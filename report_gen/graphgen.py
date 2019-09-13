@@ -178,7 +178,7 @@ def plot_by_column(mt,out_dir,out_types):
         df = join_df_by_col([mt[i] for i in mt_id], c)
         
         title = c + " - all tests"
-        nid = mt[mt_id[1]].c_names.index(c)
+        nid = mt[mt_id[0]].c_names.index(c)
         y_unit = mt[mt_id[0]].c_units[nid]
 
         fig = plot_df(df,title,t_name,c,t_unit,y_unit,colnames)
