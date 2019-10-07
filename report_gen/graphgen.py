@@ -65,6 +65,7 @@ def read_csv_files(files):
     for (i, file) in enumerate(files):
         print("Reading ",file)
         df = pd.read_csv(file, sep=',')
+        df.fillna(method='ffill')
         if len(header_has_str_idx(df, ["time"])) == 0:
             print(file," has no time column. Skipping file.")
             continue
