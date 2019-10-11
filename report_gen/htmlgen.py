@@ -36,6 +36,7 @@ def fill_params(args):
 
     for file in os.listdir(args.fig_dir):
         if file.endswith(args.graph_type):
+            file = file.replace(" ", "%20")
             if file.startswith("all_"):
                 sensor = file[4:].split('.')[0]
                 sensors.add(sensor)
@@ -114,7 +115,7 @@ def sel_list(items,links,header,sel_id):
         sl += "<tr><td><span class=\"" + highlight + "\">"
         if links[i] != "" and i != sel_id:
             sl += "<a href=" + links[i] + ">"
-        sl += items[i] + "</span>"
+        sl += items[i].replace("%20"," ") + "</span>"
         sl += "</td></tr>\n"
     sl+="</tbody></table>\n"
     return sl
@@ -173,6 +174,7 @@ def gen_all_tests_htmls(p):
 
 def test_exists(figdir,test,category,filetype):
     imgsrc = figdir + "/" + test + "_" + category + "." + filetype
+    imgsrc = imgsrc.replace("%20"," ")
     return os.path.isfile(imgsrc)
 
 def ind_tests_links(p):
@@ -191,7 +193,7 @@ def ind_tests_main(p):
     page = selection_table(p,1,True)
     page += "<table><thead><tr><td>Category &rarr; <br />Test &darr;</td>"
     for c in p.categories:
-        page += "<th>" + c + "</th>"
+        page += "<th>" + c.replace("%20"," ") + "</th>"
     page += "</tr></thead>"
 
     for i,t in enumerate(p.tests):
@@ -229,7 +231,7 @@ def ind_test(p,t_id,c_id):
         page += "<span class=\"" + highlight + "\">"
         if test_exists(p.figdir,p.tests[t_id],c,p.thumbnail_type) and i != c_id:
             page += "<a href=" + "../" + p.ind_links[t_id][i] + ">"
-        page += c + "</span>\n</td>"
+        page += c.replace("%20"," ") + "</span>\n</td>"
 
     page += "</tr></table>"
     tlinks = []
@@ -256,7 +258,7 @@ def gen_ind_tests_htmls(p):
     for i in range(len(p.ind_links)):
         for j in range(len(p.ind_links[i])):
             if p.ind_links[i][j] != "":
-                f = open(p.ind_links[i][j],"w")
+                f = open(p.ind_links[i][j].replace("%20"," "),"w")
                 page = header("Results",str("../" + p.stylefile))
                 page += ind_test(p,i,j)
                 page += footer()
