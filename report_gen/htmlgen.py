@@ -165,7 +165,7 @@ def all_tests_links(sensors,basedir):
 
 def gen_all_tests_htmls(p):
     for i in range(len(p.all_links)):
-        f = open(p.all_links[i],"w")
+        f = open(p.all_links[i][j].replace("%20"," "),"w")
         page = header("Results",str("../" + p.stylefile))
         page += all_tests_body(p,i)
         page += footer()
