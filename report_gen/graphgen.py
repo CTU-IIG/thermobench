@@ -103,30 +103,35 @@ def save_plot(file,fig):
     else:
         plotly.io.write_image(fig, file)
 
-def plot_by_category(mt, cat, y_names, out_dir, out_types):
+def plot_by_category(mt, cat, y_names, out_dir, out_types, x_axes_str):
     for i in range(len(mt)):
-        for c in range(len(cat)):
+        x_id = header_has_str_idx(mt[i].df,x_axes_str);
+        x_str = [mt[i].c_names[j] for j in x_id]
+        for x in x_str:
+            for c in range(len(cat)):
+                # Skip category if it is the same as the x axis
+                if cat[c] == x:
+                    continue
+                c_id = header_has_str_idx(mt[i].df,[x,cat[c]])
+                if(len(c_id)<2):
+                    print("Skipping category ",cat[c],
+                            ", only found one column: ",[mt[i].c_names[c_id[0]]])
+                    continue
+                
+                colnames = [mt[i].c_names[j] for j in c_id[1:]]
 
-            c_id = header_has_str_idx(mt[i].df,["time",cat[c]])
-            if(len(c_id)<2):
-                print("Skipping category ",cat[c],
-                        ", only found one column: ",[mt[i].c_names[j] for j in c_id])
-                continue
-            
-            colnames = [mt[i].c_names[j] for j in c_id[1:]]
+                title = y_names[c] + ": " + mt[i].bench_name
 
-            title = y_names[c] + ": " + mt[i].bench_name
-
-            df2 = mt[i].df.iloc[:,c_id]
-            
-            fig = plot_df(df2,title, mt[i].c_names[c_id[0]], y_names[c],
-                    mt[i].c_units[c_id[0]], mt[i].c_units[c_id[1]], colnames)
-            
-            for ot in out_types:
-                file = (out_dir + "/" + mt[i].bench_name +
-                        "_" + y_names[c] + "." + ot)
-                print("Saving figure ",file)
-                save_plot(file,fig)
+                df2 = mt[i].df.iloc[:,c_id]
+                
+                fig = plot_df(df2,title, mt[i].c_names[c_id[0]], y_names[c],
+                        mt[i].c_units[c_id[0]], mt[i].c_units[c_id[1]], colnames)
+                
+                for ot in out_types:
+                    file = (out_dir + "/" + mt[i].bench_name +
+                            ":" + x + "-" + y_names[c] + "." + ot)
+                    print("Saving figure ",file)
+                    save_plot(file,fig)
 
 def get_all_col_names(mt):
     c = set()
@@ -142,53 +147,66 @@ def col_mt_idx(mt,colname):
     return idx
 
 
-def join_df_by_col(mt, colname):
+def join_df_by_col(mt, x, colname):
 
         df = pd.DataFrame()
-        tid = header_has_str_idx(mt[0].df,["time"])
-        timecol = mt[0].df.iloc[:,tid].columns[0]
+        xid = header_has_str_idx(mt[0].df,[x])
+        xcol = mt[0].df.iloc[:,xid].columns[0]
         
-        df.insert(0,timecol,0)
-        
+        df.insert(0,xcol,0)
+
         for i in range(len(mt)):
-            tid = header_has_str_idx(mt[i].df,["time"])[0]
+            xid = header_has_str_idx(mt[i].df,[x])
+            if(len(xid)==0): continue
+            xid = xid[0]
             cid = mt[i].c_names.index(colname)
-            df1 = mt[i].df.iloc[:,[tid,cid]]
+            df1 = mt[i].df.iloc[:,[xid,cid]]
             df1 = df1.dropna()
-            df = pd.DataFrame.merge(df,df1, on=timecol, how="outer")
+            df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
         return df
 
-def plot_by_column(mt,out_dir,out_types):
+def plot_by_column(mt,out_dir,out_types, x_axes_str):
 
-    t_idx = header_has_str_idx(mt[0].df,["time"])[0]
-    t_name = mt[0].c_names[t_idx]
-    t_unit = mt[0].c_units[t_idx]
+    x_str = []
+    x_unit = []
+    for i in range(len(mt)):
+        x_id = header_has_str_idx(mt[i].df,x_axes_str);
+        for j in x_id:
+            if mt[i].c_names[j] not in x_str:
+                x_str.append(mt[i].c_names[j])
+                x_unit.append(mt[i].c_units[j])
 
     allc = get_all_col_names(mt)
 
-    for (j, c) in enumerate(allc):
+    for k in range(len(x_str)):
+        for (j, c) in enumerate(allc):
 
-        if "time" in c or "stdout" in c:
-             continue
+            if x_str[k] in c or "stdout" in c:
+                 continue
 
-        mt_id = col_mt_idx(mt,c)
+            mt_id = col_mt_idx(mt,c)
 
-        colnames = []
-        for i in range(len(mt_id)):
-            colnames.append(mt[mt_id[i]].bench_name)
-        
-        df = join_df_by_col([mt[i] for i in mt_id], c)
-        
-        title = c + " - all tests"
-        nid = mt[mt_id[0]].c_names.index(c)
-        y_unit = mt[mt_id[0]].c_units[nid]
+            colnames = []
+            for i in range(len(mt_id)):
+                colnames.append(mt[mt_id[i]].bench_name)
+           
+            mt_in = []
+            for i in mt_id:
+                if len(header_has_str_idx(mt[i].df,[x_str[k]]))>0: 
+                    mt_in.append(mt[i])
+            if len(mt_in)==0: continue
+            df = join_df_by_col(mt_in, x_str[k], c)
+            
+            title = c + " - all tests"
+            nid = mt[mt_id[0]].c_names.index(c)
+            y_unit = mt[mt_id[0]].c_units[nid]
 
-        fig = plot_df(df,title,t_name,c,t_unit,y_unit,colnames)
+            fig = plot_df(df,title,x_str[k],c,x_unit[k],y_unit,colnames)
 
-        for ot in out_types:
-            file =  out_dir + "/all_" + c + "." + ot
-            print("Saving figure ",file)
-            save_plot(file,fig)
+            for ot in out_types:
+                file =  out_dir + "/all:" + x_str[k] + "-" + c + "." + ot
+                print("Saving figure ",file)
+                save_plot(file,fig)
     
 def main():
 
@@ -202,8 +220,11 @@ def main():
     # Html is generated automatically by plotly
     out_types = ["svg","html"]
 
-    plot_by_category(mt,categories,y_names,args.out_dir,out_types)
+    # data series containing these strings are plotted as x axes
+    x_axes_str = ["time", "work"]
 
-    plot_by_column(mt,args.out_dir,out_types)
+    plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
+
+    plot_by_column(mt,args.out_dir,out_types,x_axes_str)
 
 main()
