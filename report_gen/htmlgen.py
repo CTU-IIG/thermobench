@@ -304,8 +304,8 @@ def gen_ind_tests_htmls(p):
 
 
         for k in range(len(p.ind_links)):
-            for i in range(len(p.ind_links)):
-                for j in range(len(p.ind_links[i])):
+            for i in range(len(p.ind_links[k])):
+                for j in range(len(p.ind_links[k][i])):
                     if p.ind_links[k][i][j] != "":
                         link = p.ind_links[k][i][j].replace("%20"," ")
                         f = open(os.path.join(p.outdir,link),"w")
