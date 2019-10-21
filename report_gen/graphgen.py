@@ -162,7 +162,10 @@ def join_df_by_col(mt, x, colname):
             cid = mt[i].c_names.index(colname)
             df1 = mt[i].df.iloc[:,[xid,cid]]
             df1 = df1.dropna()
-            df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
+            df1 = df1.drop_duplicates(subset=[xcol], keep='last')
+            df = pd.DataFrame.merge(df1,df, on=xcol, how="outer")
+            df = df.drop_duplicates(subset=[xcol], keep='last')
+
         return df
 
 def plot_by_column(mt,out_dir,out_types, x_axes_str):
