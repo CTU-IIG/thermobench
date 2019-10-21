@@ -163,7 +163,7 @@ def join_df_by_col(mt, x, colname):
             df1 = mt[i].df.iloc[:,[xid,cid]]
             df1 = df1.dropna()
             df1 = df1.drop_duplicates(subset=[xcol], keep='last')
-            df = pd.DataFrame.merge(df1,df, on=xcol, how="outer")
+            df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
             df = df.drop_duplicates(subset=[xcol], keep='last')
 
         return df
@@ -226,7 +226,7 @@ def main():
     # data series containing these strings are plotted as x axes
     x_axes_str = ["time", "work"]
 
-    plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
+    #plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
 
     plot_by_column(mt,args.out_dir,out_types,x_axes_str)
 
