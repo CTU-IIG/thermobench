@@ -6,13 +6,13 @@ import argparse
 def parse_commandline():
     p = argparse.ArgumentParser(description='Create html report.')
     p.add_argument('-f','--fig_dir', type=str, required=True,
-                         help='Path to the figures directory.')
+                     help='Path to the figures directory.')
     p.add_argument('-t','--thumbnail_type', type=str, required=True,
-                         help='Image type of thumbnails on the main page.')
+                     help='Image type of thumbnails on the main page.')
     p.add_argument('-g','--graph_type', type=str, required=True,
-                         help='Image type of graphs.')
+                     help='Image type of graphs.')
     p.add_argument('-o','--out_dir', type=str, required=True,
-                         help='Output directory for the report.')
+                     help='Output directory for the report.')
     return p.parse_args()
 
 class Params():
@@ -89,33 +89,28 @@ def header(title,stylefile):
     return header
 
 def footer():
-    footer="""
-</div>
-</body>
-</html>"""
-    return footer
+    return "</div></body></html>"
 
 def gen_css(stylefile):
-    s = """img { border: 0; }
-table { border-collapse: collapse; }
-th, td { border: 1px solid lightgray; padding: 4px;}
-h4 { margin: 0; }
-.otherview { margin: 1ex 0}
-.otherview .value { color: black; padding: 0ex 1ex; -moz-border-radius: 1ex; border-radius: 1ex;}
-.otherview .value a { color: inherit; text-decoration: none; }
-.otherview .other:hover { background: #eee; }
-.otherview .missing { color: gray; }
-.otherview .current { background: #ccc; }
-.na { width: 150px; height: 109px; display:  table-cell; text-align: center; vertical-align: middle; }
-left_list {
-  float: left;
-  width: 15%;
-}
-right_fig {
-  float: right;
-  width: 85%;
-}
-"""
+    s = """    img { border: 0; }
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid lightgray; padding: 4px;}
+    h4 { margin: 0; }
+    .otherview { margin: 1ex 0}
+    .otherview .value { color: black; padding: 0ex 1ex; -moz-border-radius: 1ex; border-radius: 1ex;}
+    .otherview .value a { color: inherit; text-decoration: none; }
+    .otherview .other:hover { background: #eee; }
+    .otherview .missing { color: gray; }
+    .otherview .current { background: #ccc; }
+    .na { width: 150px; height: 109px; display:  table-cell; text-align: center; vertical-align: middle; }
+    left_list {
+      float: left;
+      width: 15%;
+    }
+    right_fig {
+      float: right;
+      width: 85%;
+    }"""
     f = open(stylefile,"w")
     f.write(s)
     f.close()
@@ -148,27 +143,40 @@ def sel_row(title,items,links,sel_id):
             highlight = "value other"
             link = "<a href=" + links[i] + ">"
         sr += "<td><span class=\"" + highlight + "\">"
-        sr += link + item + "</span></td>\n"
+        sr += link + item.replace("%20"," ") + "</span></td>\n"
     sr += "</tr>"
     return sr
 
-def selection_table(p,sel_id):
+# sel hold the ids of the selected options in the selection table
+# 
+# helper_sel holds ids of other selected options not in the
+# selection table, but needed to get the correct links
+# (e.g. selected test id in the list at the all tests comparison page)
+def selection_table(p,sel,helper_sel):
+
     sel_table="<table><tbody>"
     items = ["All tests comparison","Individual tests"]
-    links = [p.all_links[sel_id[1]][0],p.ind_main_links[sel_id[1]]]
-    sel_table += sel_row("",items,links,sel_id[0])
-    if sel_id[0] == 0:
-        links = [p.all_links[i][sel_id[2]]  for i in range(len(p.all_links))]
-    elif len(sel_id)==2:
+
+    l0 = next((x for i,x in enumerate(p.all_links[sel[1]]) if x), None)
+    links = [l0,p.ind_main_links[sel[1]]]
+    sel_table += sel_row("",items,links,sel[0])
+
+    if sel[0] == 0:
+        links = [p.all_links[i][helper_sel[0]]  
+                 for i in range(len(p.all_links))]
+    elif len(sel)==2:
         links = p.ind_main_links
     else:
-        links = [p.ind_links[i][sel_id[2]][sel_id[3]] for i in range(len(p.x_names))]
-    sel_table += sel_row("x axis",p.x_names,links,sel_id[1])
+        links = [p.ind_links[i][helper_sel[0]][helper_sel[1]] 
+                 for i in range(len(p.x_names))]
+
+    sel_table += sel_row("x axis",p.x_names,links,sel[1])
     sel_table += "</tbody></table>".format(st=sel_table)
+
     return sel_table
 
 def all_tests_body(p,s_id,x_id):
-    page = selection_table(p,[0,x_id,s_id])
+    page = selection_table(p,[0,x_id],[s_id])
     page += "<left_list>\n"
     page += sel_list(p.sensors,p.all_links[x_id],"sensors",s_id)
     page += "</left_list>\n\n<right_fig>"
@@ -228,8 +236,10 @@ def ind_tests_links(p):
     return links  
 
 def ind_tests_main(p,x_id):
-    page = selection_table(p,[1,x_id])
-    page += "<table><thead><tr><td>Category &rarr; <br />Test &darr;</td>"
+    page = selection_table(p,[1,x_id],[])
+    page += "<table><thead>"
+
+    page += "<tr><td>Category &rarr; <br />Test &darr;</td>"
     for c in p.categories:
         page += "<th>" + c.replace("%20"," ") + "</th>"
     page += "</tr></thead>"
@@ -238,19 +248,25 @@ def ind_tests_main(p,x_id):
     for i,t in enumerate(p.tests):
         page += "<tr><th>" + t + "<br></th>"
         for j,c in enumerate(p.categories):
+
             if not test_exists(p.figdir,t,x,c,p.thumbnail_type):
                 page += "<td><center>N/A</center></td>"
                 continue
+
             page += "<td><a href=" + p.ind_links[x_id][i][j] + ">"
-            imgsrc = os.path.join("../",p.figdir) + "/" + t + ":" + x + "-" + c + "." + p.thumbnail_type
+            imgsrc = ("../" + p.figdir + "/" + t + ":" 
+                      + x + "-" + c + "." + p.thumbnail_type)
             page += img(imgsrc,"100%","auto")
             page += "</a></td>"
+
         page += "</tr>"
-    page += "</table></thead>"
+    page += "</table>"
     return page
 
 def img(img,width,height):
-    params = " frameborder=\"0\" height=\"" + height + "\" width=\"" + width + "\" "
+    params = " frameborder=\"0\" height=\"" + height 
+    params += "\" width=\"" + width + "\" "
+
     if img.endswith(".png") or img.endswith(".svg"):
         s = "<img " + params + "src=" + img + "></img>"
     elif img.endswith(".html") or img.endswith(".pdf"):    
@@ -262,40 +278,55 @@ def img(img,width,height):
     return s
 
 def ind_test(p,x_id,t_id,c_id):
-    page = selection_table(p,[1,x_id,t_id,c_id])
+    page = selection_table(p,[1,x_id],[t_id,c_id])
+
     page += "<table><tr><th>Category</th>"
     for i,c in enumerate(p.categories):
+
         if not p.ind_links[x_id][t_id][i]:
             continue
+
         page += "<td>" 
         highlight = "value current" if i == c_id else "value other"
         page += "<span class=\"" + highlight + "\">"
-        if test_exists(p.figdir,p.tests[t_id],p.x_names[x_id],c,p.thumbnail_type) and i != c_id:
+
+        if test_exists(p.figdir,p.tests[t_id],p.x_names[x_id],
+                       c,p.thumbnail_type) and i != c_id:
             page += "<a href=" + p.ind_links[x_id][t_id][i] + ">"
         page += c.replace("%20"," ") + "</span>\n</td>"
 
     page += "</tr></table>"
+
     tlinks = []
     for i,t in enumerate(p.tests):
         tlinks.append(p.ind_links[x_id][i][c_id])
     page += "<left_list>\n"
     page += sel_list(p.tests,tlinks,"Tests",t_id)
-    page += "</left_list>\n\n<right_fig>"
-    imgsrc = "../" + p.figdir + "/" + p.tests[t_id] + ":" + p.x_names[x_id] + "-" + p.categories[c_id] + "." + p.graph_type
+    page += "</left_list>\n\n"
+
+    page += "<right_fig>"
+    imgsrc = ("../" + p.figdir + "/" + p.tests[t_id] + ":" 
+             + p.x_names[x_id] + "-" + p.categories[c_id] 
+             + "." + p.graph_type)
     page += img(imgsrc,"60%","60%")
-    page += "</right_fig>"
-    page += "<a href=\'" + p.ind_main_links[x_id] + "\'>Back to top</a><br/>"
+
+    page += "</right_fig><a href=\'" + p.ind_main_links[x_id]
+    page += "\'>Back to top</a><br/>"
     return page
 
 def gen_ind_tests_htmls(p):
 
+    # Main link just a redirect
     f = open(p.main_link,"w")
-    page = "<html><head><meta http-equiv=\"Refresh\" content=\"1; url=" + os.path.join(p.outdir,p.ind_main_links[0]) + "\"></head><body></body></html>"
+    page = "<html><head><meta http-equiv=\"Refresh\" content=\"1; url="
+    page += os.path.join(p.outdir,p.ind_main_links[0]) 
+    page += "\"></head><body></body></html>"
     f.write(page)
     f.close()
 
     for x_id in range(len(p.x_names)):
-        f = open(os.path.join(p.outdir,p.ind_main_links[x_id]),"w")
+        link = p.ind_main_links[x_id].replace("%20"," ")
+        f = open(os.path.join(p.outdir,link),"w")
         page = header("Results", p.stylefile)
         page += ind_tests_main(p,x_id)
         page += footer()

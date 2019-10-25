@@ -5,8 +5,6 @@ import cufflinks as cf
 import plotly
 import plotly.graph_objs as go
 
-smalldata = False
-
 def parse_commandline():
     p = argparse.ArgumentParser(description='Plot and save graphs from csv.')
     p.add_argument('-c','--csv_file',
@@ -23,14 +21,9 @@ def parse_commandline():
     return p.parse_args()
 
 def get_categories_y_names():
-    if smalldata:
-        categories = ["L","gpu_work","FALALA"]
-        y_names = ["Temperature","GPU work done","fala"]
-    else:
-        categories = ["temp","load","freq","current","voltage","power","cpu_work_done"]
-        y_names = ["Temperature","Load","Frequency","Current","Voltage","Power","CPU work done"]
+    categories = ["temp","load","freq","current","voltage","power","cpu_work_done"]
+    y_names = ["Temperature","Load","Frequency","Current","Voltage","Power","CPU work done"]
     return categories,y_names
-
 
 class meas_table(NamedTuple):
     df: pd.DataFrame
@@ -67,9 +60,6 @@ def read_csv_files(files):
         df = pd.read_csv(file, sep=',')
         df = df.fillna(method='ffill')
         df = df.fillna(method='bfill')
-        if len(header_has_str_idx(df, ["time"])) == 0:
-            print(file," has no time column. Skipping file.")
-            continue
         c_names,c_units = col_names_units(df)
         # Benchmark name == name of csv file without extension
         bench_name = file.split('/')[-1][0:-4]
@@ -98,8 +88,7 @@ def plot_df(df,title,x_name,y_name,x_unit,y_unit,c_names):
 
 def save_plot(file,fig):
     if file.endswith(".html"):
-        plotly.offline.plot(fig,auto_open=False,
-                            filename=file)
+        plotly.offline.plot(fig,auto_open=False,filename=file)
     else:
         plotly.io.write_image(fig, file)
 
@@ -226,7 +215,7 @@ def main():
     # data series containing these strings are plotted as x axes
     x_axes_str = ["time", "work"]
 
-    #plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
+    plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
 
     plot_by_column(mt,args.out_dir,out_types,x_axes_str)
 
