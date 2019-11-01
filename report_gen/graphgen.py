@@ -71,19 +71,25 @@ def plot_df(df,title,x_name,y_name,x_unit,y_unit,c_names):
     x_label = x_name + " (" + x_unit + ")"
     y_label = y_name + " (" + y_unit + ")"
 
-    fig = {
-        'data': [{
-        'x': df.iloc[:,0],
-        'y': df.iloc[:,col+1],
+    data = [];
+    for col in range(len(df.columns)-1):
+        df1 = df.iloc[:,[0,col+1]]
+        df1 = df1.dropna()
+        data.append({
+        'x': df1.iloc[:,0],
+        'y': df1.iloc[:,1],
         'name': c_names[col]
-        }  for col in range(len(df.columns)-1)],
+        })
 
+    fig = {
+        'data' : data,
         'layout': {
             'title': title,
             'xaxis': {'title': x_label},
             'yaxis': {'title': y_label}
         }
     }
+
     return fig
 
 def save_plot(file,fig):
@@ -138,24 +144,24 @@ def col_mt_idx(mt,colname):
 
 def join_df_by_col(mt, x, colname):
 
-        df = pd.DataFrame()
-        xid = header_has_str_idx(mt[0].df,[x])
-        xcol = mt[0].df.iloc[:,xid].columns[0]
-        
-        df.insert(0,xcol,0)
+    df = pd.DataFrame()
+    xid = header_has_str_idx(mt[0].df,[x])
+    xcol = mt[0].df.iloc[:,xid].columns[0]
+    
+    df.insert(0,xcol,0)
 
-        for i in range(len(mt)):
-            xid = header_has_str_idx(mt[i].df,[x])
-            if(len(xid)==0): continue
-            xid = xid[0]
-            cid = mt[i].c_names.index(colname)
-            df1 = mt[i].df.iloc[:,[xid,cid]]
-            df1 = df1.dropna()
-            df1 = df1.drop_duplicates(subset=[xcol], keep='last')
-            df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
-            df = df.drop_duplicates(subset=[xcol], keep='last')
-
-        return df
+    for i in range(len(mt)):
+        xid = header_has_str_idx(mt[i].df,[x])
+        if(len(xid)==0): continue
+        xid = xid[0]
+        cid = mt[i].c_names.index(colname)
+        df1 = mt[i].df.iloc[:,[xid,cid]]
+        df1.dropna(inplace=True)
+        df1.drop_duplicates(subset=[xcol], keep='last', inplace=True)
+        df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
+        df.drop_duplicates(subset=[xcol], keep='last',inplace=True)
+    df.sort_values(by=df.columns[0],inplace=True)
+    return df
 
 def plot_by_column(mt,out_dir,out_types, x_axes_str):
 
