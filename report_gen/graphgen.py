@@ -4,6 +4,8 @@ import argparse
 import cufflinks as cf
 import plotly
 import plotly.graph_objs as go
+import scipy
+import numpy as np
 
 def parse_commandline():
     p = argparse.ArgumentParser(description='Plot and save graphs from csv.')
@@ -61,13 +63,35 @@ def read_csv_files(files):
         df = df.fillna(method='ffill')
         df = df.fillna(method='bfill')
         c_names,c_units = col_names_units(df)
+        df.columns = c_names
+        for i in range(len(c_units)):
+            if c_units[i] == "mC":
+                c_units[i] = "°C"
+                df.iloc[:,i] = df.iloc[:,i]/1000;
+            if c_units[i] == "ms":
+                max_time = df.iloc[:,i].max()
+                if max_time > 7200000: # more than 2 hours
+                    c_units[i] = "hours"
+                    df.iloc[:,i] = df.iloc[:,i]/3600000;
+                elif max_time > 120000: # more than 2 minutes
+                    c_units[i] = "minutes"
+                    df.iloc[:,i] = df.iloc[:,i]/60000;
+                elif max_time > 2000: # more than 2 seconds
+                    c_units[i] = "seconds"
+                    df.iloc[:,i] = df.iloc[:,i]/1000;
+            if c_units[i] == "Instructions executed":
+                max_instr = df.iloc[:,i].max()
+                pow10 = len(str(int(max_instr)))-1
+                c_units[i] = "10^" + str(pow10) + " instructions executed"
+                df.iloc[:,i] = df.iloc[:,i]/pow(10,pow10);
+
         # Benchmark name == name of csv file without extension
         bench_name = file.split('/')[-1][0:-4]
         mt = meas_table(df,c_names,c_units,bench_name)
         tables.append(mt)
     return tables
 
-def plot_df(df,title,x_name,y_name,x_unit,y_unit,c_names):
+def plot_df_normal(df,title,x_name,y_name,x_unit,y_unit,c_names):
     x_label = x_name + " (" + x_unit + ")"
     y_label = y_name + " (" + y_unit + ")"
 
@@ -90,6 +114,48 @@ def plot_df(df,title,x_name,y_name,x_unit,y_unit,c_names):
         }
     }
 
+    return fig
+
+def exp_trendline_data(data,x,y,a,b,c):
+    xtrend = np.linspace(x[0], x[-1], num=500)
+    ytrend = a*(1-b*np.exp(-c*xtrend))
+    data.append({
+        'x': x,
+        'y': y,
+        'name': c_names[col]
+    })
+    data.append({
+        'x': xtrend,
+        'y': ytrend,
+        'name': str(c_names[col] + " trendline")
+    })
+    return data
+
+def plot_df_bar_exp(df,title,x_name,y_name,x_unit,y_unit,c_names):
+    x_label = x_name + " (" + x_unit + ")"
+    y_label = y_name + " (" + y_unit + ")"
+
+    data = [];
+    a = [None] * (len(df.columns)-1)
+    b = [None] * (len(df.columns)-1)
+    c = [None] * (len(df.columns)-1)
+    for col in range(len(df.columns)-1):
+        df1 = df.iloc[:,[0,col+1]]
+        df1 = df1.dropna()
+        ynp = df1.iloc[:,1].to_numpy()
+        cf = scipy.optimize.curve_fit(lambda x,a,b,c: a*(1-b*np.exp(-c*x)),  df1.iloc[:,0],  df1.iloc[:,1], p0=(ynp[-1], 2,2))            
+        a[col],b[col],c[col] = cf[0]
+        #data = exp_trendline_data(data,df1.iloc[:,0].to_numpy(),df1.iloc[:,1].to_numpy(),a[col],b[col],c[col])
+
+    a, ax = zip(*sorted(zip(a, c_names)))
+    b, bx = zip(*sorted(zip(a, c_names)))
+    c, cx = zip(*sorted(zip(a, c_names)))
+    fig = go.Figure(data=[
+#        go.Bar(name='max_value', x=cx, y=a),
+#        go.Bar(name='B', x=bx, y=b),
+        go.Bar(name='exponent_value', x=cx, y=c)
+    ],
+    layout=go.Layout(title=go.layout.Title(text=title)))
     return fig
 
 def save_plot(file,fig):
@@ -119,7 +185,7 @@ def plot_by_category(mt, cat, y_names, out_dir, out_types, x_axes_str):
 
                 df2 = mt[i].df.iloc[:,c_id]
                 
-                fig = plot_df(df2,title, mt[i].c_names[c_id[0]], y_names[c],
+                fig = plot_df_normal(df2,title, mt[i].c_names[c_id[0]], y_names[c],
                         mt[i].c_units[c_id[0]], mt[i].c_units[c_id[1]], colnames)
                 
                 for ot in out_types:
@@ -199,7 +265,7 @@ def plot_by_column(mt,out_dir,out_types, x_axes_str):
             nid = mt[mt_id[0]].c_names.index(c)
             y_unit = mt[mt_id[0]].c_units[nid]
 
-            fig = plot_df(df,title,x_str[k],c,x_unit[k],y_unit,colnames)
+            fig = plot_df_normal(df,title,x_str[k],c,x_unit[k],y_unit,colnames)
 
             for ot in out_types:
                 file =  out_dir + "/all:" + x_str[k] + "-" + c + "." + ot
