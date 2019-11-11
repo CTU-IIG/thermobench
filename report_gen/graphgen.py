@@ -54,6 +54,53 @@ def header_has_str_idx(df, strings):
             indices.append(df.columns.get_loc(c))
     return indices
 
+def normalize_common_units(df,c_units):
+    for i in range(len(c_units)):
+
+        if c_units[i] == "ms":
+            max_time = df.iloc[:,i].max()
+            if max_time > 7200000: # more than 2 hours
+                c_units[i] = "hours"
+                df.iloc[:,i] = df.iloc[:,i]/3600000
+            elif max_time > 120000: # more than 2 minutes
+                c_units[i] = "minutes"
+                df.iloc[:,i] = df.iloc[:,i]/60000
+            elif max_time > 2000: # more than 2 seconds
+                c_units[i] = "seconds"
+                df.iloc[:,i] = df.iloc[:,i]/1000
+
+        if c_units[i] == "mC":
+           c_units[i] = "°C"
+           df.iloc[:,i] = df.iloc[:,i]/1000
+
+        if c_units[i] == "per-mille":
+           c_units[i] = "%"
+           df.iloc[:,i] = df.iloc[:,i]/10
+
+        if c_units[i] == "Hz":
+           c_units[i] = "MHz"
+           df.iloc[:,i] = df.iloc[:,i]/1000000
+        if c_units[i] == "kHz":
+           c_units[i] = "MHz"
+           df.iloc[:,i] = df.iloc[:,i]/1000
+        if c_units[i] == "GHz":
+           c_units[i] = "MHz"
+           df.iloc[:,i] = df.iloc[:,i]*1000
+
+        if c_units[i] == "uV":
+           c_units[i] = "mV"
+           df.iloc[:,i] = df.iloc[:,i]/1000
+        if c_units[i] == "V":
+           c_units[i] = "mV"
+           df.iloc[:,i] = df.iloc[:,i]*1000
+
+        if c_units[i] == "Instructions executed":
+            max_instr = df.iloc[:,i].max()
+            pow10 = len(str(int(max_instr)))-1
+            c_units[i] = "10^" + str(pow10) + " instructions executed"
+            df.iloc[:,i] = df.iloc[:,i]/pow(10,pow10)
+    return df,c_units
+
 def read_csv_files(files):
     tables = []
     # Read all csv files
@@ -64,27 +111,7 @@ def read_csv_files(files):
         df = df.fillna(method='bfill')
         c_names,c_units = col_names_units(df)
         df.columns = c_names
-        for i in range(len(c_units)):
-            if c_units[i] == "mC":
-                c_units[i] = "°C"
-                df.iloc[:,i] = df.iloc[:,i]/1000;
-            if c_units[i] == "ms":
-                max_time = df.iloc[:,i].max()
-                if max_time > 7200000: # more than 2 hours
-                    c_units[i] = "hours"
-                    df.iloc[:,i] = df.iloc[:,i]/3600000;
-                elif max_time > 120000: # more than 2 minutes
-                    c_units[i] = "minutes"
-                    df.iloc[:,i] = df.iloc[:,i]/60000;
-                elif max_time > 2000: # more than 2 seconds
-                    c_units[i] = "seconds"
-                    df.iloc[:,i] = df.iloc[:,i]/1000;
-            if c_units[i] == "Instructions executed":
-                max_instr = df.iloc[:,i].max()
-                pow10 = len(str(int(max_instr)))-1
-                c_units[i] = "10^" + str(pow10) + " instructions executed"
-                df.iloc[:,i] = df.iloc[:,i]/pow(10,pow10);
-
+        df,c_units = normalize_common_units(df,c_units)
         # Benchmark name == name of csv file without extension
         bench_name = file.split('/')[-1][0:-4]
         mt = meas_table(df,c_names,c_units,bench_name)
