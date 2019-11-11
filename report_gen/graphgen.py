@@ -1,15 +1,16 @@
 import pandas as pd
-from typing import NamedTuple
+from recordclass import recordclass, RecordClass
 import argparse
 import cufflinks as cf
 import plotly
 import plotly.graph_objs as go
 import scipy
 import numpy as np
+import json
 
 def parse_commandline():
     p = argparse.ArgumentParser(description='Plot and save graphs from csv.')
-    p.add_argument('-c','--csv_file',
+    p.add_argument('-f','--csv_file',
                          help='Path to the csv file to visualize',
                          type=str,
                          nargs='+',
@@ -20,6 +21,34 @@ def parse_commandline():
                          type=str,
                          default='./'
                          )
+
+    p.add_argument('--plot_col',
+                         help='Only plot the supplied columns with plot_by_column.',
+                         type=str,
+                         nargs='+',
+                         default='all'
+                         )
+
+    p.add_argument('-x','--x_axes_str',
+                         help='X axes will be all columns containing these strings.',
+                         type=str,
+                         nargs='+',
+                         required=True
+                         )
+
+    p.add_argument('-e','--extension',
+                         help='Extension of the exported graphs.',
+                         type=str,
+                         nargs='+',
+                         default='html'
+                         )
+
+    p.add_argument('-c','--categories',
+                         help='Category search string and category name pairs for grouping graphs. E.g. \'{\"temp\":\"Temperature\",\"freq\":\"Frequency\"}\'',
+                         type=json.loads,
+                         default={}
+                         )
+
     return p.parse_args()
 
 def get_categories_y_names():
@@ -27,7 +56,7 @@ def get_categories_y_names():
     y_names = ["Temperature","Load","Frequency","Current","Voltage","Power","CPU work done"]
     return categories,y_names
 
-class meas_table(NamedTuple):
+class meas_table(RecordClass):
     df: pd.DataFrame
     c_names: list
     c_units: list
@@ -191,33 +220,33 @@ def save_plot(file,fig):
     else:
         plotly.io.write_image(fig, file)
 
-def plot_by_category(mt, cat, y_names, out_dir, out_types, x_axes_str):
+def plot_by_category(mt, cat, out_dir, out_types, x_axes_str):
     for i in range(len(mt)):
         x_id = header_has_str_idx(mt[i].df,x_axes_str);
         x_str = [mt[i].c_names[j] for j in x_id]
         for x in x_str:
-            for c in range(len(cat)):
+            for c in cat:
                 # Skip category if it is the same as the x axis
-                if cat[c] == x:
+                if c == x:
                     continue
-                c_id = header_has_str_idx(mt[i].df,[x,cat[c]])
+                c_id = header_has_str_idx(mt[i].df,[x,c])
                 if(len(c_id)<2):
-                    print("Skipping category ",cat[c],
+                    print("Skipping category ",c,
                             ", only found one column: ",[mt[i].c_names[c_id[0]]])
                     continue
                 
                 colnames = [mt[i].c_names[j] for j in c_id[1:]]
 
-                title = y_names[c] + ": " + mt[i].bench_name
+                title = cat[c] + ": " + mt[i].bench_name
 
                 df2 = mt[i].df.iloc[:,c_id]
                 
-                fig = plot_df_normal(df2,title, mt[i].c_names[c_id[0]], y_names[c],
+                fig = plot_df_normal(df2,title, mt[i].c_names[c_id[0]], cat[c],
                         mt[i].c_units[c_id[0]], mt[i].c_units[c_id[1]], colnames)
                 
                 for ot in out_types:
                     file = (out_dir + "/" + mt[i].bench_name +
-                            ":" + x + "-" + y_names[c] + "." + ot)
+                            ":" + x + "-" + cat[c] + "." + ot)
                     print("Saving figure ",file)
                     save_plot(file,fig)
 
@@ -298,24 +327,28 @@ def plot_by_column(mt,out_dir,out_types, x_axes_str):
                 file =  out_dir + "/all:" + x_str[k] + "-" + c + "." + ot
                 print("Saving figure ",file)
                 save_plot(file,fig)
-    
+
+def prune_cols(mt,cols,x_axes_str):
+    for i in range(len(mt)):
+        ind = [mt[i].df.columns.get_loc(col) for col in cols]
+        ind.extend(header_has_str_idx(mt[i].df,x_axes_str))
+        ind = list(set(ind)) # selected column may be also x axis
+        mt[i].c_names = [mt[i].c_names[j] for j in ind]
+        mt[i].c_units = [mt[i].c_units[j] for j in ind]
+        mt[i].df = mt[i].df.iloc[:,ind]
+    return mt
+
 def main():
 
     args = parse_commandline()
 
     mt = read_csv_files(args.csv_file)
     
-    # Grouping categories and names of the y axis for categories
-    categories,y_names = get_categories_y_names()
+    plot_by_category(mt,args.categories,args.out_dir,args.extension,args.x_axes_str)
 
-    # Html is generated automatically by plotly
-    out_types = ["svg","html"]
+    if(args.plot_col != "all"):
+        mt = prune_cols(mt,args.plot_col,args.x_axes_str)
 
-    # data series containing these strings are plotted as x axes
-    x_axes_str = ["time", "work"]
-
-    plot_by_category(mt,categories,y_names,args.out_dir,out_types,x_axes_str)
-
-    plot_by_column(mt,args.out_dir,out_types,x_axes_str)
+    plot_by_column(mt,args.out_dir,args.extension,args.x_axes_str)
 
 main()
