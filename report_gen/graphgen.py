@@ -135,7 +135,7 @@ def read_csv_files(files):
     # Read all csv files
     for (i, file) in enumerate(files):
         print("Reading ",file)
-        df = pd.read_csv(file, sep=',')
+        df = pd.read_csv(file, sep=',',skiprows=1)
         df = df.fillna(method='ffill')
         df = df.fillna(method='bfill')
         c_names,c_units = col_names_units(df)
