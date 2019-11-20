@@ -1,0 +1,3 @@
+[submodule "src/libev"]
+	path = src/libev
+	url = git://git.lighttpd.net/libev.git
