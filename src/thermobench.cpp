@@ -455,7 +455,7 @@ static struct argp_option options[] = {
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
     { "output",         'O', "FILE",        0, "The name of output CSV file (overrides -o and -n)" },
     { "column",         'c', "STR",         0, "Add column to CSV populated by STR=val lines from COMMAND stdout" },
-    { "stdout",         'l', "STR",         0, "Log COMMAND stdout to CSV" },
+    { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { 0 }
 };
