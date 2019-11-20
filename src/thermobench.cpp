@@ -458,6 +458,9 @@ static struct argp_option options[] = {
     { 0 }
 };
 
+const char * argp_program_bug_address = "https://github.com/CTU-IIG/thermobench/issues";
+const char * argp_program_version = GIT_VERSION;
+
 /* Our argp parser. */
 static struct argp argp = {options, parse_opt, "[--] COMMAND...", ""};
 
