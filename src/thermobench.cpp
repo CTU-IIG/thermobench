@@ -442,7 +442,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
 static struct argp_option options[] = {
     { "period",         'p', "TIME [ms]",   0, "Period of reading the sensors" },
     { "measure_period", 'p', 0,             OPTION_ALIAS | OPTION_HIDDEN },
-    { "benchmark",      'b', "EXECUTABLE",  0, "Benchmark program to execute" },
+    { "benchmark",      'b', "EXECUTABLE",  OPTION_HIDDEN, "Benchmark program to execute" },
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "sensors_file",   's', "FILE",        0, "Definition of sensors to read" },
     { "sensor",         'S', "SPEC",        0, "Add sensor to the list of read sensors "
