@@ -444,14 +444,16 @@ static struct argp_option options[] = {
     { "measure_period", 'p', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "benchmark",      'b', "EXECUTABLE",  OPTION_HIDDEN, "Benchmark program to execute" },
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
-    { "sensors_file",   's', "FILE",        0, "Definition of sensors to read" },
-    { "sensor",         'S', "SPEC",        0, "Add sensor to the list of read sensors "
-                                               "(SPEC is typically something like: "
-                                               "/sys/devices/virtual/thermal/thermal_zone0/temp [NAME [UNIT]])" },
+    { "sensors_file",   's', "FILE",        0,
+      "Definition of sensors to use. Each line of the FILE contains SPEC as in -S." },
+    { "sensor",         'S', "SPEC",        0,
+      "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
+      "FILE is typically something like "
+      "/sys/devices/virtual/thermal/thermal_zone0/temp " },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
-    { "output",         'O', "FILE",        0, "The name of output CSV file" },
+    { "output",         'O', "FILE",        0, "The name of output CSV file (overrides -o and -n)" },
     { "column",         'c', "STR",         0, "Add column to CSV populated by STR=val lines from COMMAND stdout" },
     { "stdout",         'l', "STR",         0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
@@ -459,10 +461,21 @@ static struct argp_option options[] = {
 };
 
 const char * argp_program_bug_address = "https://github.com/CTU-IIG/thermobench/issues";
-const char * argp_program_version = GIT_VERSION;
+const char * argp_program_version = "thermobench " GIT_VERSION;
 
 /* Our argp parser. */
-static struct argp argp = {options, parse_opt, "[--] COMMAND...", ""};
+static struct argp argp = {
+    options, parse_opt, "[--] COMMAND...",
+
+    "Runs a benchmark COMMAND and stores the values from temperature (and "
+    "other) sensors in a .csv file. "
+
+    "\v"
+
+    "Besides reading and storing the temperatures, values reported by the "
+    "benchmark COMMAND via its stdout can be stored in the .csv file too. "
+    "This must be explicitly enabled by -c or -l options. "
+};
 
 int main(int argc, char **argv)
 {
