@@ -1,4 +1,4 @@
-CC = aarch64-linux-gnu-gcc
+#CC = aarch64-linux-gnu-gcc
 CFLAGS= -std=gnu99 -O3 -pthread -g
 
 BENCHMARKS=$(patsubst %.h,%,$(wildcard *_*.h))
