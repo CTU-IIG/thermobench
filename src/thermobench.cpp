@@ -52,6 +52,7 @@ struct sensor {
 int measure_period_ms = 100;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
+int  cooldown_temp = INT_MAX;
 char *bench_name = NULL;
 const char *output_path = ".";
 char *out_file = NULL;
@@ -201,6 +202,35 @@ void write_arr_csv(FILE *fp, double *arr, int size)
             fprintf(fp, "%g", arr[i]);
     }
     fprintf(fp, "\n");
+}
+
+void wait_cooldown(char* exec_dir){
+
+    FILE *fp = fopen(state.sensors[0].path, "r");
+    if (fp == NULL)
+        err(1, "Error while opening sensor file: %s\n", state.sensors[0].path);
+
+    char* cmd;
+    asprintf(&cmd,"%s/fan_ctrl.sh 1", exec_dir);
+    if(system(cmd) == -1)
+        err(1, "Error while executing shell command: %s\n", cmd);
+
+    while(1){
+        rewind(fp);
+        int temp = INT_MAX;
+        if(fscanf(fp, "%d", &temp) < 1) continue;
+        if(temp <= cooldown_temp) break;
+        printf("Cooling down to %d, CPU temperature: %d\n",cooldown_temp,temp);
+        fflush(stdout);
+        sleep(1);
+    }
+
+    cmd[strlen(cmd)-1]='0';
+    if(system(cmd) == -1)
+        err(1, "Error while executing shell command: %s\n", cmd);
+
+    fclose(fp);
+
 }
 
 void rewrite_header_keys_csv(FILE *fp, char *keys[], int num_keys, int num_sensors)
@@ -398,6 +428,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         state.sensors.push_back(s);
         break;
     }
+    case 'w':
+        cooldown_temp = atoi(arg);
+        break;
     case 'n':
         bench_name = arg;
         break;
@@ -450,6 +483,8 @@ static struct argp_option options[] = {
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "
       "/sys/devices/virtual/thermal/thermal_zone0/temp " },
+    { "wait",           'w', "MILLICELSIUS",0, "Before launching measurement, wait "
+      "for the CPU(first sensor in sensor paths) to cool down to this temperature" },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
@@ -480,6 +515,9 @@ static struct argp argp = {
 int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
+
+    if(cooldown_temp != INT_MAX)
+        wait_cooldown(dirname(strdup(argv[0])));
 
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
