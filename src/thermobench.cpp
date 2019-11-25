@@ -52,7 +52,8 @@ struct sensor {
 int measure_period_ms = 100;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
-int  cooldown_temp = INT_MAX;
+double  cooldown_temp = NAN;
+char *fan_cmd = NULL;
 char *bench_name = NULL;
 const char *output_path = ".";
 char *out_file = NULL;
@@ -204,33 +205,41 @@ void write_arr_csv(FILE *fp, double *arr, int size)
     fprintf(fp, "\n");
 }
 
-void wait_cooldown(char* exec_dir){
-
-    FILE *fp = fopen(state.sensors[0].path, "r");
+static double read_sensor(char* path){
+    double result;
+    FILE *fp = fopen(path, "r");
     if (fp == NULL)
-        err(1, "Error while opening sensor file: %s\n", state.sensors[0].path);
+        err(1, "Error while opening sensor file: %s", path);
+    int scanret = fscanf(fp, "%lf", &result);
+    if (scanret != 1) // read fail or file empty
+        result = NAN;
+    fclose(fp);
+    return result;
+}
 
-    char* cmd;
-    asprintf(&cmd,"%s/fan_ctrl.sh 1", exec_dir);
-    if(system(cmd) == -1)
-        err(1, "Error while executing shell command: %s\n", cmd);
+void set_fan(char* fan_cmd, int set){
+    string cmd(fan_cmd);
+    cmd = cmd + " " + to_string(set);
+    if (system(cmd.c_str()) == -1)
+        err(1, "Error while executing shell command: %s\n", cmd.c_str());
+}
 
-    while(1){
-        rewind(fp);
-        int temp = INT_MAX;
-        if(fscanf(fp, "%d", &temp) < 1) continue;
-        if(temp <= cooldown_temp) break;
-        printf("Cooling down to %d, CPU temperature: %d\n",cooldown_temp,temp);
-        fflush(stdout);
-        sleep(1);
+void wait_cooldown(char *fan_cmd)
+{
+    if (fan_cmd)
+        set_fan(fan_cmd, 1);
+
+    while (1) {
+        double temp = read_sensor(state.sensors[0].path) / 1000;
+        if (temp <= cooldown_temp)
+            break;
+        fprintf(stderr, "\rCooling down to %lf, CPU temperature: %lf", cooldown_temp, temp);
+        fflush(stderr);
+        sleep(2);
     }
 
-    cmd[strlen(cmd)-1]='0';
-    if(system(cmd) == -1)
-        err(1, "Error while executing shell command: %s\n", cmd);
-
-    fclose(fp);
-
+    if (fan_cmd)
+        set_fan(fan_cmd, 0);
 }
 
 void rewrite_header_keys_csv(FILE *fp, char *keys[], int num_keys, int num_sensors)
@@ -329,15 +338,9 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     res_buf[0] = get_current_time();
     //    printf("%g\n", get_current_time());
 
-    for (unsigned i = 0; i < state.sensors.size(); ++i) {
-        FILE *fp = fopen(state.sensors[i].path, "r");
-        if (fp == NULL)
-            err(1, "Error while opening sensor file: %s", state.sensors[i].path);
-        int scanret = fscanf(fp, "%lf", &res_buf[i + 1]);
-        if (scanret != 1) // read fail or file empty
-            res_buf[i + 1] = NAN;
-        fclose(fp);
-    }
+    for (unsigned i = 0; i < state.sensors.size(); ++i)
+        res_buf[i + 1] = read_sensor(state.sensors[i].path);
+
     write_arr_csv(state.out_fp, res_buf, state.sensors.size() + 1);
 }
 
@@ -429,7 +432,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         break;
     }
     case 'w':
-        cooldown_temp = atoi(arg);
+        cooldown_temp = atof(arg);
+        break;
+    case 'f':
+        fan_cmd = arg;
         break;
     case 'n':
         bench_name = arg;
@@ -483,8 +489,8 @@ static struct argp_option options[] = {
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "
       "/sys/devices/virtual/thermal/thermal_zone0/temp " },
-    { "wait",           'w', "MILLICELSIUS",0, "Before launching measurement, wait "
-      "for the CPU(first sensor in sensor paths) to cool down to this temperature" },
+    { "wait",           'w', "TEMP [°C]",   0, "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP before running the COMMAND." },
+    { "fan-cmd",        'f', "FAN_CMD 1/0", 0, "Command to turn the fan on/off." },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
@@ -516,8 +522,8 @@ int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
 
-    if(cooldown_temp != INT_MAX)
-        wait_cooldown(dirname(strdup(argv[0])));
+    if(!isnan(cooldown_temp))
+        wait_cooldown(fan_cmd);
 
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
