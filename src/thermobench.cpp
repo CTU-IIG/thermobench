@@ -52,7 +52,7 @@ struct sensor {
 int measure_period_ms = 100;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
-double  cooldown_temp = NAN;
+double cooldown_temp = NAN;
 char *fan_cmd = NULL;
 char *bench_name = NULL;
 const char *output_path = ".";
@@ -218,7 +218,8 @@ void write_arr_csv(FILE *fp, double *arr, int size)
     fprintf(fp, "\n");
 }
 
-static double read_sensor(char* path){
+static double read_sensor(char *path)
+{
     double result;
     FILE *fp = fopen(path, "r");
     if (fp == NULL)
@@ -230,7 +231,8 @@ static double read_sensor(char* path){
     return result;
 }
 
-void set_fan(char* fan_cmd, int set){
+void set_fan(char *fan_cmd, int set)
+{
     string cmd(fan_cmd);
     cmd = cmd + " " + to_string(set);
     if (system(cmd.c_str()) == -1)
@@ -243,11 +245,13 @@ void wait_cooldown(char *fan_cmd)
         set_fan(fan_cmd, 1);
 
     while (1) {
-        double temp = read_sensor(state.sensors[0].path) / 1000;
-        if (temp <= cooldown_temp)
+        double temp = read_sensor(state.sensors[0].path) / 1000.0;
+        fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg...",
+                cooldown_temp, state.sensors[0].name, temp);
+        if (temp <= cooldown_temp) {
+            fprintf(stderr, "\nDone\n");
             break;
-        fprintf(stderr, "\rCooling down to %lf, CPU temperature: %lf", cooldown_temp, temp);
-        fflush(stderr);
+        }
         sleep(2);
     }
 
@@ -505,7 +509,9 @@ static struct argp_option options[] = {
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "
       "/sys/devices/virtual/thermal/thermal_zone0/temp " },
-    { "wait",           'w', "TEMP [°C]",   0, "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP before running the COMMAND." },
+    { "wait",           'w', "TEMP [°C]",   0,
+      "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP "
+      "before running the COMMAND." },
     { "fan-cmd",        'f', "FAN_CMD 1/0", 0, "Command to turn the fan on/off." },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
@@ -538,7 +544,7 @@ int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
 
-    if(!isnan(cooldown_temp))
+    if (!isnan(cooldown_temp))
         wait_cooldown(fan_cmd);
 
     if (!out_file)
