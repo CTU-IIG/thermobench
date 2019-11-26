@@ -512,7 +512,7 @@ static struct argp_option options[] = {
     { "wait",           'w', "TEMP [°C]",   0,
       "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP "
       "before running the COMMAND." },
-    { "fan-cmd",        'f', "FAN_CMD 1/0", 0, "Command to turn the fan on/off." },
+    { "fan-cmd",        'f', "CMD",         0, "Command to turn the fan on (CMD 1) or off (CMD 0)" },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
