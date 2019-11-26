@@ -24,18 +24,16 @@ Then specify the cross-compiler to use when calling make:
 
 ## Usage
 
-Command line options and their description can be printed by running
-
-    src/thermobench --help
-
 The simplest useful command to try is:
 
-	src/thermobench --sensor=/sys/devices/virtual/thermal/thermal_zone0/temp benchmarks/CPU/instr/read
+	src/thermobench benchmarks/CPU/instr/read
 
-To record multiple sensors use (check how many thermal zones is
-available on your platform):
+which runs the `read` benchmark while measuring temperature from all
+available thermal zones (`/sys/devices/virtual/thermal/thermal_zone*`).
 
-	src/thermobench --sensor=/sys/devices/virtual/thermal/thermal_zone{0..8}/temp benchmarks/CPU/instr/read
+To record multiple different sensors use:
+
+	src/thermobench --sensor=/sys/devices/virtual/thermal/thermal_zone{0..3}/temp benchmarks/CPU/instr/read
 
 You can also record what the benchmark prints to stdout:
 
@@ -43,3 +41,9 @@ You can also record what the benchmark prints to stdout:
         --sensor=/sys/devices/virtual/thermal/thermal_zone{0..8}/temp \
         --column=CPU{0..5}_work_done \
 	    benchmarks/CPU/instr/read
+
+To pass some switches to the benchmark program, use `--`:
+
+	src/thermobench -- benchmarks/CPU/instr/read -m1
+
+In this example, the benchmark will execute only on CPU0.
