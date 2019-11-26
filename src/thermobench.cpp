@@ -173,6 +173,19 @@ static void read_sensor_paths(char *sensors_file)
     fclose(fp);
 }
 
+static void add_all_thermal_zones()
+{
+    for (int i=0;; i++) {
+        string sensor_path = "/sys/devices/virtual/thermal/thermal_zone" + to_string(i) + "/temp";
+        if (access(sensor_path.c_str(), R_OK) != 0)
+            break;
+
+        struct sensor s;
+        parse_sensor_spec(&s, sensor_path.c_str());
+        state.sensors.push_back(s);
+    }
+}
+
 void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char*> &keys, bool write_stdout)
 {
     fprintf(fp, "time/ms");
@@ -467,6 +480,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         if (!benchmark_argv)
             argp_error(argp_state, "COMMAND to run was not specified");
         if (state.sensors.size() == 0)
+            add_all_thermal_zones();
+        if (state.sensors.size() == 0)
             argp_error(argp_state, "No sensors to measure");
         if (!bench_name)
             bench_name = basename(benchmark_argv[0]);
@@ -484,7 +499,8 @@ static struct argp_option options[] = {
     { "benchmark",      'b', "EXECUTABLE",  OPTION_HIDDEN, "Benchmark program to execute" },
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "sensors_file",   's', "FILE",        0,
-      "Definition of sensors to use. Each line of the FILE contains SPEC as in -S." },
+      "Definition of sensors to use. Each line of the FILE contains SPEC as in -S. "
+      "When no sensors are specified, all available thermal zones are added automatically." },
     { "sensor",         'S', "SPEC",        0,
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "
