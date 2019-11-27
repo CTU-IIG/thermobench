@@ -1,0 +1,12 @@
+/sys/devices/virtual/thermal/thermal_zone0/temp       CPU_0_temp        m°C
+/sys/devices/virtual/thermal/thermal_zone1/temp       CPU_1_temp        m°C
+/sys/devices/virtual/thermal/thermal_zone2/temp       GPU_0_temp        m°C
+/sys/devices/virtual/thermal/thermal_zone3/temp       GPU_1_temp        m°C
+/sys/devices/virtual/thermal/thermal_zone4/temp       DRC_temp          m°C
+/sys/devices/virtual/thermal/thermal_zone5/temp       PMIC_temp         m°C
+/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq Cortex_A53_0_freq Hz
+/sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_cur_freq Cortex_A53_1_freq Hz
+/sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_cur_freq Cortex_A53_2_freq Hz
+/sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_cur_freq Cortex_A53_3_freq Hz
+/sys/devices/system/cpu/cpu4/cpufreq/cpuinfo_cur_freq Cortex_A72_0_freq Hz
+/sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_cur_freq Cortex_A72_1_freq Hz
