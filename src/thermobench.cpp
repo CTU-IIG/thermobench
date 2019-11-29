@@ -48,6 +48,22 @@ struct sensor {
     const char *units;
 };
 
+struct proc_stat_cpu {
+    unsigned user, nice, system, idle,
+             iowait, irq, softirq, steal,
+             guest, guest_nice;
+};
+
+struct cpu_usage {
+    unsigned idx;
+    proc_stat_cpu current;
+    proc_stat_cpu last;
+};
+
+#define MAX_CPUS 256
+unsigned n_cpus;
+struct cpu_usage cpu_usage[MAX_CPUS];
+
 /* Command line options */
 int measure_period_ms = 100;
 char *benchmark_path[2] = { NULL, NULL };
@@ -59,6 +75,7 @@ const char *output_path = ".";
 char *out_file = NULL;
 bool write_stdout = false;
 int terminate_time = 0;
+bool calc_cpu_usage = false;
 
 struct measure_state {
     struct timespec start_time;
@@ -186,14 +203,20 @@ static void add_all_thermal_zones()
     }
 }
 
-void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char*> &keys, bool write_stdout)
+void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char*> &keys, bool write_stdout, bool calc_cpu_usage)
 {
     fprintf(fp, "time/ms");
     for (unsigned i = 0; i < sensors.size(); ++i)
         fprintf(fp, sensors[i].units ? ",%s/%s" : ",%s", sensors[i].name, sensors[i].units);
+
+    if (calc_cpu_usage)
+        for (unsigned i = 0; i < n_cpus; ++i)
+            fprintf(fp, ",CPU%u_load/%%", cpu_usage[i].idx);
+
     for (unsigned i = 0; i < keys.size(); ++i) {
         fprintf(fp, ",%s", keys[i]);
     }
+
     if (write_stdout)
         fprintf(fp, ",stdout");
     fprintf(fp, "\n");
@@ -257,6 +280,48 @@ void wait_cooldown(char *fan_cmd)
 
     if (fan_cmd)
         set_fan(fan_cmd, 0);
+}
+
+void read_procstat()
+{
+
+    for (unsigned i = 0; i < n_cpus; ++i)
+        cpu_usage[i].last = cpu_usage[i].current;
+
+    FILE *fp = fopen("/proc/stat", "r");
+
+    // Skipping first line, as it contains the aggregate cpu data
+    if(fscanf(fp, "%*[^\n]\n") == EOF)
+        err(1,"fscanf /proc/stat");
+
+    for (unsigned i = 0; i < n_cpus; i++) {
+        struct proc_stat_cpu &c = cpu_usage[i].current;
+        int scanret = fscanf(fp, "cpu%u %u %u %u %u %u %u %u %u %u %u\n",
+                 &cpu_usage[i].idx,
+                 &c.user, &c.nice, &c.system, &c.idle, &c.iowait,
+                 &c.irq, &c.softirq, &c.steal, &c.guest, &c.guest_nice);
+    if (scanret != 11)
+        err(1,"fscanf /proc/stat");
+    }
+
+    fclose(fp);
+}
+
+// Calculate cpu usage from number of idle/non-idle cycles in /proc/stat
+double get_cpu_usage(int cpu)
+{
+
+    struct proc_stat_cpu &c = cpu_usage[cpu].current;
+    struct proc_stat_cpu &l = cpu_usage[cpu].last;
+
+    // Change in idle/active cycles since last measurement
+    double idle = c.idle + c.iowait - (l.idle + l.iowait);
+    double active = (c.user + c.nice + c.system + c.irq +
+                     c.softirq + c.steal + c.guest + c.guest_nice) -
+                    (l.user + l.nice + l.system + l.irq +
+                     l.softirq + l.steal + l.guest + l.guest_nice);
+
+    return (idle+active) ? active / (active+idle) * 100 : 0;
 }
 
 void rewrite_header_keys_csv(FILE *fp, char *keys[], int num_keys, int num_sensors)
@@ -332,14 +397,14 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
 
             if (id >= 0) {
                 write_column_csv(state.out_fp, curr_time, value,
-                                 1 + state.sensors.size() + id);
+                                 1 + state.sensors.size() + n_cpus + id);
                 return;
             }
             *eq = '=';
         }
         if (write_stdout)
             write_column_csv(state.out_fp, curr_time, buf,
-                             1 + state.sensors.size() + state.keys.size());
+                             1 + state.sensors.size() + n_cpus + state.keys.size());
     }
 }
 
@@ -353,12 +418,20 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     double res_buf[MAX_RESULTS] = { 0 };
 
     res_buf[0] = get_current_time();
+    int offset = 1;
     //    printf("%g\n", get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i)
-        res_buf[i + 1] = read_sensor(state.sensors[i].path);
+        res_buf[i + offset] = read_sensor(state.sensors[i].path);
+    offset += state.sensors.size();
 
-    write_arr_csv(state.out_fp, res_buf, state.sensors.size() + 1);
+    if(calc_cpu_usage){
+        read_procstat();
+        for (unsigned i = 0; i < n_cpus; ++i)
+            res_buf[i + offset] = get_cpu_usage(i);
+    }
+
+    write_arr_csv(state.out_fp, res_buf, offset + n_cpus);
 }
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -472,6 +545,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 't':
         terminate_time = atoi(arg);
         break;
+    case 'u':
+        calc_cpu_usage = true;
+        break;
 /*     case ARGP_KEY_ARG: */
 /*         break; */
     case ARGP_KEY_ARGS:
@@ -520,6 +596,7 @@ static struct argp_option options[] = {
     { "column",         'c', "STR",         0, "Add column to CSV populated by STR=val lines from COMMAND stdout" },
     { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
+    { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
     { 0 }
 };
 
@@ -550,13 +627,18 @@ int main(int argc, char **argv)
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
 
+    if(calc_cpu_usage){
+        n_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        read_procstat(); // first read to initialize cpu_usage vars
+    }
+
     state.out_fp = fopen(out_file, "w+");
     if (state.out_fp == NULL)
         err(1, "fopen(%s)", out_file);
 
     fprintf(state.out_fp, "# Generated by: %s\n", shell_quote(argc, argv).c_str());
 
-    write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout);
+    write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout, calc_cpu_usage);
 
     measure(measure_period_ms);
 
