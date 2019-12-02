@@ -203,7 +203,8 @@ static void add_all_thermal_zones()
     }
 }
 
-void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char*> &keys, bool write_stdout, bool calc_cpu_usage)
+void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char *> &keys, bool write_stdout,
+                      bool calc_cpu_usage)
 {
     fprintf(fp, "time/ms");
     for (unsigned i = 0; i < sensors.size(); ++i)
@@ -425,7 +426,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
         res_buf[i + offset] = read_sensor(state.sensors[i].path);
     offset += state.sensors.size();
 
-    if(calc_cpu_usage){
+    if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i)
             res_buf[i + offset] = get_cpu_usage(i);
@@ -627,7 +628,7 @@ int main(int argc, char **argv)
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
 
-    if(calc_cpu_usage){
+    if (calc_cpu_usage) {
         n_cpus = sysconf(_SC_NPROCESSORS_ONLN);
         read_procstat(); // first read to initialize cpu_usage vars
     }
