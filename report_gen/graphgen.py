@@ -33,14 +33,14 @@ def parse_commandline():
                          help='X axes will be all columns containing these strings.',
                          type=str,
                          nargs='+',
-                         required=True
+                         default=None
                          )
 
     p.add_argument('-e','--extension',
                          help='Extension of the exported graphs.',
                          type=str,
                          nargs='+',
-                         default='html'
+                         default=['svg']
                          )
 
     p.add_argument('-c','--categories',
@@ -50,26 +50,6 @@ def parse_commandline():
                          )
 
     return p.parse_args()
-
-def get_categories_y_names():
-    categories = ["temp","load","freq","current","voltage","power","cpu_work_done"]
-    y_names = ["Temperature","Load","Frequency","Current","Voltage","Power","CPU work done"]
-    return categories,y_names
-
-class meas_table(RecordClass):
-    df: pd.DataFrame
-    c_names: list
-    c_units: list
-    bench_name: str
-
-def col_names_units(df):
-    names = []
-    units = []
-    for c in df.columns:
-        s = c.strip().split('/')
-        names.append(s[0])
-        units.append(s[1] if len(s) > 1 else "no unit")
-    return names,units
 
 # Returns indices of columns whose header contains
 # at least 1 of the strings
@@ -83,9 +63,17 @@ def header_has_str_idx(df, strings):
             indices.append(df.columns.get_loc(c))
     return indices
 
+def col_names_units(df):
+    names = []
+    units = []
+    for c in df.columns:
+        s = c.strip().split('/')
+        names.append(s[0])
+        units.append(s[1] if len(s) > 1 else "")
+    return names,units
+
 def normalize_common_units(df,c_units):
     for i in range(len(c_units)):
-
         if c_units[i] == "ms":
             max_time = df.iloc[:,i].max()
             if max_time > 7200000: # more than 2 hours
@@ -124,32 +112,30 @@ def normalize_common_units(df,c_units):
            df.iloc[:,i] = df.iloc[:,i]*1000
 
         if c_units[i] == "Instructions executed":
-            max_instr = df.iloc[:,i].max()
-            pow10 = len(str(int(max_instr)))-1
-            c_units[i] = "10^" + str(pow10) + " instructions executed"
-            df.iloc[:,i] = df.iloc[:,i]/pow(10,pow10)
+            c_units[i] = "10^9 instructions executed"
+            df.iloc[:,i] = df.iloc[:,i]/pow(10,9)
     return df,c_units
 
+
 def read_csv_files(files):
-    tables = []
-    # Read all csv files
+    dfs = []
     for (i, file) in enumerate(files):
         print("Reading ",file)
         df = pd.read_csv(file, sep=',',skiprows=1)
         df = df.fillna(method='ffill')
         df = df.fillna(method='bfill')
         c_names,c_units = col_names_units(df)
-        df.columns = c_names
         df,c_units = normalize_common_units(df,c_units)
-        # Benchmark name == name of csv file without extension
-        bench_name = file.split('/')[-1][0:-4]
-        mt = meas_table(df,c_names,c_units,bench_name)
-        tables.append(mt)
-    return tables
+        for i in range(len(df.columns)):
+            s = c_names[i]
+            if c_units[i]: 
+                s += " (" + c_units[i] + ")"
+            df.rename(columns={df.columns[i]: s}, inplace = True)
+        df.name = file.split('/')[-1][0:-4] # basename of csv file without extension
+        dfs.append(df)
+    return dfs
 
-def plot_df_normal(df,title,x_name,y_name,x_unit,y_unit,c_names):
-    x_label = x_name + " (" + x_unit + ")"
-    y_label = y_name + " (" + y_unit + ")"
+def plot_df_normal(df,title,x_label,y_label,c_names):
 
     data = [];
     for col in range(len(df.columns)-1):
@@ -206,12 +192,8 @@ def plot_df_bar_exp(df,title,x_name,y_name,x_unit,y_unit,c_names):
     a, ax = zip(*sorted(zip(a, c_names)))
     b, bx = zip(*sorted(zip(a, c_names)))
     c, cx = zip(*sorted(zip(a, c_names)))
-    fig = go.Figure(data=[
-#        go.Bar(name='max_value', x=cx, y=a),
-#        go.Bar(name='B', x=bx, y=b),
-        go.Bar(name='exponent_value', x=cx, y=c)
-    ],
-    layout=go.Layout(title=go.layout.Title(text=title)))
+    fig = go.Figure(data=[go.Bar(name='exponent_value', x=cx, y=c)],
+                    layout=go.Layout(title=go.layout.Title(text=title)))
     return fig
 
 def save_plot(file,fig):
@@ -220,64 +202,64 @@ def save_plot(file,fig):
     else:
         plotly.io.write_image(fig, file)
 
-def plot_by_category(mt, cat, out_dir, out_types, x_axes_str):
-    for i in range(len(mt)):
-        x_id = header_has_str_idx(mt[i].df,x_axes_str);
-        x_str = [mt[i].c_names[j] for j in x_id]
+def plot_by_category(dfs, cat, out_dir, out_types, x_axes_str):
+    for i in range(len(dfs)):
+        x_id = header_has_str_idx(dfs[i],x_axes_str);
+        x_str = [dfs[i].columns[j] for j in x_id]
         for x in x_str:
             for c in cat:
                 # Skip category if it is the same as the x axis
                 if c == x:
                     continue
-                c_id = header_has_str_idx(mt[i].df,[x,c])
+                c_id = header_has_str_idx(dfs[i],[x,c])
                 if(len(c_id)<2):
                     print("Skipping category ",c,
-                            ", only found one column: ",[mt[i].c_names[c_id[0]]])
+                            ", only found one column: ",[dfs[i].columns[c_id[0]]])
                     continue
                 
-                colnames = [mt[i].c_names[j] for j in c_id[1:]]
+                colnames = [dfs[i].columns[j] for j in c_id[1:]]
 
-                title = cat[c] + ": " + mt[i].bench_name
+                title = cat[c] + ": " + dfs[i].name
 
-                df2 = mt[i].df.iloc[:,c_id]
+                df2 = dfs[i].iloc[:,c_id]
                 
-                fig = plot_df_normal(df2,title, mt[i].c_names[c_id[0]], cat[c],
-                        mt[i].c_units[c_id[0]], mt[i].c_units[c_id[1]], colnames)
+                fig = plot_df_normal(df2,title, dfs[i].columns[c_id[0]], cat[c], colnames)
                 
                 for ot in out_types:
-                    file = (out_dir + "/" + mt[i].bench_name +
-                            ":" + x + "-" + cat[c] + "." + ot)
+                    xy = x.split(" ")[0] + "-" + cat[c].split(" ")[0]
+                    file = (out_dir + "/" + dfs[i].name +
+                            ":" + xy + "." + ot)
                     print("Saving figure ",file)
                     save_plot(file,fig)
 
-def get_all_col_names(mt):
+def get_all_col_names(dfs):
     c = set()
-    for i in range(len(mt)):
-        c |= set(mt[i].c_names)
+    for i in range(len(dfs)):
+        c |= set(dfs[i].columns)
     return sorted(list(c))
 
-def col_mt_idx(mt,colname):
+def col_dfs_idx(dfs,colname):
     idx = []
-    for i in range(len(mt)):
-        if colname in mt[i].c_names:
+    for i in range(len(dfs)):
+        if colname in dfs[i].columns:
             idx.append(i)
     return idx
 
 
-def join_df_by_col(mt, x, colname):
+def join_df_by_col(dfs, x, colname):
 
     df = pd.DataFrame()
-    xid = header_has_str_idx(mt[0].df,[x])
-    xcol = mt[0].df.iloc[:,xid].columns[0]
+    xid = header_has_str_idx(dfs[0],[x])
+    xcol = dfs[0].iloc[:,xid].columns[0]
     
     df.insert(0,xcol,0)
 
-    for i in range(len(mt)):
-        xid = header_has_str_idx(mt[i].df,[x])
+    for i in range(len(dfs)):
+        xid = header_has_str_idx(dfs[i],[x])
         if(len(xid)==0): continue
         xid = xid[0]
-        cid = mt[i].c_names.index(colname)
-        df1 = mt[i].df.iloc[:,[xid,cid]]
+        cid = list(dfs[i].columns).index(colname)
+        df1 = dfs[i].iloc[:,[xid,cid]]
         df1.dropna(inplace=True)
         df1.drop_duplicates(subset=[xcol], keep='last', inplace=True)
         df = pd.DataFrame.merge(df,df1, on=xcol, how="outer")
@@ -285,18 +267,16 @@ def join_df_by_col(mt, x, colname):
     df.sort_values(by=df.columns[0],inplace=True)
     return df
 
-def plot_by_column(mt,out_dir,out_types, x_axes_str):
+def plot_by_column(dfs,out_dir,out_types, x_axes_str):
 
     x_str = []
-    x_unit = []
-    for i in range(len(mt)):
-        x_id = header_has_str_idx(mt[i].df,x_axes_str);
+    for i in range(len(dfs)):
+        x_id = header_has_str_idx(dfs[i],x_axes_str);
         for j in x_id:
-            if mt[i].c_names[j] not in x_str:
-                x_str.append(mt[i].c_names[j])
-                x_unit.append(mt[i].c_units[j])
+            if dfs[i].columns[j] not in x_str:
+                x_str.append(dfs[i].columns[j])
 
-    allc = get_all_col_names(mt)
+    allc = get_all_col_names(dfs)
 
     for k in range(len(x_str)):
         for (j, c) in enumerate(allc):
@@ -304,51 +284,52 @@ def plot_by_column(mt,out_dir,out_types, x_axes_str):
             if x_str[k] in c or "stdout" in c:
                  continue
 
-            mt_id = col_mt_idx(mt,c)
+            dfs_id = col_dfs_idx(dfs,c)
 
             colnames = []
-            for i in range(len(mt_id)):
-                colnames.append(mt[mt_id[i]].bench_name)
+            for i in range(len(dfs_id)):
+                colnames.append(dfs[dfs_id[i]].name)
            
-            mt_in = []
-            for i in mt_id:
-                if len(header_has_str_idx(mt[i].df,[x_str[k]]))>0: 
-                    mt_in.append(mt[i])
-            if len(mt_in)==0: continue
-            df = join_df_by_col(mt_in, x_str[k], c)
-            
-            title = c + " - all tests"
-            nid = mt[mt_id[0]].c_names.index(c)
-            y_unit = mt[mt_id[0]].c_units[nid]
+            dfs_in = []
+            for i in dfs_id:
+                if len(header_has_str_idx(dfs[i],[x_str[k]]))>0:
+                    dfs_in.append(dfs[i])
+            if len(dfs_in)==0: continue
 
-            fig = plot_df_normal(df,title,x_str[k],c,x_unit[k],y_unit,colnames)
+            df = join_df_by_col(dfs_in, x_str[k], c)
+            title = c + " - all tests"
+
+            fig = plot_df_normal(df,title,x_str[k],c,colnames)
 
             for ot in out_types:
-                file =  out_dir + "/all:" + x_str[k] + "-" + c + "." + ot
+                xy = x_str[k].split(" ")[0] + "-" + c.split(" ")[0]
+                file =  out_dir + "/all:" + xy + "." + ot
                 print("Saving figure ",file)
                 save_plot(file,fig)
 
-def prune_cols(mt,cols,x_axes_str):
-    for i in range(len(mt)):
-        ind = [mt[i].df.columns.get_loc(col) for col in cols]
-        ind.extend(header_has_str_idx(mt[i].df,x_axes_str))
+def prune_cols(dfs,cols,x_axes_str):
+    for i in range(len(dfs)):
+        cols.extend(x_axes_str)
+        ind = header_has_str_idx(dfs[i],cols)
         ind = list(set(ind)) # selected column may be also x axis
-        mt[i].c_names = [mt[i].c_names[j] for j in ind]
-        mt[i].c_units = [mt[i].c_units[j] for j in ind]
-        mt[i].df = mt[i].df.iloc[:,ind]
-    return mt
+        name = dfs[i].name
+        dfs[i] = dfs[i].iloc[:,ind]
+        dfs[i].name = name
+    return dfs
 
 def main():
-
     args = parse_commandline()
 
-    mt = read_csv_files(args.csv_file)
-    
-    plot_by_category(mt,args.categories,args.out_dir,args.extension,args.x_axes_str)
+    dfs = read_csv_files(args.csv_file)
+
+    if args.x_axes_str == None:
+        args.x_axes_str = [dfs[0].columns[0]]
 
     if(args.plot_col != "all"):
-        mt = prune_cols(mt,args.plot_col,args.x_axes_str)
+        dfs = prune_cols(dfs,args.plot_col,args.x_axes_str)
 
-    plot_by_column(mt,args.out_dir,args.extension,args.x_axes_str)
+    plot_by_column(dfs,args.out_dir,args.extension,args.x_axes_str)
+
+    plot_by_category(dfs,args.categories,args.out_dir,args.extension,args.x_axes_str)
 
 main()
