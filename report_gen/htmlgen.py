@@ -11,7 +11,7 @@ def parse_commandline():
                      help='Image type of thumbnails on the main page.')
     p.add_argument('-g','--graph_type', type=str, required=True,
                      help='Image type of graphs.')
-    p.add_argument('-o','--out_dir', type=str, required=True,
+    p.add_argument('-o','--out_dir', type=str, default="./",
                      help='Output directory for the report.')
     return p.parse_args()
 
@@ -180,8 +180,9 @@ def all_tests_body(p,s_id,x_id):
     page += "<left_list>\n"
     page += sel_list(p.sensors,p.all_links[x_id],"sensors",s_id)
     page += "</left_list>\n\n<right_fig>"
-    filename = "../" + p.figdir + "/all:" + p.x_names[x_id] + "-" + p.sensors[s_id] + "." + p.graph_type
-    page += img(filename,"60%","60%")
+    imgsrc = os.path.relpath(p.figdir,p.outdir)
+    imgsrc += "/all:" + p.x_names[x_id] + "-" + p.sensors[s_id] + "." + p.graph_type
+    page += img(imgsrc,"60%","60%")
     page += "</right_fig>"
     return page
 
@@ -254,8 +255,8 @@ def ind_tests_main(p,x_id):
                 continue
 
             page += "<td><a href=" + p.ind_links[x_id][i][j] + ">"
-            imgsrc = ("../" + p.figdir + "/" + t + ":" 
-                      + x + "-" + c + "." + p.thumbnail_type)
+            imgsrc = os.path.relpath(p.figdir,p.outdir)
+            imgsrc += ("/" + t + ":" + x + "-" + c + "." + p.thumbnail_type)
             page += img(imgsrc,"100%","auto")
             page += "</a></td>"
 
@@ -305,9 +306,9 @@ def ind_test(p,x_id,t_id,c_id):
     page += "</left_list>\n\n"
 
     page += "<right_fig>"
-    imgsrc = ("../" + p.figdir + "/" + p.tests[t_id] + ":" 
-             + p.x_names[x_id] + "-" + p.categories[c_id] 
-             + "." + p.graph_type)
+    imgsrc = os.path.relpath(p.figdir,p.outdir)
+    imgsrc += ("/" + p.tests[t_id] + ":" + p.x_names[x_id] 
+              + "-" + p.categories[c_id] + "." + p.graph_type)
     page += img(imgsrc,"60%","60%")
 
     page += "</right_fig><a href=\'" + p.ind_main_links[x_id]
@@ -319,7 +320,8 @@ def gen_ind_tests_htmls(p):
     # Main link just a redirect
     f = open(p.main_link,"w")
     page = "<html><head><meta http-equiv=\"Refresh\" content=\"1; url="
-    page += os.path.join(p.outdir,p.ind_main_links[0]) 
+    html_dir_name = os.path.basename(os.path.normpath(p.outdir))
+    page += os.path.join(html_dir_name,p.ind_main_links[0]) 
     page += "\"></head><body></body></html>"
     f.write(page)
     f.close()
