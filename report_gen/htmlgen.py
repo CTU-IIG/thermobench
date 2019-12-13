@@ -351,6 +351,9 @@ def gen_ind_tests_htmls(p):
 
 args = parse_commandline()
 
+if args.thumbnail_type == "html":
+    raise RuntimeError("Thumbnail type cannot be html. Select jpg, png or svg instead.")
+
 params = fill_params(args)
 
 gen_css(os.path.join(params.outdir,params.stylefile))
