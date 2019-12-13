@@ -19,6 +19,12 @@ The graph generator tool can easily be used in a standalone way.
 	-e, --extension - Specify the extension of the graphs ( Default: svg )  
 	-c, --categories - Plot by category ( Default: no category )   
 
+### Requirements:
+
+The required packages can be installed with the command:
+
+	pip3 install pandas cufflinks scipy orca
+
 ### Basic functionality
 
 Read supplied csv files, create graphs from the columns they have in common, and export them to the specified format. As default, the x axis is the first column in the first file.  
