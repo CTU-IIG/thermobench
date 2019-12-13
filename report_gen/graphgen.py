@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 import scipy
 import numpy as np
 import json
+import os
 
 def parse_commandline():
     p = argparse.ArgumentParser(description='Plot and save graphs from csv.')
@@ -319,6 +320,9 @@ def prune_cols(dfs,cols,x_axes_str):
 
 def main():
     args = parse_commandline()
+
+    if not os.path.exists(args.out_dir):
+        os.makedirs(args.out_dir)
 
     dfs = read_csv_files(args.csv_file)
 

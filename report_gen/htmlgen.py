@@ -60,7 +60,7 @@ def fill_params(args):
     params.figdir = args.fig_dir
     params.outdir = os.path.join(args.out_dir,"htmls")
     if not os.path.exists(params.outdir):
-        os.mkdir(params.outdir) 
+        os.makedirs(params.outdir) 
     params.stylefile = "style.css"
     params.main_link = os.path.join(args.out_dir,"main.html")
     params.graph_type = args.graph_type
