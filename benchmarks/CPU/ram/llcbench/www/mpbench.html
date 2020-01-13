@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <title>MPIbench Home Page</title>
+</head>
+<body BGCOLOR="#FFFFFF"
+      TEXT="#000044"
+      LINK="#0000FF"
+      ALINK="#33FFFF"
+      VLINK="#663399">
+
+
+<h1>MPIbench Home Page </h1>
+
+<h3>Description:</h3>
+
+<ul>
+  <li>This is a program to measure the performance of some
+    critical MPI functions. By critical we mean that
+    the behavior of these functions can dominate the run time of a distributed application.
+  <li>MPBench has now been integrated into <a HREF="index.htm">LLCbench</a> (Low Level
+  Characterization Benchmarks)
+  <li>Remember, your machine should be dead quiet to produce accurate results.
+</ul>
+
+<h3>Features:</h3>
+
+<ul>
+  <li>Packaging of datafiles for machines without GNUplot.</li>
+  <li>Automated build, execution and result processing.</li>
+  <li>Generates postscript graphs using GNUplot.</li>
+  <li>Safe from aggressive optimizating compilers.</li>
+  <li>Tunable run time parameters to reduce test domain.</li>
+  <li>Configurable cache flushing.</li>
+</ul>
+
+<h3>Functions:</h3>
+
+<ul>
+  <li>MPI_Send()/MPI_Recv() Bandwidth (Kb/second vs. bytes)</li>
+  <li>MPI_Send()/MPI_Recv() Application latency or Gap time (us vs. bytes)</li>
+  <li>MPI_Send()/MPI_Recv() Roundtrip or 2 * Latency (trns/second vs. bytes)</li>
+  <li>MPI_Send()/MPI_Recv() BidirectionalBandwidth (Kb/second vs. bytes)</li>
+  <li>MPI_Bcast() broadcast (Kb/second vs. bytes)</li>
+  <li>MPI_Reduce() reduction (sum) (Kb/second vs. bytes)</li>
+  <li>MPI_AllReduce() reduction (sum) (Kb/second vs. bytes)</li>
+  <li>MPI_Alltoall() Each process sends to every other process (Kb/sec vs. bytes)</li>
+</ul>
+
+<h3>Usage:</h3>
+
+<pre>
+Usage: (MPI implementation dependent portion) mpi_bench -blracyz [-i #] [-x #] [-m #] [-d #] [-e #]
+         -b Do bandwidth benchmark
+         -d Do bidirectional bandwidth benchmark
+         -l Do latency benchmark
+         -r Do roundtrip benchmark
+         -a Do all-to-all benchmark
+         -c Do broadcast benchmark
+         -y Do reduce benchmark
+         -z Do allreduce benchmark
+         -i Specify the iterations over which to average. 
+         -x Specify the number of measurements between powers of 2.  
+         -m Specify the log base 2 of the maximum message size.
+         -e Specify the repeat count per message size. 
+         -f Flush the cache between message sizes.
+         -F Flush the cache between repeats.
+         -X Flush the cache between iterations.
+         -M num[bBkKmM],num[bBkKmM]...Fix message sizes in B (default), kB or MB (base 2) to use. 
+
+Defaults in make.def: -bdlracyz -i100 -x2 -m16 -e1    (with 16 MPI processes) 
+</pre>
+
+<p>The output looks like this: </p>
+
+<pre>
+4 4.316489
+8 244.140625
+16 496.220795
+32 1008.845581
+64 1896.237915
+128 2292.400146
+256 7923.428223
+512 6994.180664
+1024 29425.611328
+2048 55506.214844
+4096 75483.093750
+8192 112612.609375
+16384 126454.226562
+32768 157232.703125
+65536 131010.085938
+</pre>
+
+<h3>Bug Reports</h3>
+Bugs should be submitted to the <a HREF="mailto:llcbench@cs.utk.edu">LLCbench Mailing List</a>.
+<h3>Author</h3>
+<b>LLCbench</b> was written by <a HREF="http://www.cs.utk.edu/~mucci">Philip J. Mucci</a> of the <a HREF="http://icl.cs.utk.edu">Innovative Computing Laboratory</a>.
+<h3>Copyright</h3>
+
+This software is <b>COMPLETELY OPEN SOURCE</b>.  If you incorporate any portion of this software, I would appreciate an acknowledgement in the appropriate places. Should you find <b>LLCbench</b> useful, please considering making a contribution in the form of hardware, software or plain old cash. 
+<hr>
+<table WIDTH="620" BORDER=0 >
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a HREF="http://icl.cs.utk.edu/news">News</a> |
+<a HREF="http://icl.cs.utk.edu/abouticl">About</a> |
+
+<a HREF="http://icl.cs.utk.edu/iclprojects">Projects</a> |
+<a HREF="http://icl.cs.utk.edu/publications">Publications</a> |
+<a HREF="http://icl.cs.utk.edu/people">People</a> |
+<a HREF="http://icl.cs.utk.edu/partners">Partners</a> |
+<a HREF="http://www.google.com/u/ICLUTK?q=&domains=icl.cs.utk.edu&sitesearch=icl.cs.utk.edu&imageField.x=20&imageField.y=12">Search</a>
+
+</td></tr>
+</table><table WIDTH="620" BORDER=0 >
+
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a href="http://www.utk.edu">UTK</a> |
+<a href="http://www.cs.utk.edu">UTK-CS</a> |
+<a href="http://icl.cs.utk.edu">ICL</a>
+<br>
+<script LANGUAGE="JavaScript">
+<!-- Hide script from older browsers
+var modifiedDate;
+modifiedDate = document.lastModified;
+document.write("Last modified: ");
+document.writeln(modifiedDate);
+// Stop hiding the script -->
+</SCRIPT>
+</font>
+</td></tr>
+</table><!-- #EndLibraryItem -->
+
+</body>
+</html>

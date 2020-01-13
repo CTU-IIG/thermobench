@@ -1,0 +1,26 @@
+# SiCortex MIPS core with PathScale compiler
+
+# Blasbench values
+
+BB_CC      	= pathcc
+BB_CFLAGS  	= -O3 -DREGISTER 
+BB_LD           = pathcc
+BB_LDFLAGS 	= -O3 
+BB_LIBS    	= -lrt -llapack -lblas -lpathfortran -lm
+
+# Cachebench values
+
+CB_CC		= $(BB_CC)
+CB_CFLAGS	= $(BB_CFLAGS)
+CB_LDFLAGS 	= $(BB_LDFLAGS) 
+CB_LIBS    	= $(BB_LIBS)
+
+# MPBench values
+
+MP_MPI_CC	= $(BB_CC)
+MP_CFLAGS	= $(BB_CFLAGS)
+MP_LDFLAGS	= $(BB_LDFLAGS)
+MPI_LIBS	= -lmpich -ldl -lcrypto -lrt
+MPIRUNCMD	= mpirun
+MPIRUNOPTS	= 
+MPIRUNPROCS	= -np

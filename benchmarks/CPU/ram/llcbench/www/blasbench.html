@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <title>BLASbench Home Page</title>
+</head>
+<body BGCOLOR="#FFFFFF"
+      TEXT="#000044"
+      LINK="#0000FF"
+      ALINK="#33FFFF"
+      VLINK="#663399">
+
+
+<h1>BLASbench Home Page </h1>
+
+<h3>Description:</h3>
+
+<ul>
+  <li>This is a program to benchmark the BLAS library in relation to the
+    memory subsystem. 
+  <li>Blasbench has now been integrated into <a HREF="index.htm">LLCbench</a>
+    (Low Level Characterization Benchmarks).  
+  <li>Remember, your machine should be dead quiet to produce accurate results.
+</ul>
+
+<h3>Features:</h3>
+
+<ul>
+  <li>Generates graphs of UTK and vendor routines as well as comparison graphs. </li>
+  <li>Both single and double precision data types, defaults to double. </li>
+  <li>Formatted output to tty, tabular to file. </li>
+  <li>3 different routines: <tt>AXPY</tt>, <tt>GEMV</tt> and <tt>GEMM</tt>. </li>
+  <li>Automated build test, execution and result processing. </li>
+  <li>Generates postscript graphs using GNUplot. </li>
+  <li>Measurement of access time in nanoseconds and bandwidth in MB/sec. </li>
+  <li>Calibrated iteration count to maintain consistent test length. </li>
+  <li>Safe from aggressive optimizating compilers. </li>
+  <li>Tunable run time parameters to reduce test domain. </li>
+  <li>Completely <a HREF="http://www.rational.com/products/purify_unix/index.jtmpl">Purified</a>!
+  </li>
+</ul>
+
+<h3>The usage is as follows:</h3>
+
+<pre>
+Usage: blasbench [-vatcs -x # -m # -e # -i #]
+         -v AXPY dot product benchmark
+         -a GEMV matrix-vector multiply benchmark
+         -t GEMM matrix-matrix multiply benchmark
+         -s Use single precision floating point data
+         -c Use constant number of iterations
+         -o Report Mflops/sec instead of MB/sec
+         -e Repeat count per problem size
+         -l Hold LDA and loop over sizes of square submatrices
+         -i Maximum iteration count
+         -x Number of measurements between powers of 2.
+         -m Specify the log2(maximum problem size) in bytes
+         -d Report/use dimension statistics instead of bytes
+
+Default datatype   : double, 8 bytes
+Default datatype   : float, 4 bytes
+Defaults if to tty : -vat -x1 -m24 -e2 -i100000
+Defaults if to file: -t   -x1 -m24 -e1 -i100000
+</pre>
+
+<h3>The output looks like this:</h3>
+
+<pre>
+                        float AXPY Cache Test
+
+CSize   PSize   % Fit   Dim     Iters           Nansec  % Chng          MB/sec
+-----   -----   -----   ----    ------          ------  ------          -------
+256     256     100.00  32      100000           4.22   100.00          226.12
+256     256     100.00  32      100000           4.19   99.40           227.49
+384     384     100.00  48      66666            4.14   98.82           230.20
+384     384     100.00  48      66666            4.12   99.36           231.68
+512     512     100.00  64      49999            4.10   99.50           232.85
+512     512     100.00  64      49999            4.09   99.92           233.04
+768     768     100.00  96      33332            4.06   99.31           234.65
+768     768     100.00  96      33332            4.09   100.64          233.17
+1024    1024    100.00  128     24999            4.12   100.83          231.25
+1024    1024    100.00  128     24999            4.06   98.37           235.09
+</pre>
+<h3>Bug Reports</h3>
+Bugs should be submitted to the <a HREF="mailto:llcbench@cs.utk.edu">LLCbench Mailing List</a>.
+<h3>Author</h3>
+<b>LLCbench</b> was written by <a HREF="http://www.cs.utk.edu/~mucci">Philip J. Mucci</a> of the <a HREF="http://icl.cs.utk.edu">Innovative Computing Laboratory</a>.
+<h3>Copyright</h3>
+
+This software is <b>COMPLETELY OPEN SOURCE</b>.  If you incorporate any portion of this software, I would appreciate an acknowledgement in the appropriate places. Should you find <b>LLCbench</b> useful, please considering making a contribution in the form of hardware, software or plain old cash. 
+<hr>
+<table WIDTH="620" BORDER=0 >
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a HREF="http://icl.cs.utk.edu/news">News</a> |
+<a HREF="http://icl.cs.utk.edu/abouticl">About</a> |
+
+<a HREF="http://icl.cs.utk.edu/iclprojects">Projects</a> |
+<a HREF="http://icl.cs.utk.edu/publications">Publications</a> |
+<a HREF="http://icl.cs.utk.edu/people">People</a> |
+<a HREF="http://icl.cs.utk.edu/partners">Partners</a> |
+<a HREF="http://www.google.com/u/ICLUTK?q=&domains=icl.cs.utk.edu&sitesearch=icl.cs.utk.edu&imageField.x=20&imageField.y=12">Search</a>
+
+</td></tr>
+</table><table WIDTH="620" BORDER=0 >
+
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a href="http://www.utk.edu">UTK</a> |
+<a href="http://www.cs.utk.edu">UTK-CS</a> |
+<a href="http://icl.cs.utk.edu">ICL</a>
+<br>
+<script LANGUAGE="JavaScript">
+<!-- Hide script from older browsers
+var modifiedDate;
+modifiedDate = document.lastModified;
+document.write("Last modified: ");
+document.writeln(modifiedDate);
+// Stop hiding the script -->
+</SCRIPT>
+</font>
+</td></tr>
+</table><!-- #EndLibraryItem -->
+
+</body>
+</html>

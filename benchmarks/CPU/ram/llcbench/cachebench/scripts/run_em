@@ -1,0 +1,70 @@
+#/bin/sh
+set clobber
+
+procs=4
+cb=cachebench
+
+cat /proc/cpuinfo > results/run
+cat sys.def user.def >> results/run
+date >> results/run
+
+mem=24
+res=3
+dur=5
+ 
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw1.1 &
+wait
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw2.1 &
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw2.2 &
+wait
+ 
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt1.1 &
+wait
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt2.1 &
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt2.2 &
+wait
+                                                                              
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read1.1 &
+wait
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read2.1 &
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read2.2 &
+                                                                             
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt1.1 &
+wait
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt2.1 &
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt2.2 &
+wait
+                                                                               
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy1.1 &
+wait
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy2.1 &
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy2.2 &
+wait
+
+if [ $procs == 4 ]; then
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw4.1 &
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw4.2 &
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw4.3 &
+cachebench -b -d${dur} -x${res} -e1 -m${mem} > results/rmw4.4 &
+wait
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt4.1 &
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt4.2 &
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt4.3 &
+cachebench -b -t -d${dur} -x${res} -e1 -m${mem} > results/rmwt4.4 &
+wait
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read4.1 &
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read4.2 &
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read4.3 &
+cachebench -r -d${dur} -x${res} -e1 -m${mem} > results/read4.4 &
+wait
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt4.1 &
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt4.2 &
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt4.3 &
+cachebench -r -t -d${dur} -x${res} -e1 -m${mem} > results/readt4.4 &
+wait
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy4.1 &
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy4.2 &
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy4.3 &
+cachebench -p -d${dur} -x${res} -e1 -m${mem} > results/mcpy4.4 &
+wait
+fi

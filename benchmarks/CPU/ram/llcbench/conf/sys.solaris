@@ -1,0 +1,23 @@
+# Sun E10000 sys.def
+
+# Blasbench values
+
+BB_CC		= cc
+BB_CFLAGS	= -fast -dalign 
+BB_LDFLAGS 	= -xlic_lib=sunperf
+
+# Cachebench values
+
+CB_CC		= $(BB_CC)
+CB_CFLAGS	= $(BB_CFLAGS)
+CB_LDFLAGS 	= 
+
+# MPBench values
+
+MP_MPI_CC	= mpcc
+MP_CFLAGS	= $(BB_CFLAGS)
+MP_LDFLAGS	= 
+MPI_LIBS	= -lmpi
+MPIRUNCMD	= mprun
+MPIRUNPROCS	= -np
+MPIRUNPOSTOPTS	= mpi_bench

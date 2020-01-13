@@ -1,0 +1,18 @@
+The latest distribution can always be found at:
+
+http://icl.cs.utk.edu/projects/llcbench
+
+Latest source tree via CVS:
+
+setenv CVSROOT :pserver:anonymous@icl.cs.utk.edu:/cvs/homes/llcbench
+cvs login
+Password: <cr>
+cvs co llcbench
+
+Mailing list:
+
+http://lists.cs.utk.edu/listinfo/llcbench
+
+-Philip J. Mucci
+llcbench@cs.utk.edu
+

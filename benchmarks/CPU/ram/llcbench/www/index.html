@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <title>LLCbench Home Page</title>
+</head>
+<body BGCOLOR="#FFFFFF"
+      TEXT="#000044"
+      LINK="#0000FF"
+      ALINK="#33FFFF"
+      VLINK="#663399">
+
+<h1>LLCbench - Low Level Architectural Characterization Benchmark Suite</h1>
+
+<h3>Description:</h3>
+
+<p>LLCbench (Low-Level Characterization Benchmarks) was created by combining <a HREF="mpbench.html">MPBench</a>, <a HREF="cachebench.html">CacheBench</a>, and <a HREF="blasbench.html">BLASBench</a> into a single benchmark package. </p>
+
+<h3>Latest News</h3>
+
+<ul>
+<li>The license of LLCBench has been updated to the <A href="http://www.gnu.org/copyleft/gpl.html">GNU GENERAL PUBLIC LICENSE</A>.
+<li>LLCBench to be added to <A href="http://grml.org">Linux Live System for Sysadmins</a>.
+</ul>
+
+<h3>Documentation</h3>
+<ul>
+<li>Note, most of the documentation is out of date. <i>Use the source (or -h) Luke</i>.
+<li>There is a <a href="http://lists.eecs.utk.edu/mailman/listinfo/llcbench">LLCbench Mailing List</a> for questions, comments and bug reports. Please subscribe.
+<li>For recent changes to the source tree, see the latest <a HREF="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/llcbench/CHANGES?rev=HEAD&cvsroot=LLCbench&content-type=text/vnd.viewcvs-markup">CHANGES</a> file in CVS. 
+<li><a HREF="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/llcbench/doc/mpbench/mpbench.README?rev=HEAD&cvsroot=LLCbench&content-type=text/vnd.viewcvs-markup">mpbench.README</a> file in CVS. 
+<li><a HREF="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/llcbench/doc/cachebench/cachebench.README?rev=HEAD&cvsroot=LLCbench&content-type=text/vnd.viewcvs-markup">cachebench.README</a> file in CVS. 
+<li><a HREF="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/llcbench/doc/blasbench/blasbench.README?rev=HEAD&cvsroot=LLCbench&content-type=text/vnd.viewcvs-markup">blasbench.README</a> file in CVS. 
+<li> MPBench Technical Report <a HREF="mpbench.pdf">PDF</a>
+<li> CacheBench Technical Report <a HREF="cachebench.pdf">PDF</a>
+<li> BLASBench Technical Report <a HREF="blasbench.pdf">PDF</a>
+<li> UTK Technical Report <A HREF="http://www.cs.utk.edu/~mucci/latest/pubs/low-level-architectural-characterization.pdf">PDF</a>
+</ul>
+
+<h3>To get LLCbench:</h3>
+
+<p>Download the distribution: <a href="llcbench.tar.gz">llcbench.tar.gz</a>.</p>
+
+<p>Or access the CVS repository directly:</p>
+
+<pre><strong>$ setenv CVSROOT :pserver:anonymous@cvs.eecs.utk.edu:/cvs/homes/llcbench
+$ cvs login
+Password: &lt;cr&gt;
+$ cvs checkout llcbench
+$ cvs logout</strong></pre>
+
+<p>Or <a href="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/LLCbench/llcbench">surf the CVS tree</a> with your browser</p>
+
+<h3>To use LLCbench:</h3>
+
+<pre><strong>UNIX&gt; gzip -dc llcbench.tar.gz | tar xvf -
+UNIX&gt; cd llcbench
+UNIX&gt; make
+
+Please use one of the following targets:
+
+        alpha
+        alpha-mpich
+        linux-lam
+        linux-mpich
+        o2000
+        pow2
+        pow3
+        ppc
+        solaris
+        solaris-mpich
+        t3e
+        reconfig (to bring this menu up again)
+</strong></pre>
+
+<h3>Choose the appropriate target: </h3>
+
+<pre><strong>UNIX&gt; make solaris-mpich
+ln -s conf/sys.solaris sys.def
+</strong></pre>
+
+<h3>Optionally edit/review the compile options:</h3>
+
+<pre><strong>UNIX&gt; vi sys.def</strong></pre>
+
+<h3>Build the benchmarks: </h3>
+
+<pre><strong>UNIX&gt; make
+Please use one of the following targets:
+
+For all three : compile, run, script, graph, clean, clobber, reconfig
+For BlasBench : blas-bench, blas-run, blas-script, blas-graph
+For CacheBench: cache-bench, cache-run, cache-script, cache-graph
+For MPBench   : mp-bench, mp-run, mp-script, mp-graph
+UNIX&gt; make compile</strong></pre>
+
+<h3>Optionally edit/review the run-time options:</h3>
+
+<pre><strong>UNIX&gt; vi user.def</strong></pre>
+
+<h3>Run the benchmarks:</h3>
+
+<pre><strong>UNIX&gt; make run</strong></pre>
+
+<h3>Examine and graph the results:</h3>
+
+<pre><strong>UNIX&gt; cd results
+UNIX&gt; ls *.dat *.gp *.tar
+UNIX&gt; make graph
+UNIX&gt; ls *.ps
+UNIX&gt; ghostview *.ps</strong></pre>
+
+<h3>or if you don't have <a HREF="http://www.gnuplot.info">GNUplot</a> installed:</h3>
+
+<pre><strong>UNIX&gt; make scripts
+UNIX&gt; ls *.dat *.gp *.tar
+</strong></pre>
+
+<h3>Then copy the tar files to a machine with GNUplot and in SH:</h3>
+
+<pre><strong>UNIX&gt; gnuplot < file.gp > file.ps
+UNIX&gt; ghostview file.ps
+</strong></pre>
+
+<h3>Related links</h3>
+
+<ul>
+  <li><a href="http://wwwipd.ira.uka.de/~skampi/">SkaMPI MPI Benchmark</a></li>
+  <li><a HREF="http://www.aim.com">AIM Benchmarks</a> </li>
+  <li><a HREF="http://www.cs.virginia.edu/stream">STREAM Benchmark</a> </li>
+    benchmark and Computer Performance</a> </li>
+  <li><a HREF="news:comp.benchmarks"><tt>comp.benchmarks</tt> Newsgroup</a> </li>
+  <li><a HREF="http://www.cs.wisc.edu/~arch/www">WWW Computer Architecture Home Page</a> </li>
+</ul>
+
+<h3>Bug Reports</h3>
+Bugs should be submitted to the <a HREF="mailto:llcbench@cs.utk.edu">LLCbench Mailing List</a>.
+<h3>Author</h3>
+<b>LLCbench</b> was written by <a HREF="http://www.cs.utk.edu/~mucci">Philip J. Mucci</a> of the <a HREF="http://icl.cs.utk.edu">Innovative Computing Laboratory</a>.
+<h3>Copyright</h3>
+
+This software is <b>COMPLETELY OPEN SOURCE</b>.  If you incorporate any portion of this software, I would appreciate an acknowledgement in the appropriate places. Should you find <b>LLCbench</b> useful, please considering making a contribution in the form of hardware, software or plain old cash. 
+<hr>
+<table WIDTH="620" BORDER=0 >
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a HREF="http://icl.cs.utk.edu/news">News</a> |
+<a HREF="http://icl.cs.utk.edu/abouticl">About</a> |
+
+<a HREF="http://icl.cs.utk.edu/iclprojects">Projects</a> |
+<a HREF="http://icl.cs.utk.edu/publications">Publications</a> |
+<a HREF="http://icl.cs.utk.edu/people">People</a> |
+<a HREF="http://icl.cs.utk.edu/partners">Partners</a> |
+<a HREF="http://www.google.com/u/ICLUTK?q=&domains=icl.cs.utk.edu&sitesearch=icl.cs.utk.edu&imageField.x=20&imageField.y=12">Search</a>
+
+</td></tr>
+</table><table WIDTH="620" BORDER=0 >
+
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a href="http://www.utk.edu">UTK</a> |
+<a href="http://www.cs.utk.edu">UTK-CS</a> |
+<a href="http://icl.cs.utk.edu">ICL</a>
+<br>
+<script LANGUAGE="JavaScript">
+<!-- Hide script from older browsers
+var modifiedDate;
+modifiedDate = document.lastModified;
+document.write("Last modified: ");
+document.writeln(modifiedDate);
+// Stop hiding the script -->
+</SCRIPT>
+</font>
+</td></tr>
+</table><!-- #EndLibraryItem -->
+
+</body>
+</html>

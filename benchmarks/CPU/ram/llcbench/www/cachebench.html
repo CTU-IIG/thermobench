@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <title>Cachebench Home Page</title>
+</head>
+<body BGCOLOR="#FFFFFF"
+      TEXT="#000044"
+      LINK="#0000FF"
+      ALINK="#33FFFF"
+      VLINK="#663399">
+
+<h1>Cachebench Home Page </h1>
+
+<h3>Description:</h3>
+
+<ul>
+  <li>This is a program to empirically determine some parameters about
+    an architectures memory subsystem.
+  <li>CacheBench has now been integrated into <a HREF="index.htm">LLCbench</a> (Low Level
+    Characterization Benchmarks) 
+  <li>Remember, your machine should be dead quiet to produce accurate results.
+</ul>
+
+<h3>Features:</h3>
+
+<ul>
+  <li>Flexible data types, defaults to double instead of int. </li>
+  <li>8 different tests, read, write and read/modify/write. </li>
+  <li>Automated build test, execution and result processing. </li>
+  <li>Generates postscript graphs using GNUplot. </li>
+  <li>Measurement of access time in nanoseconds and bandwidth in MB/sec. </li>
+  <li>Safe from aggressive optimizing compilers. </li>
+  <li>Tunable run time parameters to reduce test domain. </li>
+</ul>
+
+<h2>Usage:</h2>
+
+<pre>
+Usage: cachebench -rwbtsp [-x #] [-m #] [-d #] [-e #]
+         -r Read benchmark
+         -w Write benchmark
+         -b Read/Modify/Write benchmark
+         -t Use hand tuned versions of the above
+         -s memset() benchmark
+         -p memcpy() benchmark
+         -x Number of measurements between powers of 2.
+         -m Specify the log2(available physical memory)
+         -d Number of seconds per iteration
+         -e Repeat count per cache size
+
+Datatype used is double, 8 bytes.
+Defaults if  tty: -rwbsp -x1 -m24 -d5 -e2
+Defaults if file: -b   -x1 -m24 -d5 -e1
+</pre>
+
+<p>The output looks like this: </p>
+
+<pre>
+                        Read Cache Test
+
+C Size          Nanosec         MB/sec          % Chnge
+-------         -------         -------         -------
+4096            7.396           515.753         1.000
+6144            7.594           502.350         1.027
+8192            7.731           493.442         1.018
+12288           17.578          217.015         2.274
+</pre>
+<h3>Bug Reports</h3>
+Bugs should be submitted to the <a HREF="mailto:llcbench@cs.utk.edu">LLCbench Mailing List</a>.
+<h3>Author</h3>
+<b>LLCbench</b> was written by <a HREF="http://www.cs.utk.edu/~mucci">Philip J. Mucci</a> of the <a HREF="http://icl.cs.utk.edu">Innovative Computing Laboratory</a>.
+<h3>Copyright</h3>
+
+This software is <b>COMPLETELY OPEN SOURCE</b>.  If you incorporate any portion of this software, I would appreciate an acknowledgement in the appropriate places. Should you find <b>LLCbench</b> useful, please considering making a contribution in the form of hardware, software or plain old cash. 
+<hr>
+<table WIDTH="620" BORDER=0 >
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a HREF="http://icl.cs.utk.edu/news">News</a> |
+<a HREF="http://icl.cs.utk.edu/abouticl">About</a> |
+
+<a HREF="http://icl.cs.utk.edu/iclprojects">Projects</a> |
+<a HREF="http://icl.cs.utk.edu/publications">Publications</a> |
+<a HREF="http://icl.cs.utk.edu/people">People</a> |
+<a HREF="http://icl.cs.utk.edu/partners">Partners</a> |
+<a HREF="http://www.google.com/u/ICLUTK?q=&domains=icl.cs.utk.edu&sitesearch=icl.cs.utk.edu&imageField.x=20&imageField.y=12">Search</a>
+
+</td></tr>
+</table><table WIDTH="620" BORDER=0 >
+
+<tr WIDTH="620">
+<td ALIGN=center WIDTH="620">
+<font size="-1">
+<a href="http://www.utk.edu">UTK</a> |
+<a href="http://www.cs.utk.edu">UTK-CS</a> |
+<a href="http://icl.cs.utk.edu">ICL</a>
+<br>
+<script LANGUAGE="JavaScript">
+<!-- Hide script from older browsers
+var modifiedDate;
+modifiedDate = document.lastModified;
+document.write("Last modified: ");
+document.writeln(modifiedDate);
+// Stop hiding the script -->
+</SCRIPT>
+</font>
+</td></tr>
+</table><!-- #EndLibraryItem -->
+
+</body>
+</html>

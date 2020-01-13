@@ -1,0 +1,21 @@
+5/23/2008 - Patch for index on large loops
+10/17/2006 - Added pathscale/mpich build
+10/17/2006 - Added rdtsc timings from Chris Parrott at AMD
+12/1/2004 - Added -M,-f,-F,-X flags to mpbench
+12/1/2004 - Fixed cache flush bug!
+12/1/2004 - Added errorbars.pl script
+6/24/2004 - Added -N no flush cache option to all benchmarks
+6/24/2004 - Added clock_gettime(CLOCK_REALTIME) as default timer to other benchmarks and check for inf.
+6/23/2004 - Added clock_gettime(CLOCK_REALTIME) as default timer.
+6/21/2004 - Fixed timer wrapping bug in MPBench, added -N (noflush) to mpbench
+5/13/2004 - Fixed ARRAY definition in bb.c, thanks to Gregory Bauer of NCSA.
+4/27/2004 - Added automatic naming of output hostname-arch-...
+4/27/2004 - Fixed bug in cache flushing code
+2/13/2004 - Fixed bug in hand optimized ronly code where aggresive
+	    compilers would remove the second load statement.
+12/19/2003 - Mailing list added, go here.
+12/19/2003 - Fixed timer bug.
+10/12/2003 - Fixed minor typecasting bugs, thanks to John Fettig of NCSA.
+6/3/2003 - Added IA64/Intel Compiler/MKL/Goto BLAS/MPICH-GM target
+7/1/2000 - Fixed integer overflow in mpbench.c
+ 

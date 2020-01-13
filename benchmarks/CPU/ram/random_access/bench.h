@@ -1,0 +1,7 @@
+#define REPEAT4(x) x x x x
+#define REPEAT16(x) REPEAT4(x) REPEAT4(x) REPEAT4(x) REPEAT4(x)
+#define REPEAT64(x) REPEAT16(x) REPEAT16(x) REPEAT16(x) REPEAT16(x)
+#define REPEAT256(x) REPEAT64(x) REPEAT64(x) REPEAT64(x) REPEAT64(x)
+#define REPEAT1024(x) REPEAT256(x) REPEAT256(x) REPEAT256(x) REPEAT256(x)
+
+static inline int bench_func(void);
