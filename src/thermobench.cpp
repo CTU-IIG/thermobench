@@ -1,7 +1,7 @@
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// Copyright (C) 2019 Czech Technical University in Prague
+// Copyright (C) 2019, 2020 Czech Technical University in Prague
 //
 // Authors: Tibor Rózsa <rozsatib@fel.cvut.cz>
 //          Michal Sojka <michal.sojka@cvut.cz>
@@ -23,8 +23,17 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+
+#ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
 #include "libev/ev.h"
+#else
+#include <ev.h>
+#endif
+
+#ifndef GIT_VERSION
+#include "version.h"
+#endif
 
 using namespace std;
 

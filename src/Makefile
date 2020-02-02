@@ -5,6 +5,7 @@
 CFLAGS=-g -O2 -Wall -Wno-strict-aliasing
 CXXFLAGS=$(CFLAGS) -fno-exceptions -std=c++11
 CFLAGS+=-DGIT_VERSION='"$(shell git describe --always || echo unknown)"'
+CFLAGS+=-DWITH_LOCAL_LIBEV=1
 
 all: thermobench
 
