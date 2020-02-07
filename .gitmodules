@@ -2,3 +2,7 @@
 	path = src/libev
 #	url = git://git.lighttpd.net/libev.git
 	url = .
+[submodule "benchmarks/tacle-bench"]
+	path = benchmarks/tacle-bench
+#	url = https://github.com/tacle/tacle-bench
+	url = .
