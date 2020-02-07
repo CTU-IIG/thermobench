@@ -1,8 +1,19 @@
 # Thermobench
 
+## Prerequisites
+
+We use the Meson build system. On Debian-based distro, it can be
+installed by:
+
+    apt install meson
+
 ## Compilation
 
-To compile thermobench, run
+    git submodule update --init
+	make  # this invokes Meson
+
+Alternatively, some benchmarks can be compiled without Meson by using
+plain Makefiles:
 
     git submodule update --init
 	make -C src
