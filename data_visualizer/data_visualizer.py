@@ -294,6 +294,8 @@ class FrameFigure(tk.Frame):
 
         self.figure = plt.Figure(figsize=(8, 6), dpi=100)  # figure for the plotting
         self.axis = self.figure.add_subplot(111)
+        self.axis.grid(True)
+
         self.toolbar = None
 
         # Shrink current axis by 20% (create space for legend)
@@ -318,6 +320,7 @@ class FrameFigure(tk.Frame):
         self.axis.clear()
 
     def plot(self, data_x, data_y, label):
+        self.axis.grid(True)
         self.axis.plot(data_x, data_y, label=label)
 
     def set_x_axis_label(self, label):
