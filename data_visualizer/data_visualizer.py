@@ -259,7 +259,7 @@ class FrameHistory(tk.Frame):
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
 
         self.set_focus_last()
-        self.listbox.configure(justify=tk.RIGHT)
+        self.listbox.configure(justify=tk.LEFT)
 
     def on_select(self, event):
         """This method is called every time an element of the listbox is selected."""
