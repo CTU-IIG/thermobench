@@ -38,9 +38,12 @@ int bsort_BubbleSort( int Array[] );
   Declaration of global variables
 */
 
-#define bsort_SIZE 100
+#ifndef bsort_SIZE
+#define bsort_SIZE 20000
+#endif
 
-static int bsort_Array[ bsort_SIZE ];
+// bsort_Array is in thread-local storage, i.e., each thread has its own copy
+static __thread int bsort_Array[ bsort_SIZE ];
 
 
 /*
@@ -116,17 +119,4 @@ int bsort_BubbleSort( int Array[] )
 void _Pragma( "entrypoint" ) bsort_main( void )
 {
   bsort_BubbleSort( bsort_Array );
-}
-
-
-/*
-  Main function
-*/
-
-int main( void )
-{
-  bsort_init();
-  bsort_main();
-
-  return bsort_return();
 }
