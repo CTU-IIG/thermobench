@@ -68,9 +68,12 @@ public:
         throw runtime_error("empty cpu_set");
     }
     unsigned next_set(int j) {
-        for (int i = j + 1; i != j; i = (i + 1) % max_cpus)
+        int i = j + 1;
+        do {
             if (is_set(i))
                 return i;
+            i = (i + 1) % max_cpus;
+        } while (i != j + 1);
         throw runtime_error("empty cpu_set");
     }
 private:
@@ -82,6 +85,7 @@ cpu_set cpu_mask;
 struct synchronizer {
     cpu_set run, done;
     unsigned num_cpus = 0, num_done = 0;
+    unsigned first_cpu;
 
     unsigned work_done = 0;
     mutex m;
@@ -130,22 +134,25 @@ void *benchmark_loop(void *ptr)
 
             if (++s.num_done == s.num_cpus) {
                 usleep(delay_ms * 1000);
-                cpu_set next;
+                cpu_set next, last = s.done;
                 cout << "-- Next CPUs:";
-                for (int i = 0; i < next.max_cpus; i++) {
-                    if (s.done.is_set(i)) {
-                        int next_cpu = i;
-                        while (s.done.is_set(next_cpu) || next.is_set(next_cpu))
-                            next_cpu = cpu_mask.next_set(next_cpu);
-                        cout << " " << next_cpu;
-                        next.set(next_cpu);
-                    }
+                for (unsigned i = 0, cpu_it = s.first_cpu;
+                     i < s.num_cpus;
+                     i++, cpu_it = last.next_set(cpu_it)) {
+                    s.done.clr(cpu_it);
+                    unsigned next_cpu = cpu_it;
+                    do {
+                        next_cpu = cpu_mask.next_set(next_cpu);
+                    } while (s.done.is_set(next_cpu) || next.is_set(next_cpu));
+                    cout << " " << cpu_it;
+                    next.set(next_cpu);
+                    if (i == 0)
+                        s.first_cpu = next_cpu;
                 }
                 cout << endl << flush;
 
                 s.num_done = 0;
                 s.run = next;
-                s.done.zero();
                 s.cv.notify_all();
             }
         }
@@ -221,11 +228,7 @@ int main(int argc, char *argv[])
     if ((cpu_mask & s.run) != s.run)
         errx(1, "Invalid initial mask");
     s.num_cpus = s.run.count();
-
-    if (cpu_mask.count() - s.num_cpus < s.num_cpus)
-        errx(1, "Initial CPU count (%d) must be less than half of total CPU count (%d/2)",
-             s.num_cpus, cpu_mask.count());
-
+    s.first_cpu = s.run.lowest();
 
     for (int i = 0; i < cpu_mask.max_cpus; i++) {
         if (!cpu_mask.is_set(i))
