@@ -47,6 +47,7 @@ benchmarks/CPU/instr/simd_int64_changing_data_ref.h
 benchmarks/CPU/instr/simd_int8_add.h
 benchmarks/CPU/instr/simd_int8_madd.h
 benchmarks/CPU/instr/simd_int8_mul.h
+benchmarks/sched/workload-distr.cpp
 src/ev.c
 src/libev/ev++.h
 src/libev/ev.h
