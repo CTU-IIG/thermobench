@@ -90,6 +90,48 @@ struct synchronizer {
     unsigned work_done = 0;
     mutex m;
     condition_variable cv;
+
+    void wait(int cpu) {
+        unique_lock<mutex> lock(m);
+        while (!run.is_set(cpu))
+            cv.wait(lock);
+//            printf("running at CPU%u\n", cpu);
+//            fflush(stdout);
+    }
+
+    void completed(int cpu, unsigned wd, unsigned duration) {
+        unique_lock<mutex> lock(m);
+        run.clr(cpu);
+        done.set(cpu);
+        work_done += wd;
+        cout << "work_done=" << work_done << endl;
+        cout << "duration=" << duration << endl;
+        cout << flush;
+
+        if (++num_done == num_cpus) {
+            usleep(delay_ms * 1000);
+            cpu_set next, last = done;
+            cout << "-- Next CPUs:";
+            for (unsigned i = 0, cpu_it = first_cpu;
+                 i < num_cpus;
+                 i++, cpu_it = last.next_set(cpu_it)) {
+                done.clr(cpu_it);
+                unsigned next_cpu = cpu_it;
+                do {
+                    next_cpu = cpu_mask.next_set(next_cpu);
+                } while (done.is_set(next_cpu) || next.is_set(next_cpu));
+                cout << " " << cpu_it;
+                next.set(next_cpu);
+                if (i == 0)
+                    first_cpu = next_cpu;
+            }
+            cout << endl << flush;
+
+            num_done = 0;
+            run = next;
+            cv.notify_all();
+        }
+    }
 } s;
 
 
@@ -106,56 +148,16 @@ void *benchmark_loop(void *ptr)
     int cpu = (intptr_t)ptr;
 
     while (1) {
-        {
-            unique_lock<mutex> lock(s.m);
-            while (!s.run.is_set(cpu))
-                s.cv.wait(lock);
-//            printf("running at CPU%u\n", cpu);
-//            fflush(stdout);
-        }
+        s.wait(cpu);
 
         using namespace chrono;
-
-
         auto start = steady_clock::now();
         int wd = 0;
         for (int j = 0; j < loops_per_print || loops_per_print < 1; ++j)
             wd += bench_func();
         auto stop = steady_clock::now();
 
-        {
-            unique_lock<mutex> lock(s.m);
-            s.run.clr(cpu);
-            s.done.set(cpu);
-            s.work_done += wd;
-            cout << "work_done=" << s.work_done << endl;
-            cout << "duration=" << duration_cast<milliseconds>(stop - start).count() << endl;
-            cout << flush;
-
-            if (++s.num_done == s.num_cpus) {
-                usleep(delay_ms * 1000);
-                cpu_set next, last = s.done;
-                cout << "-- Next CPUs:";
-                for (unsigned i = 0, cpu_it = s.first_cpu;
-                     i < s.num_cpus;
-                     i++, cpu_it = last.next_set(cpu_it)) {
-                    s.done.clr(cpu_it);
-                    unsigned next_cpu = cpu_it;
-                    do {
-                        next_cpu = cpu_mask.next_set(next_cpu);
-                    } while (s.done.is_set(next_cpu) || next.is_set(next_cpu));
-                    cout << " " << cpu_it;
-                    next.set(next_cpu);
-                    if (i == 0)
-                        s.first_cpu = next_cpu;
-                }
-                cout << endl << flush;
-
-                s.num_done = 0;
-                s.run = next;
-                s.cv.notify_all();
-            }
-        }
+        s.completed(cpu, wd, duration_cast<milliseconds>(stop - start).count());
     }
     return NULL;
 }
