@@ -132,7 +132,9 @@ struct synchronizer {
             cv.notify_all();
         }
     }
-} s;
+};
+
+struct synchronizer s;
 
 
 int bench_func()
