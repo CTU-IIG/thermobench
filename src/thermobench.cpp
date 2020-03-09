@@ -26,9 +26,9 @@
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
-#include "libev/ev.h"
+#include "libev/ev++.h"
 #else
-#include <ev.h>
+#include <ev++.h>
 #endif
 
 #ifndef GIT_VERSION

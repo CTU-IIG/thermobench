@@ -3,7 +3,7 @@
 #     make CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++
 
 CFLAGS=-g -O2 -Wall -Wno-strict-aliasing
-CXXFLAGS=$(CFLAGS) -fno-exceptions -std=c++11
+CXXFLAGS=$(CFLAGS) -std=c++11
 CFLAGS+=-DGIT_VERSION='"$(shell git describe --always || echo unknown)"'
 CFLAGS+=-DWITH_LOCAL_LIBEV=1
 
