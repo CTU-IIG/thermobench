@@ -69,6 +69,10 @@ sensors in a .csv file.
 
   -c, --column=STR           Add column to CSV populated by STR=val lines from
                              COMMAND stdout
+  -e, --exec=[(COL)]CMD      Execute CMD (in addition to COMMAND) and store its
+                             stdout in CSV column COL. If COL is not specified,
+                             first world of CMD is used. Example: --exec
+                             "(ambient) ssh ambient@turbot read_temp"
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
   -l, --stdout               Log COMMAND stdout to CSV
   -n, --name=NAME            Basename of the .csv file

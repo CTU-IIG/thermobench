@@ -23,6 +23,11 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <unistd.h>
+#include <memory>
+#include <ext/stdio_filebuf.h>
+#include <algorithm>
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -86,11 +91,33 @@ bool write_stdout = false;
 int terminate_time = 0;
 bool calc_cpu_usage = false;
 
+struct Exec {
+    const string col;
+    const string cmd;
+
+    Exec(const string &arg)
+        // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
+        : col(arg[0] == '(' ? arg.substr(1, arg.find_first_of(")") - 1)
+                            : arg.substr(0, arg.find_first_of(" \t")))
+        , cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
+    {}
+
+    void start(ev::loop_ref loop);
+    void child_stdout_cb(ev::io &w, int revents);
+
+private:
+    pid_t pid = 0;
+    unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf;
+    ev::child child;
+    ev::io child_stdout;
+};
+
 struct measure_state {
     struct timespec start_time;
     vector<sensor> sensors;
     FILE *out_fp;
     vector<char*> keys;
+    vector<unique_ptr<Exec>> execs;
     pid_t child;
 } state;
 
@@ -229,10 +256,15 @@ void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char *> &keys, b
 
     if (write_stdout)
         fprintf(fp, ",stdout");
+
+    for (auto &exec : state.execs) {
+        fprintf(fp, ",%s", exec->col.c_str());
+    }
+
     fprintf(fp, "\n");
 }
 
-void write_column_csv(FILE *fp, double time, char *string, int column)
+void write_column_csv(FILE *fp, double time, const char *string, int column)
 {
     fprintf(fp, "%lf,", time);
     for (int i = 1; i < column; ++i)
@@ -418,6 +450,51 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
+void Exec::start(ev::loop_ref loop) {
+    int pipefds[2];
+
+    CHECK(pipe2(pipefds, O_NONBLOCK));
+
+    pid = CHECK(vfork());
+
+    if (pid == 0) {
+        // Child
+        close(pipefds[0]);
+        CHECK(dup2(pipefds[1], STDOUT_FILENO));
+        CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str()));
+    }
+
+    close(pipefds[1]);
+
+    // TODO
+    //child.set(loop);
+    //child.start(pid);
+
+    child_stdout.set(loop);
+    child_stdout.set<Exec, &Exec::child_stdout_cb>(this);
+    child_stdout.start(pipefds[0], ev::READ);
+
+    buf.reset(new __gnu_cxx::stdio_filebuf<char>(pipefds[0], ios::in));
+}
+
+void Exec::child_stdout_cb(ev::io &w, int revents)
+{
+    istream pipe_in(buf.get());
+    string line;
+
+    auto it = find_if(state.execs.begin(), state.execs.end(),
+                      [this](const unique_ptr<Exec> &p){ return p.get() == this; });
+    int my_index = distance(state.execs.begin(), it);
+
+    double curr_time = get_current_time();
+    while (getline(pipe_in, line)) {
+        write_column_csv(state.out_fp, curr_time, line.c_str(),
+                         1 + state.sensors.size() + n_cpus + state.keys.size() +
+                         (write_stdout ? 1 : 0) + my_index);
+    }
+}
+
+
 static void child_exit_cb(EV_P_ ev_child *w, int revents)
 {
     ev_break(EV_A_ EVBREAK_ALL);
@@ -502,6 +579,9 @@ void measure(int measure_period_ms)
     ev_signal_init (&signal_watcher, sigint_cb, SIGINT);
     ev_signal_start (loop, &signal_watcher);
 
+    for (const auto &exec : state.execs)
+        exec->start(loop);
+
     int currpriority = getpriority(PRIO_PROCESS, getpid());
     setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
 
@@ -558,6 +638,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 'u':
         calc_cpu_usage = true;
         break;
+    case 'e':
+        state.execs.emplace_back(new Exec(arg));
+        break;
 /*     case ARGP_KEY_ARG: */
 /*         break; */
     case ARGP_KEY_ARGS:
@@ -607,6 +690,10 @@ static struct argp_option options[] = {
     { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
+    { "exec",           'e', "[(COL)]CMD",  0,
+      "Execute CMD (in addition to COMMAND) and store its stdout in CSV "
+      "column COL. If COL is not specified, first world of CMD is used. "
+      "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
     { 0 }
 };
 
