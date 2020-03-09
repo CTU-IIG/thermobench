@@ -461,7 +461,7 @@ void Exec::start(ev::loop_ref loop) {
         // Child
         close(pipefds[0]);
         CHECK(dup2(pipefds[1], STDOUT_FILENO));
-        CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str()));
+        CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), NULL));
     }
 
     close(pipefds[1]);
