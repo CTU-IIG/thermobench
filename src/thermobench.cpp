@@ -552,7 +552,10 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
 {
-    kill(state.child, SIGTERM);
+    if (state.child != 0) {
+        kill(state.child, SIGTERM);
+        state.child = 0;
+    }
 }
 
 static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
@@ -560,6 +563,10 @@ static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
     // Ignore SIGINT. But our child will not ignore it and exits. We
     // detect that in child_exit_cb and break the event loop.
     fprintf(stderr, "Waiting for child to terminate...\n");
+    if (state.child != 0) {
+        kill(state.child, SIGTERM);
+        state.child = 0;
+    }
 }
 
 void measure(int measure_period_ms)
