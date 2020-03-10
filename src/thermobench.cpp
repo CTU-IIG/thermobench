@@ -488,6 +488,7 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
 
     double curr_time = get_current_time();
     while (getline(pipe_in, line)) {
+        line.erase(line.find_last_not_of("\r\n") + 1);
         write_column_csv(state.out_fp, curr_time, line.c_str(),
                          1 + state.sensors.size() + n_cpus + state.keys.size() +
                          (write_stdout ? 1 : 0) + my_index);
