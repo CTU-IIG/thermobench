@@ -103,6 +103,7 @@ struct Exec {
     {}
 
     void start(ev::loop_ref loop);
+    void kill();
     void child_stdout_cb(ev::io &w, int revents);
 
 private:
@@ -459,6 +460,7 @@ void Exec::start(ev::loop_ref loop) {
 
     if (pid == 0) {
         // Child
+        setpgid(0, 0); // Run in background process group to not receive SIGINT from terminal
         close(pipefds[0]);
         CHECK(dup2(pipefds[1], STDOUT_FILENO));
         CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), NULL));
@@ -475,6 +477,14 @@ void Exec::start(ev::loop_ref loop) {
     child_stdout.start(pipefds[0], ev::READ);
 
     buf.reset(new __gnu_cxx::stdio_filebuf<char>(pipefds[0], ios::in));
+}
+
+void Exec::kill()
+{
+    if (pid > 0) {
+        // Kill the whole process group
+        ::kill(-pid, SIGTERM);
+    }
 }
 
 void Exec::child_stdout_cb(ev::io &w, int revents)
@@ -591,6 +601,9 @@ void measure(int measure_period_ms)
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 
     ev_run(loop, 0);
+
+    for (const auto &exec : state.execs)
+        exec->kill();
 }
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
