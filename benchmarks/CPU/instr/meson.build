@@ -54,9 +54,10 @@ if host_machine.cpu_family() == 'aarch64'
 endif
 
 rt_dep = declare_dependency(link_args : '-lrt')
+threads_dep = dependency('threads')
 
 foreach b : benchmarks
 	executable(b, ['main.c'],
 		   c_args : '-DBENCH_H="@0@.h"'.format(b),
-		   dependencies : [ dependency('threads'), rt_dep ])
+		   dependencies : [ threads_dep, rt_dep ])
 endforeach
