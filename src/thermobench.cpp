@@ -466,6 +466,7 @@ void Exec::start(ev::loop_ref loop) {
     if (pid == 0) {
         // Child
         close(pipefds[0]);
+        CHECK(dup2(CHECK(open("/dev/null", O_RDONLY)), STDIN_FILENO));
         CHECK(dup2(pipefds[1], STDOUT_FILENO));
         CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), NULL));
     }
