@@ -28,6 +28,7 @@
 #include <memory>
 #include <ext/stdio_filebuf.h>
 #include <algorithm>
+#include <signal.h>
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -104,13 +105,15 @@ struct Exec {
 
     void start(ev::loop_ref loop);
     void kill();
-    void child_stdout_cb(ev::io &w, int revents);
 
 private:
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf;
     ev::child child;
     ev::io child_stdout;
+
+    void child_stdout_cb(ev::io &w, int revents);
+    void child_exit_cb(ev::child &w, int revents);
 };
 
 struct measure_state {
@@ -460,7 +463,6 @@ void Exec::start(ev::loop_ref loop) {
 
     if (pid == 0) {
         // Child
-        setpgid(0, 0); // Run in background process group to not receive SIGINT from terminal
         close(pipefds[0]);
         CHECK(dup2(pipefds[1], STDOUT_FILENO));
         CHECK(execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), NULL));
@@ -468,9 +470,9 @@ void Exec::start(ev::loop_ref loop) {
 
     close(pipefds[1]);
 
-    // TODO
-    //child.set(loop);
-    //child.start(pid);
+    child.set(loop);
+    child.set<Exec, &Exec::child_exit_cb>(this);
+    child.start(pid);
 
     child_stdout.set(loop);
     child_stdout.set<Exec, &Exec::child_stdout_cb>(this);
@@ -483,7 +485,7 @@ void Exec::kill()
 {
     if (pid > 0) {
         // Kill the whole process group
-        ::kill(-pid, SIGTERM);
+        ::kill(pid, SIGTERM);
     }
 }
 
@@ -505,9 +507,20 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     }
 }
 
+void Exec::child_exit_cb(ev::child &w, int revents)
+{
+    int s = w.rstatus;
+    if (WIFEXITED(s) && WEXITSTATUS(s) != 0)
+        fprintf(stderr, "Command '%s' exited with status %d\n",
+                cmd.c_str(), WEXITSTATUS(s));
+    w.stop();
+    pid = 0;
+
+}
 
 static void child_exit_cb(EV_P_ ev_child *w, int revents)
 {
+    ev_child_stop(EV_A_ w);
     ev_break(EV_A_ EVBREAK_ALL);
 }
 
@@ -748,6 +761,14 @@ string current_time()
     return string(outstr);
 }
 
+static void clear_sig_mask (void)
+{
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigprocmask(SIG_SETMASK, &mask, NULL);
+}
+
+
 int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
@@ -773,6 +794,10 @@ int main(int argc, char **argv)
             shell_quote(argc, argv).c_str());
 
     write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout, calc_cpu_usage);
+
+    // Clear signal mask in children - don't let them inherit our
+    // mask, which libev "randomly" modifies
+    pthread_atfork (0, 0, clear_sig_mask);
 
     measure(measure_period_ms);
 
