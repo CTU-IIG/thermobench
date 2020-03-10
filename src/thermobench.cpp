@@ -452,6 +452,8 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             write_column_csv(state.out_fp, curr_time, buf,
                              1 + state.sensors.size() + n_cpus + state.keys.size());
     }
+    if (feof(workfp))
+        ev_io_stop(EV_A_ w);
 }
 
 void Exec::start(ev::loop_ref loop) {
@@ -505,6 +507,8 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
                          1 + state.sensors.size() + n_cpus + state.keys.size() +
                          (write_stdout ? 1 : 0) + my_index);
     }
+    if (pipe_in.eof())
+        w.stop();
 }
 
 void Exec::child_exit_cb(ev::child &w, int revents)
