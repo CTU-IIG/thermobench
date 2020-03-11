@@ -71,7 +71,7 @@ sensors in a .csv file.
                              COMMAND stdout
   -e, --exec=[(COL)]CMD      Execute CMD (in addition to COMMAND) and store its
                              stdout in CSV column COL. If COL is not specified,
-                             first world of CMD is used. Example: --exec
+                             first word of CMD is used. Example: --exec
                              "(ambient) ssh ambient@turbot read_temp"
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
   -l, --stdout               Log COMMAND stdout to CSV
@@ -80,9 +80,11 @@ sensors in a .csv file.
   -O, --output=FILE          The name of output CSV file (overrides -o and -n)
   -p, --period=TIME [ms]     Period of reading the sensors
   -s, --sensors_file=FILE    Definition of sensors to use. Each line of the
-                             FILE contains SPEC as in -S. When no sensors are
-                             specified, all available thermal zones are added
-                             automatically.
+                             FILE contains either SPEC as in -S or, when the
+                             line starts with '!', the rest is interpreted as
+                             an argument to --exec. When no sensors are
+                             specified via -s or -S, all available thermal
+                             zones are added automatically.
   -S, --sensor=SPEC          Add a sensor to the list of used sensors. SPEC is
                              FILE [NAME [UNIT]]. FILE is typically something
                              like

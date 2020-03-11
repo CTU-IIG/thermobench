@@ -221,8 +221,12 @@ static void read_sensor_paths(char *sensors_file)
 
     while ((getline(&line, &len, fp)) != -1) {
         struct sensor sensor;
-        parse_sensor_spec(&sensor, line);
-        state.sensors.push_back(sensor);
+        if (line[0] == '!') {
+            state.execs.emplace_back(new Exec(line + 1));
+        } else {
+            parse_sensor_spec(&sensor, line);
+            state.sensors.push_back(sensor);
+        }
     }
     if (line)
         free(line);
@@ -711,8 +715,10 @@ static struct argp_option options[] = {
     { "benchmark",      'b', "EXECUTABLE",  OPTION_HIDDEN, "Benchmark program to execute" },
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "sensors_file",   's', "FILE",        0,
-      "Definition of sensors to use. Each line of the FILE contains SPEC as in -S. "
-      "When no sensors are specified, all available thermal zones are added automatically." },
+      "Definition of sensors to use. Each line of the FILE contains either "
+      "SPEC as in -S or, when the line starts with '!', the rest is interpreted as "
+      "an argument to --exec. When no sensors are specified via -s or -S, "
+      "all available thermal zones are added automatically." },
     { "sensor",         'S', "SPEC",        0,
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "
@@ -731,7 +737,7 @@ static struct argp_option options[] = {
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
     { "exec",           'e', "[(COL)]CMD",  0,
       "Execute CMD (in addition to COMMAND) and store its stdout in CSV "
-      "column COL. If COL is not specified, first world of CMD is used. "
+      "column COL. If COL is not specified, first word of CMD is used. "
       "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
     { 0 }
 };
