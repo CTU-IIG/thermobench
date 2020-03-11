@@ -625,8 +625,6 @@ void measure(int measure_period_ms)
     int currpriority = getpriority(PRIO_PROCESS, getpid());
     setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
 
-    set_process_affinity(pid, 0);
-
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 
     ev_run(loop, 0);
