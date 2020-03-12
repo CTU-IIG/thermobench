@@ -6,6 +6,7 @@
 
 #define _GNU_SOURCE
 #include <assert.h>
+#include <err.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdbool.h>
@@ -326,7 +327,8 @@ int main(int argc, char *argv[])
 			break;
 		case 's':
 			cfg.size = atol(optarg);
-			assert(cfg.size <= sizeof(array[0]));
+                        if (cfg.size > sizeof(array[0]))
+                            errx(1, "Maximum size for -s is %zu", sizeof(array[0]));
 			break;
 		case 't':
 			cfg.num_threads = atol(optarg);
