@@ -379,5 +379,6 @@ int main(int argc, char *argv[])
 }
 
 /* Local Variables: */
-/* compile-command: "make hello install" */
+/* c-basic-offset: 8 */
+/* indent-tabs-mode: t */
 /* End: */
