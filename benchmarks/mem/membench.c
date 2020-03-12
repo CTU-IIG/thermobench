@@ -89,6 +89,7 @@ static void prepare(struct s *array, unsigned size, bool sequential)
 {
 	int i, j;
 	int count = size / sizeof(struct s);
+        assert(count > 0);
 
 	if (sequential) {
 		for (i = 0; i < count - 1; i++)
@@ -209,10 +210,8 @@ static void *benchmark_thread(void *arg)
 	CPU_ZERO(&set);
 	CPU_SET(me->cpu, &set);
 
-	if (pthread_setaffinity_np(me->id, sizeof(set), &set) != 0) {
-		perror("pthread_setaffinity_np");
-		exit(1);
-	}
+	if (pthread_setaffinity_np(me->id, sizeof(set), &set) != 0)
+		errx(1, "Failed setting pthread_setaffinity_np to CPU %d", me->cpu);
 
 	prepare(array[me->cpu], me->cfg->size, me->cfg->sequential);
 
