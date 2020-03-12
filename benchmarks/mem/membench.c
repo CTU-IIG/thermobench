@@ -37,6 +37,7 @@ struct cfg {
 	bool write;
 	unsigned ofs;
 	bool use_cycles; /* instead of ns */
+	bool forever;
 };
 
 struct s {
@@ -220,16 +221,22 @@ static void *benchmark_thread(void *arg)
 	if (print)
 		fprintf(stderr, "CPU %d starts measurement\n", me->cpu);
 
-	uint64_t tic, tac;
-	tic = get_time(me->cfg);
-	if (me->cfg->write == false)
-		do_read(array[me->cpu], me->cfg->read_count);
-	else
-		do_write(array[me->cpu], me->cfg->read_count, me->cfg->ofs);
+        unsigned work_done = 0;
+        do {
+                uint64_t tic, tac;
+                tic = get_time(me->cfg);
+                if (me->cfg->write == false)
+                        do_read(array[me->cpu], me->cfg->read_count);
+                else
+                        do_write(array[me->cpu], me->cfg->read_count, me->cfg->ofs);
 
-	tac = get_time(me->cfg);
-	me->result = (double)(tac - tic) / me->cfg->read_count;
-
+                tac = get_time(me->cfg);
+                me->result = (double)(tac - tic) / me->cfg->read_count;
+                if (me->cfg->forever) {
+                        printf("CPU%d_work_done=%u\n", me->cpu, work_done++);
+                        printf("CPU%d size:%d time:%g\n", me->cpu, me->cfg->size, (tac - tic) / 1000000000.0);
+                }
+        } while (me->cfg->forever);
 	return NULL;
 }
 
@@ -282,6 +289,7 @@ static void print_help(char *argv[], struct cfg *dflt)
 	       "  -C <CPU#>   Run the benchmark on given CPU# (can be specified\n"
 	       "              multiple times), also see -t; the default is to go from\n"
 	       "	      CPU 0 upwards\n"
+	       "  -f          Execute forever in a loop\n"
 	       "  -h          Show this help\n"
 	       "  -o <ofs>    Offset of write operation within the cache line (see -w)\n"
 	       "  -r          Traverse memory in random order (default is sequential)\n"
@@ -314,10 +322,13 @@ int main(int argc, char *argv[])
 	CPU_ZERO(&cfg.cpu_set);
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:C:ho:rs:t:wy")) != -1) {
+	while ((opt = getopt(argc, argv, "c:C:fho:rs:t:wy")) != -1) {
 		switch (opt) {
 		case 'c':
 			cfg.read_count = atol(optarg);
+			break;
+		case 'f':
+			cfg.forever = true;
 			break;
 		case 'o':
 			cfg.ofs = atol(optarg);
