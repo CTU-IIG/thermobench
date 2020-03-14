@@ -1,5 +1,6 @@
 #include "csvRow.h"
 
+
 /* CsvColumn implementation */
 
 CsvColumn::CsvColumn(std::string name, unsigned int order){

@@ -49,5 +49,4 @@ class CsvRow{
 
         void clean();
 };
-
 #endif
