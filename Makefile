@@ -7,7 +7,7 @@ clean test: build/build.ninja
 %/build.ninja:
 	meson $(@D) $(MESON_OPTS)
 
-aarch64: MESON_OPTS=--cross-file aarch64.txt
+aarch64: MESON_OPTS=--cross-file aarch64.txt --default-library=static
 aarch64: build-aarch64/build.ninja
 	ninja -C $(<D)
 

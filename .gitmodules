@@ -1,5 +1,5 @@
 [submodule "src/libev"]
-	path = src/libev
+	path = subprojects/libev
 #	url = git://git.lighttpd.net/libev.git
 	url = .
 [submodule "benchmarks/tacle-bench"]
