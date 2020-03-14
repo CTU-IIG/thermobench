@@ -9,18 +9,12 @@ installed by:
 
 ## Compilation
 
-    git submodule update --init
-	make  # this invokes Meson
+``` sh
+git submodule update --init
+make  # this invokes Meson
+```
 
-Alternatively, some benchmarks can be compiled without Meson by using
-plain Makefiles:
-
-    git submodule update --init
-	make -C src
-	make -C benchmarks/CPU/instr read
-
-Note that the above command compiles only one benchmark `read`, which
-is portable to all platforms.
+### Cross compilation
 
 To cross-compile the tool and benchmarks for the ARM64 architecture,
 install the cross-compilers. On Debian/Ubuntu, the following should
@@ -28,15 +22,18 @@ work:
 
     sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
-Then specify the cross-compiler to use when calling make:
+Then build thermobench:
 
-	make -C src CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++
-	make -C benchmarks/CPU/instr CC=aarch64-linux-gnu-gcc
+	make aarch64
+
+The resulting binary `build-aarch64/src/demos-sched` can be copied to
+the target ARM system.
 
 ## Usage
 
 The simplest useful command to try is:
 
+	cd build
 	src/thermobench benchmarks/CPU/instr/read
 
 which runs the `read` benchmark while measuring temperature from all
@@ -45,6 +42,9 @@ available thermal zones (`/sys/devices/virtual/thermal/thermal_zone*`).
 To record multiple different sensors use:
 
 	src/thermobench --sensor=/sys/devices/virtual/thermal/thermal_zone{0..3}/temp benchmarks/CPU/instr/read
+
+Note that `{0..3}` is expanded by BASH shell. If you use a different
+shell, you might need to specify `--sensor` multiple times.
 
 You can also record what the benchmark prints to stdout:
 
