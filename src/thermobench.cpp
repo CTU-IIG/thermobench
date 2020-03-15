@@ -29,6 +29,7 @@
 #include <ext/stdio_filebuf.h>
 #include <algorithm>
 #include <signal.h>
+#include <sstream>
 #include "csvRow.h"
 
 #ifdef WITH_LOCAL_LIBEV
@@ -83,6 +84,7 @@ unsigned n_cpus;
 struct cpu_usage cpu_usage[MAX_CPUS];
 
 CsvColumns columns;
+CsvColumn* time_column;
 CsvColumn* stdout_column;
 
 /* Command line options */
@@ -286,17 +288,7 @@ void write_column_csv(FILE *fp, double time, const char *string, int column)
     for (int i = 1; i < column; ++i)
         fprintf(fp, ",");
     fprintf(fp, "%s\n", string);
-}
-
-void write_arr_csv(FILE *fp, double *arr, int size)
-{
-    fprintf(fp, "%g", arr[0]);
-    for (int i = 1; i < size; ++i) {
-        fprintf(fp, ",");
-        if (!isnan(arr[i]))
-            fprintf(fp, "%g", arr[i]);
-    }
-    fprintf(fp, "\n");
+    cout<< "write to column\n";
 }
 
 static double read_sensor(char *path)
@@ -543,23 +535,25 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
-    double res_buf[MAX_RESULTS] = { 0 };
+    CsvRow row;
+    char buf[100];
+    sprintf(buf, "%g", get_current_time());
+    row.set(time_column, buf);
 
-    res_buf[0] = get_current_time();
-    int offset = 1;
-    //    printf("%g\n", get_current_time());
-
-    for (unsigned i = 0; i < state.sensors.size(); ++i)
-        res_buf[i + offset] = read_sensor(state.sensors[i].path);
-    offset += state.sensors.size();
+    for (unsigned i = 0; i < state.sensors.size(); ++i){
+        sprintf(buf, "%g", read_sensor(state.sensors[i].path));
+        row.set(state.sensors[i].column, buf);
+    }
 
     if (calc_cpu_usage) {
         read_procstat();
-        for (unsigned i = 0; i < n_cpus; ++i)
-            res_buf[i + offset] = get_cpu_usage(i);
+        for (unsigned i = 0; i < n_cpus; ++i){
+            sprintf(buf, "%g", get_cpu_usage(i));
+            row.set(cpu_usage[i].column, buf);
+        }
     }
 
-    write_arr_csv(state.out_fp, res_buf, offset + n_cpus);
+    row.write(state.out_fp);
 }
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -797,11 +791,12 @@ void write_csv_header(FILE *fp, CsvColumns &columns){
     for(unsigned int i = 0; i < columns.getSize(); ++i){
         row.set(columns.getColumn(i), columns.getColumn(i)->getName());
     }
-    //cout << row.getRow() << endl;
-    fprintf(fp, row.getRow().c_str());
+    row.write(fp);
 }
 
 void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
+    time_column = columns.add("time/ms");
+
     for (unsigned int i = 0; i < state.sensors.size(); ++i)
         state.sensors[i].column = columns.add(state.sensors[i].name);
 
@@ -809,8 +804,7 @@ void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
         char buf[100];
         for (unsigned int i = 0; i < n_cpus; ++i){
             sprintf(buf, ",CPU%u_load/%%", cpu_usage[i].idx);
-            string name = buf;
-            cpu_usage[i].column = columns.add(name);
+            cpu_usage[i].column = columns.add(buf);
         }
     }
 
