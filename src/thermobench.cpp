@@ -29,7 +29,6 @@
 #include <ext/stdio_filebuf.h>
 #include <algorithm>
 #include <signal.h>
-#include <sstream>
 #include "csvRow.h"
 
 #ifdef WITH_LOCAL_LIBEV
@@ -480,8 +479,8 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         line.erase(line.find_last_not_of("\r\n") + 1);
         CsvRow row;
         row.set(time_column, curr_time);
-        row.set(state.execs[my_index].column, line.c_str());
-        row.write();
+        row.set(state.execs[my_index]->column, line.c_str());
+        row.write(state.out_fp);
         /*write_column_csv(state.out_fp, curr_time, line.c_str(),
                          1 + state.sensors.size() + n_cpus + state.keys.size() +
                          (write_stdout ? 1 : 0) + my_index);*/
