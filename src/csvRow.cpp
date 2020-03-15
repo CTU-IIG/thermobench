@@ -9,11 +9,11 @@ CsvColumn::CsvColumn(std::string name, unsigned int order){
 }
 
 std::string CsvColumn::getName(){
-    return this->name;
+    return name;
 }
 
 unsigned int CsvColumn::getOrder(){
-    return this->order;
+    return order;
 }
 
 
@@ -24,9 +24,9 @@ CsvColumns::CsvColumns(){
 };
 
 CsvColumns::~CsvColumns(){
-    while(!this->columns.empty()){
-        delete this->columns.back();
-        this->columns.pop_back();
+    while(!columns.empty()){
+        delete columns.back();
+        columns.pop_back();
     }
 };
 
@@ -41,7 +41,7 @@ CsvColumn* CsvColumns::add(std::string name){
 }
 
 unsigned int CsvColumns::getSize(){
-   return this->size; 
+   return size; 
 }
 
 
@@ -59,7 +59,7 @@ void CsvRow::set(CsvColumn* column, std::string data){
     const unsigned int order = column->getOrder();
     data = makeCsvSafe(data);
     data.push_back(',');
-    if(order < this->row.size()){
+    if(order < row.size()){
         row[order] = data;
     }
     else{
@@ -81,7 +81,7 @@ std::string CsvRow::getRow(){
 }
 
 void CsvRow::write(FILE *fp){
-   fprintf(fp, "%s", (this->getRow()).c_str());
+   fprintf(fp, "%s", (getRow()).c_str());
 }
 
 void CsvRow::clean(){

@@ -23,7 +23,7 @@ endif
 
 
 executable('thermobench', [
-		  'thermobench.cpp',
+		  'thermobench.cpp','csvRow.cpp',
 		  version_h,
 	   ],
 	   dependencies : deps)

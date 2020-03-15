@@ -29,6 +29,7 @@
 #include <ext/stdio_filebuf.h>
 #include <algorithm>
 #include <signal.h>
+#include "csvRow.h"
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -61,6 +62,7 @@ struct sensor {
     char *path;
     char *name;
     const char *units;
+    CsvColumn* column;
 };
 
 struct proc_stat_cpu {
@@ -73,11 +75,15 @@ struct cpu_usage {
     unsigned idx;
     proc_stat_cpu current;
     proc_stat_cpu last;
+    CsvColumn* column;
 };
 
 #define MAX_CPUS 256
 unsigned n_cpus;
 struct cpu_usage cpu_usage[MAX_CPUS];
+
+CsvColumns columns;
+CsvColumn* stdout_column;
 
 /* Command line options */
 int measure_period_ms = 100;
@@ -95,6 +101,7 @@ bool calc_cpu_usage = false;
 struct Exec {
     const string col;
     const string cmd;
+    CsvColumn* column;
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
@@ -121,6 +128,7 @@ struct measure_state {
     vector<sensor> sensors;
     FILE *out_fp;
     vector<char*> keys;
+    vector<CsvColumn*> keysColumns;
     vector<unique_ptr<Exec>> execs;
     pid_t child;
 } state;
@@ -784,6 +792,39 @@ static void clear_sig_mask (void)
     sigprocmask(SIG_SETMASK, &mask, NULL);
 }
 
+void write_csv_header(FILE *fp, CsvColumns &columns){
+    CsvRow row;
+    for(unsigned int i = 0; i < columns.getSize(); ++i){
+        row.set(columns.getColumn(i), columns.getColumn(i)->getName());
+    }
+    //cout << row.getRow() << endl;
+    fprintf(fp, row.getRow().c_str());
+}
+
+void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
+    for (unsigned int i = 0; i < state.sensors.size(); ++i)
+        state.sensors[i].column = columns.add(state.sensors[i].name);
+
+    if (calc_cpu_usage){
+        char buf[100];
+        for (unsigned int i = 0; i < n_cpus; ++i){
+            sprintf(buf, ",CPU%u_load/%%", cpu_usage[i].idx);
+            string name = buf;
+            cpu_usage[i].column = columns.add(name);
+        }
+    }
+
+    for (unsigned int i = 0; i < state.keys.size(); ++i) {
+        state.keysColumns.push_back(columns.add(state.keys[i]));
+    }
+
+    if (write_stdout)
+        stdout_column = columns.add("stdout");
+
+    for (auto &exec : state.execs) {
+        exec->column = columns.add(exec->col);
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -809,7 +850,11 @@ int main(int argc, char **argv)
             current_time().c_str(), GIT_VERSION,
             shell_quote(argc, argv).c_str());
 
-    write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout, calc_cpu_usage);
+    init_columns(write_stdout, calc_cpu_usage, columns);
+
+    write_csv_header(state.out_fp, columns);
+
+    //write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout, calc_cpu_usage);
 
     // Clear signal mask in children - don't let them inherit our
     // mask, which libev "randomly" modifies
