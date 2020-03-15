@@ -41,6 +41,7 @@ class CsvRow{
         std::vector<std::string> row;
 
     public:
+        void set(CsvColumn* column, double data);
         void set(CsvColumn* column, std::string data);
 
         std::string getRow();

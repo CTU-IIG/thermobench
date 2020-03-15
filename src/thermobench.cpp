@@ -257,40 +257,6 @@ static void add_all_thermal_zones()
     }
 }
 
-void write_header_csv(FILE *fp, vector<sensor> &sensors, vector<char *> &keys, bool write_stdout,
-                      bool calc_cpu_usage)
-{
-    fprintf(fp, "time/ms");
-    for (unsigned i = 0; i < sensors.size(); ++i)
-        fprintf(fp, sensors[i].units ? ",%s/%s" : ",%s", sensors[i].name, sensors[i].units);
-
-    if (calc_cpu_usage)
-        for (unsigned i = 0; i < n_cpus; ++i)
-            fprintf(fp, ",CPU%u_load/%%", cpu_usage[i].idx);
-
-    for (unsigned i = 0; i < keys.size(); ++i) {
-        fprintf(fp, ",%s", keys[i]);
-    }
-
-    if (write_stdout)
-        fprintf(fp, ",stdout");
-
-    for (auto &exec : state.execs) {
-        fprintf(fp, ",%s", exec->col.c_str());
-    }
-
-    fprintf(fp, "\n");
-}
-
-void write_column_csv(FILE *fp, double time, const char *string, int column)
-{
-    fprintf(fp, "%lf,", time);
-    for (int i = 1; i < column; ++i)
-        fprintf(fp, ",");
-    fprintf(fp, "%s\n", string);
-    cout<< "write to column\n";
-}
-
 static double read_sensor(char *path)
 {
     double result;
@@ -435,6 +401,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     FILE *workfp = fdopen(w->fd, "r");
     char buf[200];
     double curr_time = get_current_time();
+    CsvRow row;
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
         char *eq = strchr(buf, '=');
         if (eq) {
@@ -446,15 +413,18 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             int id = get_key_idx(key, state.keys);
 
             if (id >= 0) {
-                write_column_csv(state.out_fp, curr_time, value,
-                                 1 + state.sensors.size() + n_cpus + id);
+                row.set(time_column, curr_time);
+                row.set(state.keysColumns[id], value);
+                row.write(state.out_fp);
                 return;
             }
             *eq = '=';
         }
-        if (write_stdout)
-            write_column_csv(state.out_fp, curr_time, buf,
-                             1 + state.sensors.size() + n_cpus + state.keys.size());
+        if (write_stdout){
+            row.set(time_column, curr_time);
+            row.set(stdout_column, buf);
+            row.write(state.out_fp);
+        }
     }
     if (feof(workfp))
         ev_io_stop(EV_A_ w);
@@ -508,9 +478,13 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     double curr_time = get_current_time();
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
-        write_column_csv(state.out_fp, curr_time, line.c_str(),
+        CsvRow row;
+        row.set(time_column, curr_time);
+        row.set(state.execs[my_index].column, line.c_str());
+        row.write();
+        /*write_column_csv(state.out_fp, curr_time, line.c_str(),
                          1 + state.sensors.size() + n_cpus + state.keys.size() +
-                         (write_stdout ? 1 : 0) + my_index);
+                         (write_stdout ? 1 : 0) + my_index);*/
     }
     if (pipe_in.eof())
         w.stop();
@@ -536,20 +510,16 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     CsvRow row;
-    char buf[100];
-    sprintf(buf, "%g", get_current_time());
-    row.set(time_column, buf);
+    row.set(time_column, get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
-        sprintf(buf, "%g", read_sensor(state.sensors[i].path));
-        row.set(state.sensors[i].column, buf);
+        row.set(state.sensors[i].column, read_sensor(state.sensors[i].path));
     }
 
     if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i){
-            sprintf(buf, "%g", get_cpu_usage(i));
-            row.set(cpu_usage[i].column, buf);
+            row.set(cpu_usage[i].column, get_cpu_usage(i));
         }
     }
 
@@ -847,8 +817,6 @@ int main(int argc, char **argv)
     init_columns(write_stdout, calc_cpu_usage, columns);
 
     write_csv_header(state.out_fp, columns);
-
-    //write_header_csv(state.out_fp, state.sensors, state.keys, write_stdout, calc_cpu_usage);
 
     // Clear signal mask in children - don't let them inherit our
     // mask, which libev "randomly" modifies

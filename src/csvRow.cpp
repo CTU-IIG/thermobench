@@ -54,6 +54,11 @@ CsvColumn* CsvColumns::getColumn(unsigned int index){
 
 
 /* CsvRow implementation */
+void CsvRow::set(CsvColumn* column, double data){
+    char buf[100];
+    sprintf(buf, "%g", data);
+    set(column, buf);
+};
 
 void CsvRow::set(CsvColumn* column, std::string data){
     const unsigned int order = column->getOrder();
