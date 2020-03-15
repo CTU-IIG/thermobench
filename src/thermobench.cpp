@@ -339,36 +339,6 @@ double get_cpu_usage(int cpu)
     return (idle+active) ? active / (active+idle) * 100 : 0;
 }
 
-void rewrite_header_keys_csv(FILE *fp, char *keys[], int num_keys, int num_sensors)
-{
-    size_t len;
-    char *line = NULL;
-
-    fseek(fp, 0, SEEK_SET);
-    if ((getline(&line, &len, fp)) == -1)
-        err(1, "getline");
-
-    char *s = strchr(line, ',');
-    for (unsigned i = 0; i < state.sensors.size() + 2; ++i) {
-        s = strchr(s, ',');
-        s++;
-    }
-
-    *(s - 1) = '\0';
-    for (int i = 0; i < num_keys; ++i) {
-        strcat(line, ",");
-        strncat(line, keys[i], MAX_KEY_LENGTH);
-    }
-    memset(line + strlen(line), ' ', len - strlen(line));
-    line[len - 2] = '\n';
-
-    fseek(fp, 0, SEEK_SET);
-    fwrite(line, sizeof(char), len - 1, fp);
-
-    if (line)
-        free(line);
-}
-
 void set_process_affinity(int pid, int cpu_id)
 {
     cpu_set_t my_set;
@@ -481,9 +451,6 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         row.set(time_column, curr_time);
         row.set(state.execs[my_index]->column, line.c_str());
         row.write(state.out_fp);
-        /*write_column_csv(state.out_fp, curr_time, line.c_str(),
-                         1 + state.sensors.size() + n_cpus + state.keys.size() +
-                         (write_stdout ? 1 : 0) + my_index);*/
     }
     if (pipe_in.eof())
         w.stop();
@@ -755,14 +722,6 @@ static void clear_sig_mask (void)
     sigprocmask(SIG_SETMASK, &mask, NULL);
 }
 
-void write_csv_header(FILE *fp, CsvColumns &columns){
-    CsvRow row;
-    for(unsigned int i = 0; i < columns.getSize(); ++i){
-        row.set(columns.getColumn(i), columns.getColumn(i)->getName());
-    }
-    row.write(fp);
-}
-
 void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
     time_column = columns.add("time/ms");
 
@@ -815,7 +774,9 @@ int main(int argc, char **argv)
 
     init_columns(write_stdout, calc_cpu_usage, columns);
 
-    write_csv_header(state.out_fp, columns);
+    CsvRow row;
+    columns.writeHeader(row);
+    row.write(state.out_fp);
 
     // Clear signal mask in children - don't let them inherit our
     // mask, which libev "randomly" modifies

@@ -4,17 +4,19 @@
 #include <iostream>
 #include <vector>
 
-std::string makeCsvSafe(std::string unsafe);
+std::string csvEscape(std::string unsafe);
+
+class CsvRow;
 
 class CsvColumn{
     private:
-        std::string name;
+        std::string header;
         unsigned int order;
 
     public:
-        CsvColumn(std::string name, unsigned int order);
+        CsvColumn(std::string header, unsigned int order);
 
-        std::string getName();
+        std::string getHeader();
 
         unsigned int getOrder();
 };
@@ -31,9 +33,8 @@ class CsvColumns{
 
         CsvColumn* add(std::string name);
         
-        unsigned int getSize();
+        void writeHeader(CsvRow &row);
 
-        CsvColumn* getColumn(unsigned int index);
 };
 
 class CsvRow{
@@ -44,10 +45,8 @@ class CsvRow{
         void set(CsvColumn* column, double data);
         void set(CsvColumn* column, std::string data);
 
-        std::string getRow();
+        std::string toString();
 
         void write(FILE *fp);
-
-        void clean();
 };
 #endif

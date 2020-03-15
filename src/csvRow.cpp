@@ -3,13 +3,13 @@
 
 /* CsvColumn implementation */
 
-CsvColumn::CsvColumn(std::string name, unsigned int order){
-    this->name = name;
+CsvColumn::CsvColumn(std::string header, unsigned int order){
+    this->header = header;
     this->order = order;
 }
 
-std::string CsvColumn::getName(){
-    return name;
+std::string CsvColumn::getHeader(){
+    return header;
 }
 
 unsigned int CsvColumn::getOrder(){
@@ -40,16 +40,10 @@ CsvColumn* CsvColumns::add(std::string name){
     return NULL;
 }
 
-unsigned int CsvColumns::getSize(){
-   return size; 
-}
-
-
-CsvColumn* CsvColumns::getColumn(unsigned int index){
-    if(index < size){
-        return columns[index];
+void CsvColumns::writeHeader(CsvRow &row){
+    for(CsvColumn* column: columns){
+        row.set(column, column->getHeader());
     }
-    return NULL;
 }
 
 
@@ -62,7 +56,7 @@ void CsvRow::set(CsvColumn* column, double data){
 
 void CsvRow::set(CsvColumn* column, std::string data){
     const unsigned int order = column->getOrder();
-    data = makeCsvSafe(data);
+    data = csvEscape(data);
     data.push_back(',');
     if(order < row.size()){
         row[order] = data;
@@ -75,9 +69,9 @@ void CsvRow::set(CsvColumn* column, std::string data){
     }
 };
 
-std::string CsvRow::getRow(){
+std::string CsvRow::toString(){
     std::string line;
-    for(std::string str: row){
+    for(const std::string &str: row){
         line.append(str);
     }
     line.pop_back();
@@ -86,16 +80,11 @@ std::string CsvRow::getRow(){
 }
 
 void CsvRow::write(FILE *fp){
-   fprintf(fp, "%s", (getRow()).c_str());
-}
-
-void CsvRow::clean(){
-    while(!row.empty()) 
-        row.pop_back();
+   fprintf(fp, "%s", (toString()).c_str());
 }
 
 
-std::string makeCsvSafe(std::string unsafe){
+std::string csvEscape(std::string unsafe){
     //Each of the embedded double-quote characters 
     //must be represented by a pair of double-quote characters
     int first = 0, last = unsafe.size();
