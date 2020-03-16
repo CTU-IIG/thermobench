@@ -57,13 +57,12 @@ void CsvRow::set(CsvColumn* column, double data){
 void CsvRow::set(CsvColumn* column, std::string data){
     const unsigned int order = column->getOrder();
     data = csvEscape(data);
-    data.push_back(',');
     if(order < row.size()){
         row[order] = data;
     }
     else{
         while(row.size() < order){
-            row.push_back(",");
+            row.push_back("");
         }
         row.push_back(data);
     }
@@ -73,8 +72,9 @@ std::string CsvRow::toString(){
     std::string line;
     for(const std::string &str: row){
         line.append(str);
+        line.push_back(',');
     }
-    line.pop_back();
+    line.pop_back();//remove last ','
     line.push_back('\n');
     return line;
 }
@@ -87,15 +87,10 @@ void CsvRow::write(FILE *fp){
 std::string csvEscape(std::string unsafe){
     //Each of the embedded double-quote characters 
     //must be represented by a pair of double-quote characters
-    int first = 0, last = unsafe.size();
-    //find pairs of double-quote and quote them
-    while((first = unsafe.find_first_of('"', first)) >= 0 && 
-            (last = unsafe.find_last_of('"', last)) >= 0 &&
-            first < last){
+    int first = 0;
+    while((first = unsafe.find_first_of('"', first)) >= 0){
         unsafe.insert(first, "\"");
-        unsafe.insert(last + 1, "\"");
         first+=2; //after insert index of founded character is incremented, therefore +2
-        last--;
     }
     //Fields with embedded commas or line breaks characters must be quoted
     int comma, whitespace; 
