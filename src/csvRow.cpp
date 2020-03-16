@@ -49,22 +49,26 @@ void CsvColumns::writeHeader(CsvRow &row){
 
 /* CsvRow implementation */
 void CsvRow::set(CsvColumn* column, double data){
-    char buf[100];
-    sprintf(buf, "%g", data);
-    set(column, buf);
+    if(column){
+        char buf[100];
+        sprintf(buf, "%g", data);
+        set(column, buf);
+    }
 };
 
 void CsvRow::set(CsvColumn* column, std::string data){
-    const unsigned int order = column->getOrder();
-    data = csvEscape(data);
-    if(order < row.size()){
-        row[order] = data;
-    }
-    else{
-        while(row.size() < order){
-            row.push_back("");
+    if(column){
+        const unsigned int order = column->getOrder();
+        data = csvEscape(data);
+        if(order < row.size()){
+            row[order] = data;
         }
-        row.push_back(data);
+        else{
+            while(row.size() < order){
+                row.push_back("");
+            }
+            row.push_back(data);
+        }
     }
 };
 
@@ -80,7 +84,8 @@ std::string CsvRow::toString(){
 }
 
 void CsvRow::write(FILE *fp){
-   fprintf(fp, "%s", (toString()).c_str());
+    if(fp)
+        fprintf(fp, "%s", (toString()).c_str());
 }
 
 
