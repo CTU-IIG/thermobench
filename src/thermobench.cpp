@@ -124,12 +124,16 @@ private:
     void child_exit_cb(ev::child &w, int revents);
 };
 
+typedef struct{
+    char* key;
+    CsvColumn* column;
+} StdoutColumn;
+
 struct measure_state {
     struct timespec start_time;
     vector<sensor> sensors;
     FILE *out_fp;
-    vector<char*> keys;
-    vector<CsvColumn*> keysColumns;
+    vector<StdoutColumn> stdoutColumns;
     vector<unique_ptr<Exec>> execs;
     pid_t child;
 } state;
@@ -347,12 +351,12 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-int get_key_idx(char *key, vector<char*> &keys)
+int get_key_idx(char *key, vector<StdoutColumn> stdoutColumns)
 {
-    if (keys.size() == 0)
+    if (stdoutColumns.size() == 0)
         return -1;
-    for (unsigned i = 0; i < keys.size(); ++i)
-        if (strcmp(key, keys[i]) == 0)
+    for (unsigned i = 0; i < stdoutColumns.size(); ++i)
+        if (strcmp(key, stdoutColumns[i].key) == 0)
             return i;
     return -1;
 }
@@ -379,11 +383,11 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             char *key = buf;
             char *value = eq + 1;
 
-            int id = get_key_idx(key, state.keys);
+            int id = get_key_idx(key, state.stdoutColumns);
 
             if (id >= 0) {
                 row.set(time_column, curr_time);
-                row.set(state.keysColumns[id], value);
+                row.set(state.stdoutColumns[id].column, value);
                 row.write(state.out_fp);
                 return;
             }
@@ -609,7 +613,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.keys.push_back(arg);
+        StdoutColumn stdoutColumn;
+        stdoutColumn.key = arg;
+        state.stdoutColumns.push_back(stdoutColumn);
         break;
     case 't':
         terminate_time = atoi(arg);
@@ -736,8 +742,8 @@ void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
         }
     }
 
-    for (unsigned int i = 0; i < state.keys.size(); ++i) {
-        state.keysColumns.push_back(columns.add(state.keys[i]));
+    for (unsigned int i = 0; i < state.stdoutColumns.size(); ++i) {
+        state.stdoutColumns[i].column = (columns.add(state.stdoutColumns[i].key));
     }
 
     if (write_stdout)
@@ -773,7 +779,6 @@ int main(int argc, char **argv)
             shell_quote(argc, argv).c_str());
 
     init_columns(write_stdout, calc_cpu_usage, columns);
-
     CsvRow row;
     columns.writeHeader(row);
     row.write(state.out_fp);
