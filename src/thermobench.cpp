@@ -355,9 +355,10 @@ int get_key_idx(char *key, vector<StdoutColumn> stdoutColumns)
 {
     if (stdoutColumns.size() == 0)
         return -1;
-    for (unsigned i = 0; i < stdoutColumns.size(); ++i)
+    for (unsigned i = 0; i < stdoutColumns.size(); ++i){
         if (strcmp(key, stdoutColumns[i].key) == 0)
             return i;
+    }
     return -1;
 }
 
@@ -373,32 +374,38 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
 {
     FILE *workfp = fdopen(w->fd, "r");
     char buf[200];
-    double curr_time = get_current_time();
     CsvRow row;
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
+        if(row.empty())
+            row.set(time_column, get_current_time());
         char *eq = strchr(buf, '=');
         if (eq) {
             *eq = 0;
-
             char *key = buf;
             char *value = eq + 1;
-
             int id = get_key_idx(key, state.stdoutColumns);
 
             if (id >= 0) {
-                row.set(time_column, curr_time);
+                if(!row.getValue(state.stdoutColumns[id].column).empty()){
+                    row.write(state.out_fp);
+                    row.clear();
+                    row.set(time_column, get_current_time());
+                }
                 row.set(state.stdoutColumns[id].column, value);
-                row.write(state.out_fp);
-                return;
+                continue;
             }
             *eq = '=';
         }
         if (write_stdout){
-            row.set(time_column, curr_time);
             row.set(stdout_column, buf);
             row.write(state.out_fp);
+            row.clear();
         }
     }
+
+    if(!row.empty())
+        row.write(state.out_fp);
+
     if (feof(workfp))
         ev_io_stop(EV_A_ w);
 }

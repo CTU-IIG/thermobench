@@ -72,6 +72,14 @@ void CsvRow::set(CsvColumn* column, std::string data){
     }
 };
 
+std::string CsvRow::getValue(CsvColumn* column){
+    if(column){
+        const unsigned int order = column->getOrder();
+        return (order < row.size()) ? row[column->getOrder()] : "";
+    }
+    return NULL;
+}
+
 std::string CsvRow::toString(){
     std::string line;
     for(const std::string &str: row){
@@ -88,6 +96,13 @@ void CsvRow::write(FILE *fp){
         fprintf(fp, "%s", (toString()).c_str());
 }
 
+void CsvRow::clear(){
+    row.clear();
+}
+
+bool CsvRow::empty(){
+    return row.empty();
+}
 
 std::string csvEscape(std::string unsafe){
     //Each of the embedded double-quote characters 

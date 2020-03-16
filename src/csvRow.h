@@ -45,8 +45,14 @@ class CsvRow{
         void set(CsvColumn* column, double data);
         void set(CsvColumn* column, std::string data);
 
+        std::string getValue(CsvColumn* column);
+
         std::string toString();
 
         void write(FILE *fp);
+
+        void clear();
+
+        bool empty();
 };
 #endif
