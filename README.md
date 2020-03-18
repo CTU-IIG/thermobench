@@ -7,6 +7,10 @@ installed by:
 
     apt install meson
 
+Alternatively, newest `meson` version can be installed by:
+
+	pip3 install --user meson
+
 ## Compilation
 
 ``` sh
