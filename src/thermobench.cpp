@@ -83,7 +83,7 @@ unsigned n_cpus;
 struct cpu_usage cpu_usage[MAX_CPUS];
 
 CsvColumns columns;
-CsvColumn* time_column;
+const CsvColumn &time_column = columns.add("time/ms");
 CsvColumn* stdout_column;
 
 /* Command line options */
@@ -378,7 +378,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     double curr_time = get_current_time();
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
         if(row.empty())
-            row.set(*time_column, curr_time);
+            row.set(time_column, curr_time);
         char *eq = strchr(buf, '=');
         if (eq) {
             *eq = 0;
@@ -390,7 +390,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
                 if (!row.getValue(*col).empty()) {
                     row.write(state.out_fp);
                     row.clear();
-                    row.set(*time_column, curr_time);
+                    row.set(time_column, curr_time);
                 }
                 row.set(*col, value);
                 continue;
@@ -735,8 +735,6 @@ static void clear_sig_mask (void)
 }
 
 void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
-    time_column = columns.add("time/ms");
-
     for (unsigned int i = 0; i < state.sensors.size(); ++i)
         state.sensors[i].column = columns.add(state.sensors[i].name);
 

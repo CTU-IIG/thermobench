@@ -21,27 +21,16 @@ unsigned int CsvColumn::getOrder() const
 
 /* CsvColumns implementation */
 
-CsvColumns::~CsvColumns()
+const CsvColumn &CsvColumns::add(std::string name)
 {
-    for (auto p : columns)
-        delete p;
-    columns.clear();
-};
-
-CsvColumn *CsvColumns::add(std::string name)
-{
-    CsvColumn *newColumn = new CsvColumn(name, columns.size());
-    if (newColumn) {
-        columns.push_back(newColumn);
-        return columns.back();
-    }
-    return NULL;
+    columns.push_back(CsvColumn(name, columns.size()));
+    return columns.back();
 }
 
 void CsvColumns::setHeader(CsvRow &row)
 {
-    for (CsvColumn *column : columns) {
-        row.set(*column, column->getHeader());
+    for (const CsvColumn &column : columns) {
+        row.set(column, column.getHeader());
     }
 }
 

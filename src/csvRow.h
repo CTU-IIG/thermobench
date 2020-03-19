@@ -23,12 +23,10 @@ public:
 
 class CsvColumns {
 private:
-    std::vector<CsvColumn *> columns;
+    std::vector<CsvColumn> columns;
 
 public:
-    ~CsvColumns();
-
-    CsvColumn *add(std::string name);
+    const CsvColumn &add(std::string name);
 
     void setHeader(CsvRow &row);
 };
