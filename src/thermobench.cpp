@@ -351,15 +351,13 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-int get_key_idx(char *key, vector<StdoutColumn> stdoutColumns)
+const CsvColumn *get_stdout_column(char *key, const vector<StdoutColumn> &stdoutColumns)
 {
-    if (stdoutColumns.size() == 0)
-        return -1;
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
         if (strcmp(key, stdoutColumns[i].key) == 0)
-            return i;
+            return stdoutColumns[i].column;
     }
-    return -1;
+    return nullptr;
 }
 
 static double get_current_time()
@@ -383,15 +381,15 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             *eq = 0;
             char *key = buf;
             char *value = eq + 1;
-            int id = get_key_idx(key, state.stdoutColumns);
+            const CsvColumn *col = get_stdout_column(key, state.stdoutColumns);
 
-            if (id >= 0) {
-                if (!row.getValue(*state.stdoutColumns[id].column).empty()) {
+            if (col) {
+                if (!row.getValue(*col).empty()) {
                     row.write(state.out_fp);
                     row.clear();
                     row.set(*time_column, get_current_time());
                 }
-                row.set(*state.stdoutColumns[id].column, value);
+                row.set(*col, value);
                 continue;
             }
             *eq = '=';
