@@ -23,10 +23,9 @@ unsigned int CsvColumn::getOrder()
 
 CsvColumns::~CsvColumns()
 {
-    while (!columns.empty()) {
-        delete columns.back();
-        columns.pop_back();
-    }
+    for (auto p : columns)
+        delete p;
+    columns.clear();
 };
 
 CsvColumn *CsvColumns::add(std::string name)
