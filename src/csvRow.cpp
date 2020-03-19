@@ -38,7 +38,7 @@ CsvColumn *CsvColumns::add(std::string name)
     return NULL;
 }
 
-void CsvColumns::writeHeader(CsvRow &row)
+void CsvColumns::setHeader(CsvRow &row)
 {
     for (CsvColumn *column : columns) {
         row.set(column, column->getHeader());

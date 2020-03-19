@@ -787,7 +787,7 @@ int main(int argc, char **argv)
 
     init_columns(write_stdout, calc_cpu_usage, columns);
     CsvRow row;
-    columns.writeHeader(row);
+    columns.setHeader(row);
     row.write(state.out_fp);
 
     // Clear signal mask in children - don't let them inherit our

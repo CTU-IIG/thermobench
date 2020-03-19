@@ -30,7 +30,7 @@ public:
 
     CsvColumn *add(std::string name);
 
-    void writeHeader(CsvRow &row);
+    void setHeader(CsvRow &row);
 };
 
 class CsvRow {
