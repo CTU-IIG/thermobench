@@ -24,11 +24,8 @@ public:
 class CsvColumns {
 private:
     std::vector<CsvColumn *> columns;
-    unsigned int size;
 
 public:
-    CsvColumns();
-
     ~CsvColumns();
 
     CsvColumn *add(std::string name);

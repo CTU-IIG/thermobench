@@ -21,11 +21,6 @@ unsigned int CsvColumn::getOrder()
 
 /* CsvColumns implementation */
 
-CsvColumns::CsvColumns()
-{
-    this->size = 0;
-};
-
 CsvColumns::~CsvColumns()
 {
     while (!columns.empty()) {
@@ -36,9 +31,8 @@ CsvColumns::~CsvColumns()
 
 CsvColumn *CsvColumns::add(std::string name)
 {
-    CsvColumn *newColumn = new CsvColumn(name, size);
+    CsvColumn *newColumn = new CsvColumn(name, columns.size());
     if (newColumn) {
-        ++size;
         columns.push_back(newColumn);
         return columns.back();
     }
