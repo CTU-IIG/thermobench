@@ -16,9 +16,9 @@ private:
 public:
     CsvColumn(std::string header, unsigned int order);
 
-    std::string getHeader();
+    std::string getHeader() const;
 
-    unsigned int getOrder();
+    unsigned int getOrder() const;
 };
 
 class CsvColumns {
@@ -41,14 +41,14 @@ public:
     void set(CsvColumn *column, double data);
     void set(CsvColumn *column, std::string data);
 
-    std::string getValue(CsvColumn *column);
+    std::string getValue(CsvColumn *column) const;
 
-    std::string toString();
+    std::string toString() const;
 
     void write(FILE *fp);
 
     void clear();
 
-    bool empty();
+    bool empty() const;
 };
 #endif

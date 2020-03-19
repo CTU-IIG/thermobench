@@ -9,12 +9,12 @@ CsvColumn::CsvColumn(std::string header, unsigned int order)
     this->order = order;
 }
 
-std::string CsvColumn::getHeader()
+std::string CsvColumn::getHeader() const
 {
     return header;
 }
 
-unsigned int CsvColumn::getOrder()
+unsigned int CsvColumn::getOrder() const
 {
     return order;
 }
@@ -71,7 +71,7 @@ void CsvRow::set(CsvColumn *column, std::string data)
     }
 };
 
-std::string CsvRow::getValue(CsvColumn *column)
+std::string CsvRow::getValue(CsvColumn *column) const
 {
     if (column) {
         const unsigned int order = column->getOrder();
@@ -80,7 +80,7 @@ std::string CsvRow::getValue(CsvColumn *column)
     return NULL;
 }
 
-std::string CsvRow::toString()
+std::string CsvRow::toString() const
 {
     std::string line;
     for (const std::string &str : row) {
@@ -103,7 +103,7 @@ void CsvRow::clear()
     row.clear();
 }
 
-bool CsvRow::empty()
+bool CsvRow::empty() const
 {
     return row.empty();
 }
