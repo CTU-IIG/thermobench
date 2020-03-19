@@ -124,9 +124,9 @@ private:
     void child_exit_cb(ev::child &w, int revents);
 };
 
-typedef struct{
-    char* key;
-    CsvColumn* column;
+typedef struct {
+    char *key;
+    CsvColumn *column;
 } StdoutColumn;
 
 struct measure_state {
@@ -386,7 +386,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             int id = get_key_idx(key, state.stdoutColumns);
 
             if (id >= 0) {
-                if(!row.getValue(*state.stdoutColumns[id].column).empty()){
+                if (!row.getValue(*state.stdoutColumns[id].column).empty()) {
                     row.write(state.out_fp);
                     row.clear();
                     row.set(*time_column, get_current_time());
