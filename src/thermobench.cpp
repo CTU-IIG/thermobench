@@ -377,7 +377,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     CsvRow row;
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
         if(row.empty())
-            row.set(time_column, get_current_time());
+            row.set(*time_column, get_current_time());
         char *eq = strchr(buf, '=');
         if (eq) {
             *eq = 0;
@@ -386,18 +386,18 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             int id = get_key_idx(key, state.stdoutColumns);
 
             if (id >= 0) {
-                if(!row.getValue(state.stdoutColumns[id].column).empty()){
+                if(!row.getValue(*state.stdoutColumns[id].column).empty()){
                     row.write(state.out_fp);
                     row.clear();
-                    row.set(time_column, get_current_time());
+                    row.set(*time_column, get_current_time());
                 }
-                row.set(state.stdoutColumns[id].column, value);
+                row.set(*state.stdoutColumns[id].column, value);
                 continue;
             }
             *eq = '=';
         }
         if (write_stdout){
-            row.set(stdout_column, buf);
+            row.set(*stdout_column, buf);
             row.write(state.out_fp);
             row.clear();
         }
@@ -459,8 +459,8 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
         CsvRow row;
-        row.set(time_column, curr_time);
-        row.set(state.execs[my_index]->column, line.c_str());
+        row.set(*time_column, curr_time);
+        row.set(*state.execs[my_index]->column, line.c_str());
         row.write(state.out_fp);
     }
     if (pipe_in.eof())
@@ -487,16 +487,16 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     CsvRow row;
-    row.set(time_column, get_current_time());
+    row.set(*time_column, get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
-        row.set(state.sensors[i].column, read_sensor(state.sensors[i].path));
+        row.set(*state.sensors[i].column, read_sensor(state.sensors[i].path));
     }
 
     if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i){
-            row.set(cpu_usage[i].column, get_cpu_usage(i));
+            row.set(*cpu_usage[i].column, get_cpu_usage(i));
         }
     }
 

@@ -38,10 +38,10 @@ private:
     std::vector<std::string> row;
 
 public:
-    void set(CsvColumn *column, double data);
-    void set(CsvColumn *column, std::string data);
+    void set(const CsvColumn &column, double data);
+    void set(const CsvColumn &column, std::string data);
 
-    std::string getValue(CsvColumn *column) const;
+    std::string getValue(const CsvColumn &column) const;
 
     std::string toString() const;
 

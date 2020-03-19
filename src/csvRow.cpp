@@ -41,43 +41,36 @@ CsvColumn *CsvColumns::add(std::string name)
 void CsvColumns::setHeader(CsvRow &row)
 {
     for (CsvColumn *column : columns) {
-        row.set(column, column->getHeader());
+        row.set(*column, column->getHeader());
     }
 }
 
 /* CsvRow implementation */
-void CsvRow::set(CsvColumn *column, double data)
+void CsvRow::set(const CsvColumn &column, double data)
 {
-    if (column) {
-        char buf[100];
-        sprintf(buf, "%g", data);
-        set(column, buf);
-    }
+    char buf[100];
+    sprintf(buf, "%g", data);
+    set(column, buf);
 };
 
-void CsvRow::set(CsvColumn *column, std::string data)
+void CsvRow::set(const CsvColumn &column, std::string data)
 {
-    if (column) {
-        const unsigned int order = column->getOrder();
-        data = csvEscape(data);
-        if (order < row.size()) {
-            row[order] = data;
-        } else {
-            while (row.size() < order) {
-                row.push_back("");
-            }
-            row.push_back(data);
+    const unsigned int order = column.getOrder();
+    data = csvEscape(data);
+    if (order < row.size()) {
+        row[order] = data;
+    } else {
+        while (row.size() < order) {
+            row.push_back("");
         }
+        row.push_back(data);
     }
 };
 
-std::string CsvRow::getValue(CsvColumn *column) const
+std::string CsvRow::getValue(const CsvColumn &column) const
 {
-    if (column) {
-        const unsigned int order = column->getOrder();
-        return (order < row.size()) ? row[column->getOrder()] : "";
-    }
-    return NULL;
+    const unsigned int order = column.getOrder();
+    return (order < row.size()) ? row[column.getOrder()] : "";
 }
 
 std::string CsvRow::toString() const
