@@ -48,6 +48,8 @@ benchmarks/CPU/instr/simd_int8_add.h
 benchmarks/CPU/instr/simd_int8_madd.h
 benchmarks/CPU/instr/simd_int8_mul.h
 benchmarks/sched/workload-distr.cpp
+src/csvRow.cpp
+src/csvRow.h
 src/ev.c
 src/libev/ev++.h
 src/libev/ev.h
