@@ -373,9 +373,10 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     FILE *workfp = fdopen(w->fd, "r");
     char buf[200];
     CsvRow row;
+    double curr_time = get_current_time();
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
         if(row.empty())
-            row.set(*time_column, get_current_time());
+            row.set(*time_column, curr_time);
         char *eq = strchr(buf, '=');
         if (eq) {
             *eq = 0;
@@ -387,7 +388,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
                 if (!row.getValue(*col).empty()) {
                     row.write(state.out_fp);
                     row.clear();
-                    row.set(*time_column, get_current_time());
+                    row.set(*time_column, curr_time);
                 }
                 row.set(*col, value);
                 continue;
