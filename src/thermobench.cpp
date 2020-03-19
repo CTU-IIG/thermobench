@@ -124,10 +124,12 @@ private:
     void child_exit_cb(ev::child &w, int revents);
 };
 
-typedef struct {
-    char *key;
+struct StdoutColumn {
+    const char *key;
     CsvColumn *column;
-} StdoutColumn;
+
+    StdoutColumn(const char *key) : key(key) {}
+};
 
 struct measure_state {
     struct timespec start_time;
@@ -619,9 +621,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        StdoutColumn stdoutColumn;
-        stdoutColumn.key = arg;
-        state.stdoutColumns.push_back(stdoutColumn);
+        state.stdoutColumns.push_back(StdoutColumn(arg));
         break;
     case 't':
         terminate_time = atoi(arg);
