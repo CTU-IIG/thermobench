@@ -8,51 +8,50 @@ std::string csvEscape(std::string unsafe);
 
 class CsvRow;
 
-class CsvColumn{
-    private:
-        std::string header;
-        unsigned int order;
+class CsvColumn {
+private:
+    std::string header;
+    unsigned int order;
 
-    public:
-        CsvColumn(std::string header, unsigned int order);
+public:
+    CsvColumn(std::string header, unsigned int order);
 
-        std::string getHeader();
+    std::string getHeader();
 
-        unsigned int getOrder();
+    unsigned int getOrder();
 };
 
-class CsvColumns{
-    private:
-        std::vector<CsvColumn*> columns;
-        unsigned int size;
-    
-    public:
-        CsvColumns();
+class CsvColumns {
+private:
+    std::vector<CsvColumn *> columns;
+    unsigned int size;
 
-        ~CsvColumns();
+public:
+    CsvColumns();
 
-        CsvColumn* add(std::string name);
-        
-        void writeHeader(CsvRow &row);
+    ~CsvColumns();
 
+    CsvColumn *add(std::string name);
+
+    void writeHeader(CsvRow &row);
 };
 
-class CsvRow{
-    private:
-        std::vector<std::string> row;
+class CsvRow {
+private:
+    std::vector<std::string> row;
 
-    public:
-        void set(CsvColumn* column, double data);
-        void set(CsvColumn* column, std::string data);
+public:
+    void set(CsvColumn *column, double data);
+    void set(CsvColumn *column, std::string data);
 
-        std::string getValue(CsvColumn* column);
+    std::string getValue(CsvColumn *column);
 
-        std::string toString();
+    std::string toString();
 
-        void write(FILE *fp);
+    void write(FILE *fp);
 
-        void clear();
+    void clear();
 
-        bool empty();
+    bool empty();
 };
 #endif
