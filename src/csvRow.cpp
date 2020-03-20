@@ -21,9 +21,9 @@ unsigned int CsvColumn::getOrder() const
 
 /* CsvColumns implementation */
 
-const CsvColumn &CsvColumns::add(std::string name)
+const CsvColumn &CsvColumns::add(std::string header)
 {
-    columns.push_back(CsvColumn(name, columns.size()));
+    columns.push_back(CsvColumn(header, columns.size()));
     return columns.back();
 }
 
@@ -94,13 +94,13 @@ std::string csvEscape(std::string unsafe)
 {
     // Each of the embedded double-quote characters
     // must be represented by a pair of double-quote characters
-    int index = 0;
+    std::size_t index = 0;
     while ((index = unsafe.find_first_of('"', index)) != std::string::npos) {
         unsafe.insert(index, "\"");
         index += 2; // after insert index of founded character is incremented, therefore +2
     }
     // Fields with embedded commas or line breaks characters must be quoted
-    if ((index = unsafe.find_first_of(",\r\n")) != std::string::npos) {
+    if (unsafe.find_first_of(",\r\n") != std::string::npos) {
         unsafe.insert(0, "\"");
         unsafe.push_back('"');
     }

@@ -58,11 +58,19 @@ using namespace std;
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
 
-struct sensor {
+struct sensor_data {
     char *path;
     char *name;
     const char *units;
-    CsvColumn* column;
+};
+
+struct sensor {
+    struct sensor_data data;
+    const CsvColumn &column;
+    sensor(const CsvColumn &column, struct sensor_data data) : column(column)
+    {
+        this->data = data;
+    };
 };
 
 struct proc_stat_cpu {
@@ -75,16 +83,25 @@ struct cpu_usage {
     unsigned idx;
     proc_stat_cpu current;
     proc_stat_cpu last;
-    CsvColumn* column;
+};
+
+struct cpu {
+    struct cpu_usage cpu_usage;
+    const CsvColumn &column;
+    cpu(const CsvColumn &column, struct cpu_usage cpu_usage) : column(column)
+    {
+        this->cpu_usage = cpu_usage;
+    };
 };
 
 #define MAX_CPUS 256
 unsigned n_cpus;
-struct cpu_usage cpu_usage[MAX_CPUS];
+//struct cpu_usage cpu_usage[MAX_CPUS];
+vector<struct cpu> cpus;
 
 CsvColumns columns;
 const CsvColumn &time_column = columns.add("time/ms");
-CsvColumn* stdout_column;
+const CsvColumn &stdout_column = columns.add("stdout");
 
 /* Command line options */
 int measure_period_ms = 100;
@@ -102,13 +119,14 @@ bool calc_cpu_usage = false;
 struct Exec {
     const string col;
     const string cmd;
-    CsvColumn* column;
+    const CsvColumn &column;
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
         : col(arg[0] == '(' ? arg.substr(1, arg.find_first_of(")") - 1)
                             : arg.substr(0, arg.find_first_of(" \t")))
         , cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
+        , column(columns.add(col))
     {}
 
     void start(ev::loop_ref loop);
@@ -126,9 +144,8 @@ private:
 
 struct StdoutColumn {
     const char *key;
-    CsvColumn *column;
-
-    StdoutColumn(const char *key) : key(key) {}
+    const CsvColumn &column;
+    StdoutColumn(const char *key) : key(key), column(columns.add(key)) {};
 };
 
 struct measure_state {
@@ -198,7 +215,7 @@ static char *areadfileline(const char *fname)
     return line;
 }
 
-static void parse_sensor_spec(struct sensor *s, const char *spec)
+static void parse_sensor_spec(struct sensor_data *s, const char *spec)
 {
     char extra;
     int ret = sscanf(spec, "%ms %ms %ms %c", &s->path, &s->name, &s->units, &extra);
@@ -235,11 +252,12 @@ static void read_sensor_paths(char *sensors_file)
     char *line = NULL;
 
     while ((getline(&line, &len, fp)) != -1) {
-        struct sensor sensor;
         if (line[0] == '!') {
             state.execs.emplace_back(new Exec(line + 1));
         } else {
-            parse_sensor_spec(&sensor, line);
+            struct sensor_data s;
+            parse_sensor_spec(&s, line);
+            struct sensor sensor(columns.add(s.name), s);
             state.sensors.push_back(sensor);
         }
     }
@@ -256,9 +274,10 @@ static void add_all_thermal_zones()
         if (access(sensor_path.c_str(), R_OK) != 0)
             break;
 
-        struct sensor s;
+        struct sensor_data s;
         parse_sensor_spec(&s, sensor_path.c_str());
-        state.sensors.push_back(s);
+        struct sensor sensor(columns.add(s.name), s);
+        state.sensors.push_back(sensor);
     }
 }
 
@@ -289,9 +308,9 @@ void wait_cooldown(char *fan_cmd)
         set_fan(fan_cmd, 1);
 
     while (1) {
-        double temp = read_sensor(state.sensors[0].path) / 1000.0;
+        double temp = read_sensor(state.sensors[0].data.path) / 1000.0;
         fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg...",
-                cooldown_temp, state.sensors[0].name, temp);
+                cooldown_temp, state.sensors[0].data.name, temp);
         if (temp <= cooldown_temp) {
             fprintf(stderr, "\nDone\n");
             break;
@@ -305,6 +324,7 @@ void wait_cooldown(char *fan_cmd)
 
 void read_procstat()
 {
+    struct cpu_usage cpu_usage[MAX_CPUS];
 
     for (unsigned i = 0; i < n_cpus; ++i)
         cpu_usage[i].last = cpu_usage[i].current;
@@ -326,14 +346,21 @@ void read_procstat()
     }
 
     fclose(fp);
+
+    char buf[100];
+    for(unsigned i = 0; i < n_cpus; ++i)
+    {
+        sprintf(buf, ",CPU%u_load/%%", cpu_usage[i].idx);
+        cpus.push_back(cpu(columns.add(buf), cpu_usage[i]));
+    }
 }
 
 // Calculate cpu usage from number of idle/non-idle cycles in /proc/stat
 double get_cpu_usage(int cpu)
 {
 
-    struct proc_stat_cpu &c = cpu_usage[cpu].current;
-    struct proc_stat_cpu &l = cpu_usage[cpu].last;
+    struct proc_stat_cpu &c = cpus[cpu].cpu_usage.current;
+    struct proc_stat_cpu &l = cpus[cpu].cpu_usage.last;
 
     // Change in idle/active cycles since last measurement
     double idle = c.idle + c.iowait - (l.idle + l.iowait);
@@ -357,7 +384,7 @@ const CsvColumn *get_stdout_column(char *key, const vector<StdoutColumn> &stdout
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
         if (strcmp(key, stdoutColumns[i].key) == 0)
-            return stdoutColumns[i].column;
+            return &(stdoutColumns[i].column);
     }
     return nullptr;
 }
@@ -398,7 +425,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             *eq = '=';
         }
         if (write_stdout){
-            row.set(*stdout_column, buf);
+            row.set(stdout_column, buf);
             row.write(state.out_fp);
             row.clear();
         }
@@ -460,8 +487,8 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
         CsvRow row;
-        row.set(*time_column, curr_time);
-        row.set(*state.execs[my_index]->column, line.c_str());
+        row.set(time_column, curr_time);
+        row.set(state.execs[my_index]->column, line.c_str());
         row.write(state.out_fp);
     }
     if (pipe_in.eof())
@@ -488,16 +515,16 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     CsvRow row;
-    row.set(*time_column, get_current_time());
+    row.set(time_column, get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
-        row.set(*state.sensors[i].column, read_sensor(state.sensors[i].path));
+        row.set(state.sensors[i].column, read_sensor(state.sensors[i].data.path));
     }
 
     if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i){
-            row.set(*cpu_usage[i].column, get_cpu_usage(i));
+            row.set(cpus[i].column, get_cpu_usage(i));
         }
     }
 
@@ -597,9 +624,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         read_sensor_paths(arg);
         break;
     case 'S': {
-        struct sensor s;
+        struct sensor_data s;
         parse_sensor_spec(&s, arg);
-        state.sensors.push_back(s);
+        struct sensor sensor(columns.add(s.name), s);
+        state.sensors.push_back(sensor);
         break;
     }
     case 'w':
@@ -734,30 +762,6 @@ static void clear_sig_mask (void)
     sigprocmask(SIG_SETMASK, &mask, NULL);
 }
 
-void init_columns(bool write_stdout, bool calc_cpu_usage, CsvColumns &columns){
-    for (unsigned int i = 0; i < state.sensors.size(); ++i)
-        state.sensors[i].column = columns.add(state.sensors[i].name);
-
-    if (calc_cpu_usage){
-        char buf[100];
-        for (unsigned int i = 0; i < n_cpus; ++i){
-            sprintf(buf, ",CPU%u_load/%%", cpu_usage[i].idx);
-            cpu_usage[i].column = columns.add(buf);
-        }
-    }
-
-    for (unsigned int i = 0; i < state.stdoutColumns.size(); ++i) {
-        state.stdoutColumns[i].column = (columns.add(state.stdoutColumns[i].key));
-    }
-
-    if (write_stdout)
-        stdout_column = columns.add("stdout");
-
-    for (auto &exec : state.execs) {
-        exec->column = columns.add(exec->col);
-    }
-}
-
 int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
@@ -782,7 +786,6 @@ int main(int argc, char **argv)
             current_time().c_str(), GIT_VERSION,
             shell_quote(argc, argv).c_str());
 
-    init_columns(write_stdout, calc_cpu_usage, columns);
     CsvRow row;
     columns.setHeader(row);
     row.write(state.out_fp);

@@ -26,7 +26,7 @@ private:
     std::vector<CsvColumn> columns;
 
 public:
-    const CsvColumn &add(std::string name);
+    const CsvColumn &add(std::string header);
 
     void setHeader(CsvRow &row);
 };
