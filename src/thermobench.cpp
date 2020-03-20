@@ -404,8 +404,6 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     CsvRow row;
     double curr_time = get_current_time();
     while (fscanf(workfp, "%[^\n]", buf) > 0) {
-        if(row.empty())
-            row.set(time_column, curr_time);
         char *eq = strchr(buf, '=');
         if (eq) {
             *eq = 0;
@@ -414,6 +412,8 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             const CsvColumn *col = get_stdout_column(key, state.stdoutColumns);
 
             if (col) {
+                if(row.empty())
+                    row.set(time_column, curr_time);
                 if (!row.getValue(*col).empty()) {
                     row.write(state.out_fp);
                     row.clear();
@@ -425,6 +425,8 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             *eq = '=';
         }
         if (write_stdout){
+            if(row.empty())
+                row.set(time_column, curr_time);
             row.set(stdout_column, buf);
             row.write(state.out_fp);
             row.clear();
