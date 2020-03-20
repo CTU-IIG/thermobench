@@ -425,8 +425,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             *eq = '=';
         }
         if (write_stdout){
-            if(row.empty())
-                row.set(time_column, curr_time);
+            row.set(time_column, curr_time);
             row.set(stdout_column, buf);
             row.write(state.out_fp);
             row.clear();
