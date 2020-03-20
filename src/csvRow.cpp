@@ -94,14 +94,13 @@ std::string csvEscape(std::string unsafe)
 {
     // Each of the embedded double-quote characters
     // must be represented by a pair of double-quote characters
-    int first = 0;
-    while ((first = unsafe.find_first_of('"', first)) >= 0) {
-        unsafe.insert(first, "\"");
-        first += 2; // after insert index of founded character is incremented, therefore +2
+    int index = 0;
+    while ((index = unsafe.find_first_of('"', index)) != std::string::npos) {
+        unsafe.insert(index, "\"");
+        index += 2; // after insert index of founded character is incremented, therefore +2
     }
     // Fields with embedded commas or line breaks characters must be quoted
-    int comma, whitespace;
-    if ((comma = unsafe.find_first_of(',')) >= 0 || (whitespace = unsafe.find_first_of(' ')) >= 0) {
+    if ((index = unsafe.find_first_of(",\r\n")) != std::string::npos) {
         unsafe.insert(0, "\"");
         unsafe.push_back('"');
     }
