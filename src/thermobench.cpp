@@ -69,39 +69,6 @@ struct sensor {
     string path;
     string name;
     const string units;
-    /*
-    struct data{
-        char *name;
-        const char *units;
-        data(const char *spec)
-        {
-            char extra;
-            int ret = sscanf(spec, "%ms %ms %ms %c", &this->path, &this->name, &this->units, &extra);
-            if (ret > 3)
-                errx(1, "Extra text in sensor specification: %c...", extra);
-            if (ret <= 2)
-                this->units = NULL;
-            if (ret <= 1) {
-                char *p = strdup(this->path);
-                char *base = basename(p);
-                char *dir = dirname(p);
-                char *type;
-                asprintf(&type, "%s/type", dir);
-                if (strcmp(base, "temp") == 0 &&
-                    access(type, R_OK) == 0) {
-                    this->name = areadfileline(type);
-                } else {
-                    this->name = basename(dir);
-                }
-                free(type);
-                free(p);
-            }
-            if (ret == 0)
-                errx(1, "Invalid sensor specification: %s", spec);
-        };
-    };
-    struct data data;
-    */
     const CsvColumn &column;
     sensor(const char *spec) : path(extractPath(spec)), 
         name(extractName(this->path, spec)), units(extractUnits(spec)),
@@ -795,7 +762,7 @@ static string extractUnits(const string spec)
         return string();
     size_t last = spec.find_first_of(" ", ++index);
     if(last != string::npos)
-        errx(1, "Extra text in sensor specification: %s...", spec.substr(last).c_str());
+        errx(1, "Extra text in sensor specification: %s", spec.substr(last).c_str());
     return spec.substr(index);
 }
 
