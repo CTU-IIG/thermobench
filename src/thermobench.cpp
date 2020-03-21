@@ -101,7 +101,7 @@ vector<struct cpu> cpus;
 
 CsvColumns columns;
 const CsvColumn &time_column = columns.add("time/ms");
-const CsvColumn &stdout_column = columns.add("stdout");
+const CsvColumn *stdout_column = NULL;
 
 /* Command line options */
 int measure_period_ms = 100;
@@ -426,7 +426,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
         }
         if (write_stdout){
             row.set(time_column, curr_time);
-            row.set(stdout_column, buf);
+            row.set(*stdout_column, buf);
             row.write(state.out_fp);
             row.clear();
         }
@@ -787,6 +787,8 @@ int main(int argc, char **argv)
             current_time().c_str(), GIT_VERSION,
             shell_quote(argc, argv).c_str());
 
+    if(write_stdout)
+        stdout_column = &(columns.add("stdout")); 
     CsvRow row;
     columns.setHeader(row);
     row.write(state.out_fp);
