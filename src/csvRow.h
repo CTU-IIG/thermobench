@@ -4,44 +4,46 @@
 #include <iostream>
 #include <vector>
 
-std::string csvEscape(std::string unsafe);
+using namespace std;
+
+string csvEscape(string unsafe);
 
 class CsvRow;
 
 class CsvColumn {
 private:
-    std::string header;
+    string header;
     unsigned int order;
 
 public:
-    CsvColumn(std::string header, unsigned int order);
+    CsvColumn(string header, unsigned int order);
 
-    std::string getHeader() const;
+    string getHeader() const;
 
     unsigned int getOrder() const;
 };
 
 class CsvColumns {
 private:
-    std::vector<CsvColumn> columns;
+    vector<CsvColumn> columns;
 
 public:
-    const CsvColumn &add(std::string header);
+    const CsvColumn &add(string header);
 
     void setHeader(CsvRow &row);
 };
 
 class CsvRow {
 private:
-    std::vector<std::string> row;
+    vector<string> row;
 
 public:
     void set(const CsvColumn &column, double data);
-    void set(const CsvColumn &column, std::string data);
+    void set(const CsvColumn &column, string data);
 
-    std::string getValue(const CsvColumn &column) const;
+    string getValue(const CsvColumn &column) const;
 
-    std::string toString() const;
+    string toString() const;
 
     void write(FILE *fp);
 

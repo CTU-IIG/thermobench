@@ -1,15 +1,14 @@
 #include "csvRow.h"
 
-
 /* CsvColumn implementation */
 
-CsvColumn::CsvColumn(std::string header, unsigned int order)
+CsvColumn::CsvColumn(string header, unsigned int order)
 {
     this->header = header;
     this->order = order;
 }
 
-std::string CsvColumn::getHeader() const
+string CsvColumn::getHeader() const
 {
     return header;
 }
@@ -21,7 +20,7 @@ unsigned int CsvColumn::getOrder() const
 
 /* CsvColumns implementation */
 
-const CsvColumn &CsvColumns::add(std::string header)
+const CsvColumn &CsvColumns::add(string header)
 {
     columns.push_back(CsvColumn(header, columns.size()));
     return columns.back();
@@ -42,7 +41,7 @@ void CsvRow::set(const CsvColumn &column, double data)
     set(column, buf);
 };
 
-void CsvRow::set(const CsvColumn &column, std::string data)
+void CsvRow::set(const CsvColumn &column, string data)
 {
     const unsigned int order = column.getOrder();
     data = csvEscape(data);
@@ -56,16 +55,16 @@ void CsvRow::set(const CsvColumn &column, std::string data)
     }
 };
 
-std::string CsvRow::getValue(const CsvColumn &column) const
+string CsvRow::getValue(const CsvColumn &column) const
 {
     const unsigned int order = column.getOrder();
     return (order < row.size()) ? row[column.getOrder()] : "";
 }
 
-std::string CsvRow::toString() const
+string CsvRow::toString() const
 {
-    std::string line;
-    for (const std::string &str : row) {
+    string line;
+    for (const string &str : row) {
         line.append(str);
         line.push_back(',');
     }
@@ -90,17 +89,17 @@ bool CsvRow::empty() const
     return row.empty();
 }
 
-std::string csvEscape(std::string unsafe)
+string csvEscape(string unsafe)
 {
     // Each of the embedded double-quote characters
     // must be represented by a pair of double-quote characters
-    std::size_t index = 0;
-    while ((index = unsafe.find_first_of('"', index)) != std::string::npos) {
+    size_t index = 0;
+    while ((index = unsafe.find_first_of('"', index)) != string::npos) {
         unsafe.insert(index, "\"");
         index += 2; // after insert index of founded character is incremented, therefore +2
     }
     // Fields with embedded commas or line breaks characters must be quoted
-    if (unsafe.find_first_of(",\r\n") != std::string::npos) {
+    if (unsafe.find_first_of(",\r\n") != string::npos) {
         unsafe.insert(0, "\"");
         unsafe.push_back('"');
     }
