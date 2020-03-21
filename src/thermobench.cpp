@@ -29,6 +29,7 @@
 #include <ext/stdio_filebuf.h>
 #include <algorithm>
 #include <signal.h>
+#include <sstream>
 #include "csvRow.h"
 
 #ifdef WITH_LOCAL_LIBEV
@@ -62,6 +63,8 @@ static char *areadfileline(const char *fname);
 static string extractPath(const string spec);
 static string extractName(const string path, const string spec);
 static string extractUnits(const string spec);
+static string getCpuHeader(unsigned idx);
+
 
 CsvColumns columns;
 
@@ -82,16 +85,13 @@ struct proc_stat_cpu {
              guest, guest_nice;
 };
 
-struct cpu_usage {
-    unsigned idx;
-    proc_stat_cpu current;
-    proc_stat_cpu last;
-};
-
 struct cpu {
-    struct cpu_usage cpu_usage;
+    unsigned idx;
+    proc_stat_cpu last;
+    proc_stat_cpu current;
     const CsvColumn &column;
-    cpu(const CsvColumn &column, struct cpu_usage cpu_usage) : cpu_usage(cpu_usage), column(column){};
+    cpu(unsigned idx, const struct proc_stat_cpu current) : idx(idx),
+        last(current), current(current), column(columns.add(getCpuHeader(idx))){}; 
 };
 
 #define MAX_CPUS 256
@@ -296,21 +296,22 @@ void read_procstat()
     if(fscanf(fp, "%*[^\n]\n") == EOF)
         err(1,"fscanf /proc/stat");
 
-    char buf[100];
+    struct proc_stat_cpu cur;
+    unsigned idx;
+    bool defined = cpus.size() == n_cpus;
     for (unsigned i = 0; i < n_cpus; i++) {
-        struct cpu_usage cpu_usage;
-        cpu_usage.last = cpu_usage.current;
-        struct proc_stat_cpu &c = cpu_usage.current;
+        if(defined)
+            cpus[i].last = cpus[i].current;
+        struct proc_stat_cpu &c = (defined) ? cpus[i].current : cur;
         int scanret = fscanf(fp, "cpu%u %u %u %u %u %u %u %u %u %u %u\n",
-                 &cpu_usage.idx,
+                 (defined) ? &(cpus[i].idx) : &idx,
                  &c.user, &c.nice, &c.system, &c.idle, &c.iowait,
                  &c.irq, &c.softirq, &c.steal, &c.guest, &c.guest_nice);
         if (scanret != 11)
             err(1,"fscanf /proc/stat");
-        sprintf(buf, ",CPU%u_load/%%", cpu_usage.idx);
-        cpus.push_back(cpu(columns.add(buf), cpu_usage));
+        if(!defined)
+            cpus.push_back(cpu(idx, c));
     }
-
     fclose(fp);
 }
 
@@ -318,8 +319,8 @@ void read_procstat()
 double get_cpu_usage(struct cpu &cpu)
 {
 
-    struct proc_stat_cpu &c = cpu.cpu_usage.current;
-    struct proc_stat_cpu &l = cpu.cpu_usage.last;
+    struct proc_stat_cpu &c = cpu.current;
+    struct proc_stat_cpu &l = cpu.last;
 
     // Change in idle/active cycles since last measurement
     double idle = c.idle + c.iowait - (l.idle + l.iowait);
@@ -766,6 +767,12 @@ static string extractUnits(const string spec)
     return spec.substr(index);
 }
 
+static string getCpuHeader(unsigned idx)
+{
+    stringstream header;
+    header << "CPU" << idx << "_load/%%";
+    return header.str();
+}
 
 int main(int argc, char **argv)
 {
