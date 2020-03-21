@@ -67,10 +67,7 @@ struct sensor_data {
 struct sensor {
     struct sensor_data data;
     const CsvColumn &column;
-    sensor(const CsvColumn &column, struct sensor_data data) : column(column)
-    {
-        this->data = data;
-    };
+    sensor(const CsvColumn &column, struct sensor_data data) : data(data), column(column){};
 };
 
 struct proc_stat_cpu {
@@ -88,10 +85,7 @@ struct cpu_usage {
 struct cpu {
     struct cpu_usage cpu_usage;
     const CsvColumn &column;
-    cpu(const CsvColumn &column, struct cpu_usage cpu_usage) : column(column)
-    {
-        this->cpu_usage = cpu_usage;
-    };
+    cpu(const CsvColumn &column, struct cpu_usage cpu_usage) : cpu_usage(cpu_usage), column(column){};
 };
 
 #define MAX_CPUS 256
