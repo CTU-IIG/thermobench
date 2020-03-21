@@ -318,35 +318,28 @@ void wait_cooldown(char *fan_cmd)
 
 void read_procstat()
 {
-    struct cpu_usage cpu_usage[MAX_CPUS];
-
-    for (unsigned i = 0; i < n_cpus; ++i)
-        cpu_usage[i].last = cpu_usage[i].current;
-
     FILE *fp = fopen("/proc/stat", "r");
 
     // Skipping first line, as it contains the aggregate cpu data
     if(fscanf(fp, "%*[^\n]\n") == EOF)
         err(1,"fscanf /proc/stat");
 
+    char buf[100];
     for (unsigned i = 0; i < n_cpus; i++) {
-        struct proc_stat_cpu &c = cpu_usage[i].current;
+        struct cpu_usage cpu_usage;
+        cpu_usage.last = cpu_usage.current;
+        struct proc_stat_cpu &c = cpu_usage.current;
         int scanret = fscanf(fp, "cpu%u %u %u %u %u %u %u %u %u %u %u\n",
-                 &cpu_usage[i].idx,
+                 &cpu_usage.idx,
                  &c.user, &c.nice, &c.system, &c.idle, &c.iowait,
                  &c.irq, &c.softirq, &c.steal, &c.guest, &c.guest_nice);
-    if (scanret != 11)
-        err(1,"fscanf /proc/stat");
+        if (scanret != 11)
+            err(1,"fscanf /proc/stat");
+        sprintf(buf, ",CPU%u_load/%%", cpu_usage.idx);
+        cpus.push_back(cpu(columns.add(buf), cpu_usage));
     }
 
     fclose(fp);
-
-    char buf[100];
-    for(unsigned i = 0; i < n_cpus; ++i)
-    {
-        sprintf(buf, ",CPU%u_load/%%", cpu_usage[i].idx);
-        cpus.push_back(cpu(columns.add(buf), cpu_usage[i]));
-    }
 }
 
 // Calculate cpu usage from number of idle/non-idle cycles in /proc/stat
