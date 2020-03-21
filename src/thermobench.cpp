@@ -339,11 +339,11 @@ void read_procstat()
 }
 
 // Calculate cpu usage from number of idle/non-idle cycles in /proc/stat
-double get_cpu_usage(int cpu)
+double get_cpu_usage(struct cpu &cpu)
 {
 
-    struct proc_stat_cpu &c = cpus[cpu].cpu_usage.current;
-    struct proc_stat_cpu &l = cpus[cpu].cpu_usage.last;
+    struct proc_stat_cpu &c = cpu.cpu_usage.current;
+    struct proc_stat_cpu &l = cpu.cpu_usage.last;
 
     // Change in idle/active cycles since last measurement
     double idle = c.idle + c.iowait - (l.idle + l.iowait);
@@ -508,7 +508,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i){
-            row.set(cpus[i].column, get_cpu_usage(i));
+            row.set(cpus[i].column, get_cpu_usage(cpus[i]));
         }
     }
 
