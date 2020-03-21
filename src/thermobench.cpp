@@ -59,12 +59,18 @@ using namespace std;
 #define MAX_KEY_LENGTH 50
 
 static char *areadfileline(const char *fname);
+static string extractPath(const string spec);
+static string extractName(const string path, const string spec);
+static string extractUnits(const string spec);
 
 CsvColumns columns;
 
 struct sensor {
+    string path;
+    string name;
+    const string units;
+    /*
     struct data{
-        char *path;
         char *name;
         const char *units;
         data(const char *spec)
@@ -95,8 +101,11 @@ struct sensor {
         };
     };
     struct data data;
+    */
     const CsvColumn &column;
-    sensor(const char *spec) : data(spec), column(columns.add(this->data.name)){};
+    sensor(const char *spec) : path(extractPath(spec)), 
+        name(extractName(this->path, spec)), units(extractUnits(spec)),
+        column(columns.add(this->name)){};
 };
 
 
@@ -271,7 +280,7 @@ static void add_all_thermal_zones()
     }
 }
 
-static double read_sensor(char *path)
+static double read_sensor(const char *path)
 {
     double result;
     FILE *fp = fopen(path, "r");
@@ -298,9 +307,9 @@ void wait_cooldown(char *fan_cmd)
         set_fan(fan_cmd, 1);
 
     while (1) {
-        double temp = read_sensor(state.sensors[0].data.path) / 1000.0;
+        double temp = read_sensor(state.sensors[0].path.c_str()) / 1000.0;
         fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg...",
-                cooldown_temp, state.sensors[0].data.name, temp);
+                cooldown_temp, state.sensors[0].name.c_str(), temp);
         if (temp <= cooldown_temp) {
             fprintf(stderr, "\nDone\n");
             break;
@@ -502,7 +511,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     row.set(time_column, get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
-        row.set(state.sensors[i].column, read_sensor(state.sensors[i].data.path));
+        row.set(state.sensors[i].column, read_sensor(state.sensors[i].path.c_str()));
     }
 
     if (calc_cpu_usage) {
@@ -742,6 +751,54 @@ static void clear_sig_mask (void)
     sigemptyset(&mask);
     sigprocmask(SIG_SETMASK, &mask, NULL);
 }
+
+static string extractPath(const string spec)
+{
+    if (spec.empty())
+        errx(1, "Invalid sensor specification: %s", spec.c_str());
+    size_t index = spec.find_first_of(" ");
+    if(index == string::npos)
+        return spec;
+    return spec.substr(0, index);
+}
+
+static string extractName(const string path, const string spec)
+{
+    string name;
+    size_t index = spec.find_first_of(" ");
+    if(index++ == string::npos)
+    {
+        char *p = strdup(path.c_str());
+        char *base = basename(p);
+        char *dir = dirname(p);
+        char *type;
+        asprintf(&type, "%s/type", dir);
+        if (strcmp(base, "temp") == 0 &&
+            access(type, R_OK) == 0) 
+            name = areadfileline(type);
+        else 
+            name = basename(dir);
+        free(type);
+        free(p);
+        return name;
+    }
+    size_t last = spec.find_first_of(" ", index);
+    if(last == string::npos)
+        return name.substr(index);
+    return name.substr(index, last - index);
+}
+
+static string extractUnits(const string spec)
+{
+    size_t index = spec.find_first_of(" ");
+    if(index++ == string::npos || (index = spec.find_first_of(" ", index)) == string::npos)
+        return string();
+    size_t last = spec.find_first_of(" ", ++index);
+    if(last != string::npos)
+        errx(1, "Extra text in sensor specification: %s...", spec.substr(last).c_str());
+    return spec.substr(index);
+}
+
 
 int main(int argc, char **argv)
 {
