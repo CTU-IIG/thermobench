@@ -58,17 +58,47 @@ using namespace std;
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
 
-struct sensor_data {
-    char *path;
-    char *name;
-    const char *units;
-};
+static char *areadfileline(const char *fname);
+
+CsvColumns columns;
 
 struct sensor {
-    struct sensor_data data;
+    struct data{
+        char *path;
+        char *name;
+        const char *units;
+        data(const char *spec)
+        {
+            char extra;
+            int ret = sscanf(spec, "%ms %ms %ms %c", &this->path, &this->name, &this->units, &extra);
+            if (ret > 3)
+                errx(1, "Extra text in sensor specification: %c...", extra);
+            if (ret <= 2)
+                this->units = NULL;
+            if (ret <= 1) {
+                char *p = strdup(this->path);
+                char *base = basename(p);
+                char *dir = dirname(p);
+                char *type;
+                asprintf(&type, "%s/type", dir);
+                if (strcmp(base, "temp") == 0 &&
+                    access(type, R_OK) == 0) {
+                    this->name = areadfileline(type);
+                } else {
+                    this->name = basename(dir);
+                }
+                free(type);
+                free(p);
+            }
+            if (ret == 0)
+                errx(1, "Invalid sensor specification: %s", spec);
+        };
+    };
+    struct data data;
     const CsvColumn &column;
-    sensor(const CsvColumn &column, struct sensor_data data) : data(data), column(column){};
+    sensor(const char *spec) : data(spec), column(columns.add(this->data.name)){};
 };
+
 
 struct proc_stat_cpu {
     unsigned user, nice, system, idle,
@@ -93,7 +123,6 @@ unsigned n_cpus;
 //struct cpu_usage cpu_usage[MAX_CPUS];
 vector<struct cpu> cpus;
 
-CsvColumns columns;
 const CsvColumn &time_column = columns.add("time/ms");
 const CsvColumn *stdout_column = NULL;
 
@@ -209,33 +238,6 @@ static char *areadfileline(const char *fname)
     return line;
 }
 
-static void parse_sensor_spec(struct sensor_data *s, const char *spec)
-{
-    char extra;
-    int ret = sscanf(spec, "%ms %ms %ms %c", &s->path, &s->name, &s->units, &extra);
-    if (ret > 3)
-        errx(1, "Extra text in sensor specification: %c...", extra);
-    if (ret <= 2)
-        s->units = NULL;
-    if (ret <= 1) {
-        char *p = strdup(s->path);
-        char *base = basename(p);
-        char *dir = dirname(p);
-        char *type;
-        asprintf(&type, "%s/type", dir);
-        if (strcmp(base, "temp") == 0 &&
-            access(type, R_OK) == 0) {
-            s->name = areadfileline(type);
-        } else {
-            s->name = basename(dir);
-        }
-        free(type);
-        free(p);
-    }
-    if (ret == 0)
-        errx(1, "Invalid sensor specification: %s", spec);
-}
-
 static void read_sensor_paths(char *sensors_file)
 {
     FILE *fp = fopen(sensors_file, "r");
@@ -249,10 +251,7 @@ static void read_sensor_paths(char *sensors_file)
         if (line[0] == '!') {
             state.execs.emplace_back(new Exec(line + 1));
         } else {
-            struct sensor_data s;
-            parse_sensor_spec(&s, line);
-            struct sensor sensor(columns.add(s.name), s);
-            state.sensors.push_back(sensor);
+            state.sensors.push_back(sensor(line));
         }
     }
     if (line)
@@ -268,10 +267,7 @@ static void add_all_thermal_zones()
         if (access(sensor_path.c_str(), R_OK) != 0)
             break;
 
-        struct sensor_data s;
-        parse_sensor_spec(&s, sensor_path.c_str());
-        struct sensor sensor(columns.add(s.name), s);
-        state.sensors.push_back(sensor);
+        state.sensors.push_back(sensor(sensor_path.c_str()));
     }
 }
 
@@ -612,10 +608,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         read_sensor_paths(arg);
         break;
     case 'S': {
-        struct sensor_data s;
-        parse_sensor_spec(&s, arg);
-        struct sensor sensor(columns.add(s.name), s);
-        state.sensors.push_back(sensor);
+        state.sensors.push_back(sensor(arg));
         break;
     }
     case 'w':
