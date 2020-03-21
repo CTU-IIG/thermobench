@@ -91,7 +91,8 @@ struct cpu {
     proc_stat_cpu current;
     const CsvColumn &column;
     cpu(unsigned idx, const struct proc_stat_cpu current) : idx(idx),
-        last(current), current(current), column(columns.add(getCpuHeader(idx))){}; 
+        last(current), current(current), 
+        column(columns.add(getCpuHeader(idx))){}; 
 };
 
 #define MAX_CPUS 256
@@ -742,7 +743,7 @@ static string extractName(const string path, const string spec)
         char *type;
         asprintf(&type, "%s/type", dir);
         if (strcmp(base, "temp") == 0 &&
-            access(type, R_OK) == 0) 
+                access(type, R_OK) == 0) 
             name = areadfileline(type);
         else 
             name = basename(dir);
@@ -752,8 +753,8 @@ static string extractName(const string path, const string spec)
     }
     size_t last = spec.find_first_of(" ", index);
     if(last == string::npos)
-        return name.substr(index);
-    return name.substr(index, last - index);
+        return spec.substr(index);
+    return spec.substr(index, last - index);
 }
 
 static string extractUnits(const string spec)
