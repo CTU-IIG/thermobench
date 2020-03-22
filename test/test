@@ -1,0 +1,26 @@
+#!/bin/bash
+. testlib
+
+# plan_tests 1
+plan_no_plan
+
+thermobench --help > /dev/null
+ok $? "help"
+
+out=$(thermobench --output=- -s/dev/null -- true)
+okx grep "^time/ms" <<<$out
+
+out=$(thermobench --output=- -s/dev/null --stdout -- echo ahoy)
+okx grep -E "[0-9.]+,ahoy" <<<$out
+
+out=$(thermobench --output=- -s/dev/null --column=key -- echo key=value)
+okx grep -E "time/ms,key" <<<$out
+okx grep -E "[0-9.],value" <<<$out
+
+out=$(thermobench --output=- -s/dev/null --exec="echo value" -- true)
+okx grep -E "time/ms,echo" <<<$out
+okx grep -E "[0-9.]+,value" <<<$out
+
+out=$(thermobench --output=- -s/dev/null --exec="(header)echo value" -- true)
+okx grep -E "time/ms,header" <<<$out
+okx grep -E "[0-9.]+,value" <<<$out

@@ -1,0 +1,3 @@
+# -*-sh-*-
+. "$(dirname "$0")/tap-functions"
+PATH="$(dirname "$0")/../build/src":$PATH

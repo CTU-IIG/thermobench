@@ -6,3 +6,4 @@ project('thermobench', 'c', 'cpp',
 
 subdir('src')
 subdir('benchmarks')
+subdir('test')
