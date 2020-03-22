@@ -140,6 +140,9 @@ struct measure_state {
     pid_t child;
 } state;
 
+ev_timer measure_timer;
+ev_signal signal_watcher;
+
 static string shell_quote(int argc, char **argv)
 {
     string result;
@@ -481,8 +484,16 @@ void Exec::child_exit_cb(ev::child &w, int revents)
 
 static void child_exit_cb(EV_P_ ev_child *w, int revents)
 {
+    // Stop all child-related watchers. If no watches remain started,
+    // the event loop exits.
     ev_child_stop(EV_A_ w);
-    ev_break(EV_A_ EVBREAK_ALL);
+    ev_timer_stop(EV_A_ &measure_timer);
+    ev_signal_stop(EV_A_ &signal_watcher);
+
+    // Also kill other processes - if there are any, event loop exits
+    // after all terminate.
+    for (const auto &exec : state.execs)
+        exec->kill();
 }
 
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -542,10 +553,8 @@ void measure(int measure_period_ms)
 
     // Parent process - measurement
     ev_io child_stdout;
-    ev_timer measure_timer;
     ev_timer terminate_timer;
     ev_child child_exit;
-    ev_signal signal_watcher;
 
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -578,9 +587,6 @@ void measure(int measure_period_ms)
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 
     ev_run(loop, 0);
-
-    for (const auto &exec : state.execs)
-        exec->kill();
 }
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
