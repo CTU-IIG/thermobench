@@ -82,7 +82,8 @@ sensors in a .csv file.
   -l, --stdout               Log COMMAND stdout to CSV
   -n, --name=NAME            Basename of the .csv file
   -o, --output_dir=DIR       Where to create output .csv file
-  -O, --output=FILE          The name of output CSV file (overrides -o and -n)
+  -O, --output=FILE          The name of output CSV file (overrides -o and -n).
+                             Hyphen (-) means standard output
   -p, --period=TIME [ms]     Period of reading the sensors
   -s, --sensors_file=FILE    Definition of sensors to use. Each line of the
                              FILE contains either SPEC as in -S or, when the
