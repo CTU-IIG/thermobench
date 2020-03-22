@@ -585,6 +585,8 @@ void measure(int measure_period_ms)
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
 {
+    static bool sensors_specified = false;
+
     switch (key) {
     case 'p':
         measure_period_ms = atoi(arg);
@@ -594,10 +596,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         benchmark_argv = benchmark_path;
         break;
     case 's':
+        sensors_specified = true;
         read_sensor_paths(arg);
         break;
     case 'S': {
         struct sensor s;
+        sensors_specified = true;
         parse_sensor_spec(&s, arg);
         state.sensors.push_back(s);
         break;
@@ -643,10 +647,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case ARGP_KEY_END:
         if (!benchmark_argv)
             argp_error(argp_state, "COMMAND to run was not specified");
-        if (state.sensors.size() == 0)
+        if (!sensors_specified && state.sensors.size() == 0)
             add_all_thermal_zones();
-        if (state.sensors.size() == 0)
-            argp_error(argp_state, "No sensors to measure");
         if (!bench_name)
             bench_name = basename(benchmark_argv[0]);
         break;
