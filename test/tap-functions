@@ -132,7 +132,7 @@ plan_tests(){
 	_expected_tests=$tests
 	_plan_set=1
 
-	return $tests
+	return 0
 }
 
 
@@ -227,8 +227,12 @@ okx(){
 	local command="$@"
 
 	local line=
-	diag "Output of '$command':"
+	local output=
 	"$@" | while IFS= read -r line ; do
+		if ! [[ "$output" ]]; then
+		   diag "Output of '$command':"
+		   output=1
+		fi
 		diag "$line"
 	done
 	ok ${PIPESTATUS[0]} "$command"
