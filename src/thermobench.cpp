@@ -59,9 +59,9 @@ using namespace std;
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
 
-static char *areadfileline(const char *fname);
+static string areadfileline(const char *fname);
 static string extractPath(const string spec);
-static string extractName(const string path, const string spec);
+static string extractName(const string spec);
 static string extractUnits(const string spec);
 static string getCpuHeader(unsigned idx);
 
@@ -73,11 +73,12 @@ struct sensor {
     string name;
     const string units;
     const CsvColumn &column;
-    sensor(const char *spec) : path(extractPath(spec)),
-        name(extractName(this->path, spec)), units(extractUnits(spec)),
-        column(columns.add(this->name)){};
+    sensor(const char *spec)
+        : path(extractPath(spec))
+        , name(extractName(spec))
+        , units(extractUnits(spec))
+        , column(columns.add(this->name)) {};
 };
-
 
 struct proc_stat_cpu {
     unsigned user, nice, system, idle,
@@ -205,17 +206,10 @@ static string shell_quote(int argc, char **argv)
     return result;
 }
 
-static char *areadfileline(const char *fname)
+static string areadfileline(const char *fname)
 {
-    FILE *f = fopen(fname, "r");
-    char *line = NULL;
-    size_t len, nread;
-
-    nread = getline(&line, &len, f);
-    fclose(f);
-
-    while (nread > 0 && isspace(line[nread - 1]))
-        line[nread - 1] = 0;
+    string line;
+    getline(ifstream(fname, ios::in), line);
     return line;
 }
 
@@ -738,51 +732,64 @@ static void clear_sig_mask (void)
     sigprocmask(SIG_SETMASK, &mask, NULL);
 }
 
-static string extractPath(const string spec)
+vector<string> split_words(const string str)
 {
-    if (spec.empty())
-        errx(1, "Invalid sensor specification: %s", spec.c_str());
-    size_t index = spec.find_first_of(" ");
-    if(index == string::npos)
-        return spec;
-    return spec.substr(0, index);
+    vector<string> words;
+    const char *whitespace = " \t";
+
+    for (size_t start = 0, end = 0;;) {
+        start = str.find_first_not_of(whitespace, end);
+        if (start == string::npos)
+            break;
+
+        end = str.find_first_of(whitespace, start);
+        if (end == string::npos)
+            end = str.size();
+
+        words.push_back(str.substr(start, end - start));
+    }
+    return words;
 }
 
-static string extractName(const string path, const string spec)
+static string extractPath(const string spec)
+{
+    auto words = split_words(spec);
+
+    if (words.size() < 1)
+        errx(1, "Invalid sensor specification: %s", spec.c_str());
+    return words[0];
+}
+
+static string extractName(const string spec)
 {
     string name;
-    size_t index = spec.find_first_of(" ");
-    if(index++ == string::npos)
-    {
-        char *p = strdup(path.c_str());
+    auto words = split_words(spec);
+
+    if (words.size() < 1) {
+        errx(1, "Invalid sensor specification: %s", spec.c_str());
+    } else if (words.size() == 1) {
+        char *p = strdup(words[0].c_str());
         char *base = basename(p);
         char *dir = dirname(p);
         char *type;
         asprintf(&type, "%s/type", dir);
         if (strcmp(base, "temp") == 0 &&
-                access(type, R_OK) == 0)
+            access(type, R_OK) == 0)
             name = areadfileline(type);
         else
             name = basename(dir);
         free(type);
         free(p);
-        return name;
+    } else {
+        name = words[1];
     }
-    size_t last = spec.find_first_of(" ", index);
-    if(last == string::npos)
-        return spec.substr(index);
-    return spec.substr(index, last - index);
+    return name;
 }
 
 static string extractUnits(const string spec)
 {
-    size_t index = spec.find_first_of(" ");
-    if(index++ == string::npos || (index = spec.find_first_of(" ", index)) == string::npos)
-        return string();
-    size_t last = spec.find_first_of(" ", ++index);
-    if(last != string::npos)
-        errx(1, "Extra text in sensor specification: %s", spec.substr(last).c_str());
-    return spec.substr(index);
+    auto words = split_words(spec);
+    return words.size() >= 3 ? words[2] : "";
 }
 
 static string getCpuHeader(unsigned idx)
