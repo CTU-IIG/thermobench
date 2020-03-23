@@ -98,6 +98,7 @@ char *out_file = NULL;
 bool write_stdout = false;
 int terminate_time = 0;
 bool calc_cpu_usage = false;
+bool exec_wait = false;
 
 struct Exec {
     const string col;
@@ -444,7 +445,7 @@ void Exec::start(ev::loop_ref loop) {
 
 void Exec::kill()
 {
-    if (pid > 0) {
+    if (pid > 0 && !exec_wait) {
         ::kill(pid, SIGTERM);
     }
 }
@@ -644,6 +645,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 'e':
         state.execs.emplace_back(new Exec(arg));
         break;
+    case 'E':
+        exec_wait = true;
+        break;
 /*     case ARGP_KEY_ARG: */
 /*         break; */
     case ARGP_KEY_ARGS:
@@ -698,6 +702,8 @@ static struct argp_option options[] = {
       "Execute CMD (in addition to COMMAND) and store its stdout in CSV "
       "column COL. If COL is not specified, first word of CMD is used. "
       "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
+    { "exec-wait",      'E', 0,             0,
+      "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
     { 0 }
 };
 
