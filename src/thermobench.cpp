@@ -734,20 +734,12 @@ static void clear_sig_mask (void)
 
 vector<string> split_words(const string str)
 {
+    istringstream ss(str);
     vector<string> words;
-    const char *whitespace = " \t";
+    string word;
 
-    for (size_t start = 0, end = 0;;) {
-        start = str.find_first_not_of(whitespace, end);
-        if (start == string::npos)
-            break;
-
-        end = str.find_first_of(whitespace, start);
-        if (end == string::npos)
-            end = str.size();
-
-        words.push_back(str.substr(start, end - start));
-    }
+    while (ss >> word)
+        words.push_back(word);
     return words;
 }
 
