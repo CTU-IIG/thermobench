@@ -141,7 +141,7 @@ struct measure_state {
 } state;
 
 ev_timer measure_timer;
-ev_signal signal_watcher;
+ev_signal sigint_watcher, sigterm_watcher;
 
 static string shell_quote(int argc, char **argv)
 {
@@ -488,7 +488,8 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
     // the event loop exits.
     ev_child_stop(EV_A_ w);
     ev_timer_stop(EV_A_ &measure_timer);
-    ev_signal_stop(EV_A_ &signal_watcher);
+    ev_signal_stop(EV_A_ &sigint_watcher);
+    ev_signal_stop(EV_A_ &sigterm_watcher);
 
     // Also kill other processes - if there are any, event loop exits
     // after all terminate.
@@ -575,8 +576,10 @@ void measure(int measure_period_ms)
         ev_timer_start(loop, &terminate_timer);
     }
 
-    ev_signal_init (&signal_watcher, sigint_cb, SIGINT);
-    ev_signal_start (loop, &signal_watcher);
+    ev_signal_init (&sigint_watcher, sigint_cb, SIGINT);
+    ev_signal_start (loop, &sigint_watcher);
+    ev_signal_init (&sigterm_watcher, sigint_cb, SIGTERM);
+    ev_signal_start (loop, &sigterm_watcher);
 
     for (const auto &exec : state.execs)
         exec->start(loop);
