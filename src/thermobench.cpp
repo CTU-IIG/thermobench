@@ -59,10 +59,6 @@ using namespace std;
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
 
-static string areadfileline(const char *fname);
-static string extractPath(const string spec);
-static string extractName(const string spec);
-static string extractUnits(const string spec);
 static string getCpuHeader(unsigned idx);
 
 
@@ -78,6 +74,11 @@ struct sensor {
         , name(extractName(spec))
         , units(extractUnits(spec))
         , column(columns.add(this->name)) {};
+
+private:
+    static string extractPath(const string spec);
+    static string extractName(const string spec);
+    static string extractUnits(const string spec);
 };
 
 struct proc_stat_cpu {
@@ -751,7 +752,7 @@ vector<string> split_words(const string str)
     return words;
 }
 
-static string extractPath(const string spec)
+string sensor::extractPath(const string spec)
 {
     auto words = split_words(spec);
 
@@ -760,7 +761,7 @@ static string extractPath(const string spec)
     return words[0];
 }
 
-static string extractName(const string spec)
+string sensor::extractName(const string spec)
 {
     string name;
     auto words = split_words(spec);
@@ -786,7 +787,7 @@ static string extractName(const string spec)
     return name;
 }
 
-static string extractUnits(const string spec)
+string sensor::extractUnits(const string spec)
 {
     auto words = split_words(spec);
     return words.size() >= 3 ? words[2] : "";
