@@ -1,15 +1,14 @@
 #include "csvRow.h"
 
-
 /* CsvColumn implementation */
 
-CsvColumn::CsvColumn(std::string header, unsigned int order)
+CsvColumn::CsvColumn(string header, unsigned int order)
 {
     this->header = header;
     this->order = order;
 }
 
-std::string CsvColumn::getHeader() const
+string CsvColumn::getHeader() const
 {
     return header;
 }
@@ -21,27 +20,16 @@ unsigned int CsvColumn::getOrder() const
 
 /* CsvColumns implementation */
 
-CsvColumns::~CsvColumns()
+const CsvColumn &CsvColumns::add(string header)
 {
-    for (auto p : columns)
-        delete p;
-    columns.clear();
-};
-
-CsvColumn *CsvColumns::add(std::string name)
-{
-    CsvColumn *newColumn = new CsvColumn(name, columns.size());
-    if (newColumn) {
-        columns.push_back(newColumn);
-        return columns.back();
-    }
-    return NULL;
+    columns.push_back(CsvColumn(header, columns.size()));
+    return columns.back();
 }
 
 void CsvColumns::setHeader(CsvRow &row)
 {
-    for (CsvColumn *column : columns) {
-        row.set(*column, column->getHeader());
+    for (const CsvColumn &column : columns) {
+        row.set(column, column.getHeader());
     }
 }
 
@@ -53,7 +41,7 @@ void CsvRow::set(const CsvColumn &column, double data)
     set(column, buf);
 };
 
-void CsvRow::set(const CsvColumn &column, std::string data)
+void CsvRow::set(const CsvColumn &column, string data)
 {
     const unsigned int order = column.getOrder();
     data = csvEscape(data);
@@ -67,16 +55,16 @@ void CsvRow::set(const CsvColumn &column, std::string data)
     }
 };
 
-std::string CsvRow::getValue(const CsvColumn &column) const
+string CsvRow::getValue(const CsvColumn &column) const
 {
     const unsigned int order = column.getOrder();
     return (order < row.size()) ? row[column.getOrder()] : "";
 }
 
-std::string CsvRow::toString() const
+string CsvRow::toString() const
 {
-    std::string line;
-    for (const std::string &str : row) {
+    string line;
+    for (const string &str : row) {
         line.append(str);
         line.push_back(',');
     }
@@ -101,18 +89,17 @@ bool CsvRow::empty() const
     return row.empty();
 }
 
-std::string csvEscape(std::string unsafe)
+string csvEscape(string unsafe)
 {
     // Each of the embedded double-quote characters
     // must be represented by a pair of double-quote characters
-    int first = 0;
-    while ((first = unsafe.find_first_of('"', first)) >= 0) {
-        unsafe.insert(first, "\"");
-        first += 2; // after insert index of founded character is incremented, therefore +2
+    size_t index = 0;
+    while ((index = unsafe.find_first_of('"', index)) != string::npos) {
+        unsafe.insert(index, "\"");
+        index += 2; // after insert index of founded character is incremented, therefore +2
     }
     // Fields with embedded commas or line breaks characters must be quoted
-    int comma, whitespace;
-    if ((comma = unsafe.find_first_of(',')) >= 0 || (whitespace = unsafe.find_first_of(' ')) >= 0) {
+    if (unsafe.find_first_of(",\r\n") != string::npos) {
         unsafe.insert(0, "\"");
         unsafe.push_back('"');
     }
