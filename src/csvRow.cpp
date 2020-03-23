@@ -98,8 +98,8 @@ string csvEscape(string unsafe)
         unsafe.insert(index, "\"");
         index += 2; // after insert index of founded character is incremented, therefore +2
     }
-    // Fields with embedded commas or line breaks characters must be quoted
-    if (unsafe.find_first_of(",\r\n") != string::npos) {
+    // Fields with embedded commas, quotes or line breaks characters must be quoted
+    if (unsafe.find_first_of(",\"\r\n") != string::npos) {
         unsafe.insert(0, "\"");
         unsafe.push_back('"');
     }
