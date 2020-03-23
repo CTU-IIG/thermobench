@@ -552,7 +552,8 @@ void measure(int measure_period_ms)
     ev_io_start(loop, &child_stdout);
 
     ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
-    ev_timer_start(loop, &measure_timer);
+    if (state.sensors.size())
+        ev_timer_start(loop, &measure_timer);
 
     if (terminate_time > 0) {
         ev_timer_init(&terminate_timer, terminate_timer_cb, terminate_time, 0);
