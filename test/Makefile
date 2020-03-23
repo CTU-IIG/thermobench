@@ -1,0 +1,2 @@
+all:
+	prove --directives *.t
