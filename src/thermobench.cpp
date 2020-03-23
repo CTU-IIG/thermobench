@@ -59,9 +59,6 @@ using namespace std;
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
 
-static string getCpuHeader(unsigned idx);
-
-
 CsvColumns columns;
 
 struct sensor {
@@ -94,7 +91,9 @@ struct cpu {
     const CsvColumn &column;
     cpu(unsigned idx, const struct proc_stat_cpu current) : idx(idx),
         last(current), current(current),
-        column(columns.add(getCpuHeader(idx))){};
+        column(columns.add(getHeader(idx))){};
+private:
+    static string getHeader(unsigned idx);
 };
 
 #define MAX_CPUS 256
@@ -793,7 +792,7 @@ string sensor::extractUnits(const string spec)
     return words.size() >= 3 ? words[2] : "";
 }
 
-static string getCpuHeader(unsigned idx)
+string cpu::getHeader(unsigned idx)
 {
     stringstream header;
     header << "CPU" << idx << "_load/%%";
