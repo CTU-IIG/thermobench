@@ -445,7 +445,6 @@ void Exec::start(ev::loop_ref loop) {
 void Exec::kill()
 {
     if (pid > 0) {
-        // Kill the whole process group
         ::kill(pid, SIGTERM);
     }
 }
