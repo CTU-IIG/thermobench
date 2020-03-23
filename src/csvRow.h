@@ -2,6 +2,7 @@
 #define CSVROW
 
 #include <iostream>
+#include <list>
 #include <vector>
 
 using namespace std;
@@ -25,7 +26,7 @@ public:
 
 class CsvColumns {
 private:
-    vector<CsvColumn> columns;
+    list<CsvColumn> columns;
 
 public:
     const CsvColumn &add(string header);
