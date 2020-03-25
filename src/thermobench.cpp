@@ -70,7 +70,7 @@ struct sensor {
         : path(extractPath(spec))
         , name(extractName(spec))
         , units(extractUnits(spec))
-        , column(columns.add(this->name)) {};
+        , column(columns.add(units.empty() ? name : name + "/" + units)) {};
 
 private:
     static string extractPath(const string spec);

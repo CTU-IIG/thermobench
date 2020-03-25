@@ -1,6 +1,6 @@
 #!/bin/bash
 . testlib
-plan_tests 6
+plan_tests 8
 
 out=$(thermobench -O- -S"/proc/version" -- true)
 ok $? "exit code"
@@ -9,6 +9,10 @@ is "$(sed -ne 2p <<<$out)" "time/ms,proc" "header line"
 out=$(thermobench -O- -S"/proc/version version" -- true)
 ok $? "exit code"
 is "$(sed -ne 2p <<<$out)" "time/ms,version" "header line"
+
+out=$(thermobench -O- -S"/proc/version	version    °C" -- true)
+ok $? "exit code"
+is "$(sed -ne 2p <<<$out)" "time/ms,version/°C" "header line"
 
 if test -d /sys/class/thermal/thermal_zone0; then
     out=$(thermobench -O- -S"/sys/class/thermal/thermal_zone0/temp" -- true)
