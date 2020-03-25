@@ -234,6 +234,7 @@ static void *benchmark_thread(void *arg)
                 if (me->cfg->forever) {
                         printf("CPU%d_work_done=%u\n", me->cpu, work_done++);
                         printf("CPU%d size:%d time:%g\n", me->cpu, me->cfg->size, (tac - tic) / 1000000000.0);
+			fflush(stdout);
                 }
         } while (me->cfg->forever);
 	return NULL;
