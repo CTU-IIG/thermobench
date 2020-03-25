@@ -407,6 +407,7 @@ void Exec::start(ev::loop_ref loop) {
 
     if (pid == 0) {
         // Child
+        setpgid(0, 0); // Run in background process group to not receive SIGINT from terminal
         close(pipefds[0]);
         CHECK(dup2(CHECK(open("/dev/null", O_RDONLY)), STDIN_FILENO));
         CHECK(dup2(pipefds[1], STDOUT_FILENO));
@@ -429,7 +430,7 @@ void Exec::start(ev::loop_ref loop) {
 void Exec::kill()
 {
     if (pid > 0 && !exec_wait) {
-        ::kill(pid, SIGTERM);
+        ::kill(-pid, SIGTERM);
     }
 }
 
