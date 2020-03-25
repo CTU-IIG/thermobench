@@ -11,7 +11,7 @@ int bench_func(){
     b=0;
     d=0;
     // 1024 instructions
-    asm(
+    asm volatile (
         REPEAT256("add %w[c], %w[a], %w[b]\n\t"
                   "add %w[a], %w[c], %w[d]\n\t")
         REPEAT256("add %w[c], %w[a], %w[b]\n\t"
@@ -22,6 +22,5 @@ int bench_func(){
     :
     );
 
-    volatile int end = (a > 100) ? 1 : 0;
     return 1024; // return the number of instructions executed
 }

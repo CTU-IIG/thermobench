@@ -9,13 +9,12 @@ int bench_func(){
     a=3;
     b=5;
     // 1024 instructions
-    asm(
+    asm volatile (
         REPEAT1024("mul %[c], %[a], %[b]\n\t")
     : [c] "=r" (c)
     : [a] "r" (a), [b] "r" (b)
     :
     );
 
-    volatile int end = (c > 100) ? 1 : 0;
     return 1024; // return the number of instructions executed
 }

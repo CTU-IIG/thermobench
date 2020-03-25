@@ -11,7 +11,7 @@ int bench_func(){
     b=-1;
     d=1;
     // 1024 instructions
-    asm(
+    asm volatile (
         // Not a perfect solution, LSB of operand 2 stays the same
         // But all other input and output bits change
         // ~0 =  0 + ~0
@@ -26,6 +26,5 @@ int bench_func(){
     :
     );
 
-    volatile int end = (a > 100) ? 1 : 0;
     return 1024; // return the number of instructions executed
 }

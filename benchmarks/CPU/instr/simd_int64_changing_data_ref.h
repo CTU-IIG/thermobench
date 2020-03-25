@@ -10,7 +10,7 @@ int bench_func(){
     register bench_t c asm("v3");
     register bench_t d asm("v4") = {0,0};
 
-    asm (
+    asm volatile (
         REPEAT256("add %[c].2d, %[a].2d, %[b].2d \n"
                   "add %[a].2d, %[c].2d, %[d].2d \n")
         REPEAT256("add %[c].2d, %[a].2d, %[b].2d \n"
@@ -20,7 +20,6 @@ int bench_func(){
     :
     );
 
-    volatile bench_t end = a;
 
     return 1024*2;
 }
