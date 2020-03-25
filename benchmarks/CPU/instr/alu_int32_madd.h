@@ -1,22 +1,21 @@
 #include "bench.h"
 
-#define bench_t int32_t 
+#define bench_t int32_t
 
-int bench_func(){
+int bench_func()
+{
     register bench_t a asm("w1");
     register bench_t b asm("w2");
     register bench_t c asm("w3");
     register bench_t d asm("w4");
-    a=3;
-    b=5;
-    c=5;
+    a = 3;
+    b = 5;
+    c = 5;
     // 1024 instructions
-    asm volatile (
-        REPEAT1024("madd %w[d], %w[a], %w[b], %w[c]\n\t")
-    : [d] "=r" (d)
-    : [a] "r" (a), [b] "r" (b), [c] "r" (c)
-    :
-    );
+    asm volatile(REPEAT1024("madd %w[d], %w[a], %w[b], %w[c]\n\t")
+                 : [ d ] "=r"(d)
+                 : [ a ] "r"(a), [ b ] "r"(b), [ c ] "r"(c)
+                 :);
 
     return 1024; // return the number of instructions executed
 }
