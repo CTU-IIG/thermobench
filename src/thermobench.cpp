@@ -105,7 +105,7 @@ const CsvColumn &time_column = columns.add("time/ms");
 const CsvColumn *stdout_column = NULL;
 
 /* Command line options */
-int measure_period_ms = 100;
+int measure_period_ms = 1000;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
 double cooldown_temp = NAN;
