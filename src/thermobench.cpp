@@ -746,9 +746,9 @@ static struct argp_option options[] = {
     { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
-    { "exec",           'e', "[(COL)]CMD",  0,
-      "Execute CMD (in addition to COMMAND) and store its stdout in CSV "
-      "column COL. If COL is not specified, first word of CMD is used. "
+    { "exec",           'e', "[(COL[,COL[,...]])]CMD",  0,
+      "Execute CMD (in addition to COMMAND) and store its stdout in a relevant"
+      "CSV column COL. If COL is not specified, first word of CMD is used. "
       "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
