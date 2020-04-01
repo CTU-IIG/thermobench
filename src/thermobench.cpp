@@ -386,7 +386,7 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(char *key, const vector<keyColumn> &stdoutColumns)
+const CsvColumn *get_stdout_column(const char *key, const vector<keyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
         if (strcmp(key, stdoutColumns[i].key.c_str()) == 0)
@@ -493,10 +493,26 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     double curr_time = get_current_time();
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
-        CsvRow row;
-        row.set(time_column, curr_time);
-        row.set(*(state.execs[my_index]->stdout_col), line.c_str());
-        row.write(state.out_fp);
+        size_t index = line.find_first_of('=');
+        const CsvColumn *column = state.execs[my_index]->stdout_col;
+
+        if(index != string::npos)
+        {
+            const CsvColumn *ret = get_stdout_column((line.substr(0, index)).c_str(), state.execs[my_index]->keys);
+            if(ret)
+            {
+                column = ret;
+                line = line.substr(index + 1);
+            }
+        }
+
+        if(column)
+        {
+            CsvRow row;
+            row.set(time_column, curr_time);
+            row.set(*column, line.c_str());
+            row.write(state.out_fp);
+        }
     }
     if (pipe_in.eof())
         w.stop();
