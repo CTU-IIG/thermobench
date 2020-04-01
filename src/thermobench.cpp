@@ -98,7 +98,6 @@ private:
 
 #define MAX_CPUS 256
 unsigned n_cpus;
-//struct cpu_usage cpu_usage[MAX_CPUS];
 vector<struct cpu> cpus;
 
 const CsvColumn &time_column = columns.add("time/ms");
@@ -118,23 +117,36 @@ int terminate_time = 0;
 bool calc_cpu_usage = false;
 bool exec_wait = false;
 
+struct keyColumn {
+    const string key;
+    const CsvColumn &column;
+    keyColumn(const string key) : key(key), column(columns.add(key)) {};
+};
+
 struct Exec {
     const string col;
     const string cmd;
     const CsvColumn &column;
+    vector<keyColumn> keys;
+    const CsvColumn *stdout_col {nullptr};
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
         : col(arg[0] == '(' ? arg.substr(1, arg.find_first_of(")") - 1)
                             : arg.substr(0, arg.find_first_of(" \t")))
-        , cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
+        //, cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
+        , cmd(init_cmd(arg))
         , column(columns.add(col))
-    {}
+    {
+        init_columns(arg);
+    }
 
     void start(ev::loop_ref loop);
     void kill();
 
 private:
+    static const string init_cmd(const string &arg);
+    void init_columns(const string &arg);
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf;
     ev::child child;
@@ -144,17 +156,56 @@ private:
     void child_exit_cb(ev::child &w, int revents);
 };
 
-struct StdoutColumn {
-    const char *key;
-    const CsvColumn &column;
-    StdoutColumn(const char *key) : key(key), column(columns.add(key)) {};
-};
+const string Exec::init_cmd(const string &arg)
+{
+    string cmd;
+    if(arg[0] != '(')
+        cmd = arg;
+    else
+        cmd = arg.substr(arg.find_first_of(")") + 1);
+    if(cmd.find_first_not_of(" \t\r\n") == string::npos)
+        errx(1, "no command");
+    return cmd;
+}
+
+
+void Exec::init_columns(const string &arg)
+{
+    if(arg[0] != '(')
+    { 
+        keys.push_back(keyColumn(arg.substr(0, arg.find_first_of(" \t"))));
+        stdout_col = &(keys.back().column);
+        return;
+    }
+
+    size_t spec_end = arg.find_first_of(")"), first = 1, last;
+    if(spec_end == first + 1)
+        errx(1, "no columns");
+    do
+    {
+        last = arg.find_first_of(",)", first);
+        string spec = arg.substr(first, last - first);
+        if(spec.back() == '=')
+        {
+            spec.pop_back();
+            keys.push_back(keyColumn(spec));
+        }
+        else
+        {
+            if(stdout_col)
+                errx(1, "multiple stdout definition");
+            keys.push_back(keyColumn(spec));
+            stdout_col = &(keys.back().column);
+        }
+        first = last + 1;
+    } while(first < spec_end);
+}
 
 struct measure_state {
     struct timespec start_time;
     vector<sensor> sensors;
     FILE *out_fp;
-    vector<StdoutColumn> stdoutColumns;
+    vector<keyColumn> stdoutColumns;
     vector<unique_ptr<Exec>> execs;
     pid_t child;
 } state;
@@ -339,10 +390,10 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(char *key, const vector<StdoutColumn> &stdoutColumns)
+const CsvColumn *get_stdout_column(char *key, const vector<keyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
-        if (strcmp(key, stdoutColumns[i].key) == 0)
+        if (strcmp(key, stdoutColumns[i].key.c_str()) == 0)
             return &(stdoutColumns[i].column);
     }
     return nullptr;
@@ -594,6 +645,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         read_sensor_paths(arg);
         break;
     case 'S': {
+
+        cout << "--sensor specified here" << endl;
         sensors_specified = true;
         state.sensors.push_back(sensor(arg));
         break;
@@ -617,7 +670,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.stdoutColumns.push_back(StdoutColumn(arg));
+        state.stdoutColumns.push_back(keyColumn(arg));
         break;
     case 't':
         terminate_time = atoi(arg);
