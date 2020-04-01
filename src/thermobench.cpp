@@ -124,19 +124,13 @@ struct keyColumn {
 };
 
 struct Exec {
-    const string col;
     const string cmd;
-    const CsvColumn &column;
     vector<keyColumn> keys;
     const CsvColumn *stdout_col {nullptr};
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
-        : col(arg[0] == '(' ? arg.substr(1, arg.find_first_of(")") - 1)
-                            : arg.substr(0, arg.find_first_of(" \t")))
-        //, cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
-        , cmd(init_cmd(arg))
-        , column(columns.add(col))
+        : cmd(init_cmd(arg))
     {
         init_columns(arg);
     }
@@ -179,6 +173,8 @@ void Exec::init_columns(const string &arg)
     }
 
     size_t spec_end = arg.find_first_of(")"), first = 1, last;
+    if(spec_end == string::npos) 
+        errx(1, "missing ')'");
     if(spec_end == first + 1)
         errx(1, "no columns");
     do
@@ -499,7 +495,7 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         line.erase(line.find_last_not_of("\r\n") + 1);
         CsvRow row;
         row.set(time_column, curr_time);
-        row.set(state.execs[my_index]->column, line.c_str());
+        row.set(*(state.execs[my_index]->stdout_col), line.c_str());
         row.write(state.out_fp);
     }
     if (pipe_in.eof())
