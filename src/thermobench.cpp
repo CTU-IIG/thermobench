@@ -175,7 +175,7 @@ void Exec::init_columns(const string &arg)
     size_t spec_end = arg.find_first_of(")"), first = 1, last;
     if(spec_end == string::npos) 
         errx(1, "missing ')'");
-    if(spec_end == first + 1)
+    if(spec_end == first)
         errx(1, "no columns");
     do
     {
