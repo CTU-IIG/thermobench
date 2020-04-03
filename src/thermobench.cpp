@@ -813,6 +813,25 @@ vector<string> split_words(const string str)
     return words;
 }
 
+vector<string> split(const string str, const char *delimiters)
+{
+    vector<string> words;
+
+    for (size_t start = 0, end = 0;;) {
+        start = str.find_first_not_of(delimiters, end);
+        if (start == string::npos)
+            break;
+
+        end = str.find_first_of(delimiters, start);
+        if (end == string::npos)
+            end = str.size();
+
+        words.push_back(str.substr(start, end - start));
+    }
+    return words;
+}
+
+
 string sensor::extractPath(const string spec)
 {
     auto words = split_words(spec);
