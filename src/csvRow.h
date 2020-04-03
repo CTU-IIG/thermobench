@@ -26,7 +26,7 @@ public:
 
 class CsvColumns {
 private:
-    list<CsvColumn> columns;
+    list<CsvColumn> columns = {};
 
 public:
     const CsvColumn &add(string header);
@@ -36,7 +36,7 @@ public:
 
 class CsvRow {
 private:
-    vector<string> row;
+    vector<string> row = {};
 
 public:
     void set(const CsvColumn &column, double data);

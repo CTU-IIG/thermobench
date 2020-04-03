@@ -135,6 +135,9 @@ struct Exec {
         init_columns(arg);
     }
 
+    Exec(const Exec&) = delete;
+    void operator=(const Exec&) = delete;
+
     void start(ev::loop_ref loop);
     void kill();
 
@@ -142,9 +145,9 @@ private:
     static const string init_cmd(const string &arg);
     void init_columns(const string &arg);
     pid_t pid = 0;
-    unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf;
-    ev::child child;
-    ev::io child_stdout;
+    unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
+    ev::child child = {};
+    ev::io child_stdout = {};
 
     void child_stdout_cb(ev::io &w, int revents);
     void child_exit_cb(ev::child &w, int revents);
@@ -198,12 +201,12 @@ void Exec::init_columns(const string &arg)
 }
 
 struct measure_state {
-    struct timespec start_time;
-    vector<sensor> sensors;
-    FILE *out_fp;
-    vector<keyColumn> stdoutColumns;
-    vector<unique_ptr<Exec>> execs;
-    pid_t child;
+    struct timespec start_time = {0};
+    vector<sensor> sensors = {};
+    FILE *out_fp = nullptr;
+    vector<keyColumn> stdoutColumns = {};
+    vector<unique_ptr<Exec>> execs = {};
+    pid_t child = 0;
 } state;
 
 ev_timer measure_timer;

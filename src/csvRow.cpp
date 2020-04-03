@@ -3,9 +3,9 @@
 /* CsvColumn implementation */
 
 CsvColumn::CsvColumn(string header, unsigned int order)
+    : header(header)
+    , order(order)
 {
-    this->header = header;
-    this->order = order;
 }
 
 string CsvColumn::getHeader() const

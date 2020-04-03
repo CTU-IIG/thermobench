@@ -23,7 +23,9 @@ endif
 
 
 executable('thermobench', [
-		  'thermobench.cpp','csvRow.cpp',
+		  'thermobench.cpp',
+		  'csvRow.cpp',
 		  version_h,
 	   ],
+	   cpp_args : '-Weffc++',
 	   dependencies : deps)
