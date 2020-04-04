@@ -117,15 +117,15 @@ int terminate_time = 0;
 bool calc_cpu_usage = false;
 bool exec_wait = false;
 
-struct keyColumn {
+struct StdoutKeyColumn {
     const string key;
     const CsvColumn &column;
-    keyColumn(const string key) : key(key), column(columns.add(key)) {};
+    StdoutKeyColumn(const string key) : key(key), column(columns.add(key)) {};
 };
 
 struct Exec {
     const string cmd;
-    vector<keyColumn> keys;
+    vector<StdoutKeyColumn> keys;
     const CsvColumn *stdout_col {nullptr};
 
     Exec(const string &arg)
@@ -161,7 +161,7 @@ const string Exec::init_cmd(const string &arg)
     else
         cmd = arg.substr(arg.find_first_of(")") + 1);
     if(cmd.find_first_not_of(" \t\r\n") == string::npos)
-        errx(1, "no command");
+        errx(1, "--exec. no command");
     return cmd;
 }
 
@@ -170,16 +170,16 @@ void Exec::init_columns(const string &arg)
 {
     if(arg[0] != '(')
     { 
-        keys.push_back(keyColumn(arg.substr(0, arg.find_first_of(" \t"))));
+        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t"))));
         stdout_col = &(keys.back().column);
         return;
     }
 
     size_t spec_end = arg.find_first_of(")"), first = 1, last;
     if(spec_end == string::npos) 
-        errx(1, "missing ')'");
+        errx(1, "--exec. missing ')'");
     if(spec_end == first)
-        errx(1, "no columns");
+        errx(1, "--exec. no columns");
     do
     {
         last = arg.find_first_of(",)", first);
@@ -187,13 +187,13 @@ void Exec::init_columns(const string &arg)
         if(spec.back() == '=')
         {
             spec.pop_back();
-            keys.push_back(keyColumn(spec));
+            keys.push_back(StdoutKeyColumn(spec));
         }
         else
         {
             if(stdout_col)
                 errx(1, "multiple stdout definition");
-            keys.push_back(keyColumn(spec));
+            keys.push_back(StdoutKeyColumn(spec));
             stdout_col = &(keys.back().column);
         }
         first = last + 1;
@@ -204,7 +204,7 @@ struct measure_state {
     struct timespec start_time = {0};
     vector<sensor> sensors = {};
     FILE *out_fp = nullptr;
-    vector<keyColumn> stdoutColumns = {};
+    vector<StdoutKeyColumn> stdoutColumns = {};
     vector<unique_ptr<Exec>> execs = {};
     pid_t child = 0;
 } state;
@@ -389,10 +389,10 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(const char *key, const vector<keyColumn> &stdoutColumns)
+const CsvColumn *get_stdout_column(const char *key, const vector<StdoutKeyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
-        if (strcmp(key, stdoutColumns[i].key.c_str()) == 0)
+        if (stdoutColumns[i].key == key)
             return &(stdoutColumns[i].column);
     }
     return nullptr;
@@ -687,7 +687,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.stdoutColumns.push_back(keyColumn(arg));
+        state.stdoutColumns.push_back(StdoutKeyColumn(arg));
         break;
     case 't':
         terminate_time = atoi(arg);
@@ -753,7 +753,9 @@ static struct argp_option options[] = {
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
     { "exec",           'e', "[(COL[,COL[,...]])]CMD",  0,
       "Execute CMD (in addition to COMMAND) and store its stdout in a relevant"
-      "CSV column COL. If COL is not specified, first word of CMD is used. "
+      "CSV column COL. Where COL is COL-header or COL-key=. The COL-header variant" 
+      "must be present at most once, COL-key= can appear multiple times for different" 
+      "keys. If COL is not specified, first word of CMD is used to specify COL-header."
       "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
