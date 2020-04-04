@@ -488,35 +488,39 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
 {
     istream pipe_in(buf.get());
     string line;
-
-    auto it = find_if(state.execs.begin(), state.execs.end(),
-                      [this](const unique_ptr<Exec> &p){ return p.get() == this; });
-    int my_index = distance(state.execs.begin(), it);
-
     double curr_time = get_current_time();
+    CsvRow row;
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
         size_t index = line.find_first_of('=');
-        const CsvColumn *column = state.execs[my_index]->stdout_col;
+        const CsvColumn *column = nullptr;
 
         if(index != string::npos)
-        {
-            const CsvColumn *ret = get_stdout_column((line.substr(0, index)).c_str(), state.execs[my_index]->keys);
-            if(ret)
-            {
-                column = ret;
-                line = line.substr(index + 1);
-            }
-        }
+            column = get_stdout_column((line.substr(0, index)).c_str(), this->keys);
+
+        if(row.empty())
+            row.set(time_column, curr_time);
+
+        if(column)
+            line = line.substr(index + 1);
+        else
+            column = this->stdout_col;
 
         if(column)
         {
-            CsvRow row;
-            row.set(time_column, curr_time);
+            if(!row.getValue(*column).empty())
+            {
+                row.write(state.out_fp);
+                row.clear();
+                row.set(time_column, curr_time);
+            }
             row.set(*column, line.c_str());
-            row.write(state.out_fp);
         }
     }
+
+    if(!row.empty())
+        row.write(state.out_fp);
+
     if (pipe_in.eof())
         w.stop();
 }
@@ -660,8 +664,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         read_sensor_paths(arg);
         break;
     case 'S': {
-
-        cout << "--sensor specified here" << endl;
         sensors_specified = true;
         state.sensors.push_back(sensor(arg));
         break;
