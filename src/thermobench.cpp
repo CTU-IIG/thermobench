@@ -123,6 +123,8 @@ struct StdoutKeyColumn {
     StdoutKeyColumn(const string key) : key(key), column(columns.add(key)) {};
 };
 
+vector<string> split(const string str, const char *delimiters);
+
 struct Exec {
     const string cmd;
     vector<StdoutKeyColumn> keys;
@@ -130,10 +132,10 @@ struct Exec {
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
-        : cmd(init_cmd(arg))
-    {
-        init_columns(arg);
-    }
+        : cmd(init_cmd(arg)),
+        keys(init_columns(arg)),
+        stdout_col(init_stdout_col(arg, keys))
+    {}
 
     Exec(const Exec&) = delete;
     void operator=(const Exec&) = delete;
@@ -142,8 +144,10 @@ struct Exec {
     void kill();
 
 private:
+    static vector<string> get_specs(const string &arg);
     static const string init_cmd(const string &arg);
-    void init_columns(const string &arg);
+    static const CsvColumn * init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys);
+    static vector<StdoutKeyColumn> init_columns(const string &arg);
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
     ev::child child = {};
@@ -165,39 +169,59 @@ const string Exec::init_cmd(const string &arg)
     return cmd;
 }
 
+vector<string> Exec::get_specs(const string &arg)
+{
+    size_t spec_end = arg.find_first_of(")");
+    if(spec_end == string::npos) 
+        errx(1, "--exec. missing ')'");
 
-void Exec::init_columns(const string &arg)
+    vector<string> specs = split(arg.substr(1, spec_end - 1), ",");
+    if(specs.empty())
+        errx(1, "--exec. no columns specified");
+    return specs;
+}
+
+vector<StdoutKeyColumn> Exec::init_columns(const string &arg)
+{
+    vector<StdoutKeyColumn> keys;
+
+    if(arg[0] == '(')
+    { 
+        vector<string> specs = get_specs(arg);
+
+        for(string spec : specs)
+        {
+            if(spec.back() == '=')
+            {
+                spec.pop_back();
+                keys.push_back(StdoutKeyColumn(spec));
+            }
+        }
+    }
+    return keys;
+}
+
+const CsvColumn * Exec::init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys)
 {
     if(arg[0] != '(')
     { 
         keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t"))));
-        stdout_col = &(keys.back().column);
-        return;
+        return &(keys.back().column);
     }
+    vector<string> specs = get_specs(arg);
 
-    size_t spec_end = arg.find_first_of(")"), first = 1, last;
-    if(spec_end == string::npos) 
-        errx(1, "--exec. missing ')'");
-    if(spec_end == first)
-        errx(1, "--exec. no columns");
-    do
+    const CsvColumn *col = nullptr;
+    for(string spec : specs)
     {
-        last = arg.find_first_of(",)", first);
-        string spec = arg.substr(first, last - first);
-        if(spec.back() == '=')
+        if(spec.back() != '=')
         {
-            spec.pop_back();
+            if(col)
+                errx(1, "--exec. multiple stdout definition");
             keys.push_back(StdoutKeyColumn(spec));
+            col = &(keys.back().column);
         }
-        else
-        {
-            if(stdout_col)
-                errx(1, "multiple stdout definition");
-            keys.push_back(StdoutKeyColumn(spec));
-            stdout_col = &(keys.back().column);
-        }
-        first = last + 1;
-    } while(first < spec_end);
+    }
+    return col;
 }
 
 struct measure_state {
@@ -498,9 +522,6 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         if(index != string::npos)
             column = get_stdout_column((line.substr(0, index)).c_str(), this->keys);
 
-        if(row.empty())
-            row.set(time_column, curr_time);
-
         if(column)
             line = line.substr(index + 1);
         else
@@ -508,6 +529,9 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
 
         if(column)
         {
+            if(row.empty())
+                row.set(time_column, curr_time);
+
             if(!row.getValue(*column).empty())
             {
                 row.write(state.out_fp);
