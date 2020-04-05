@@ -30,11 +30,11 @@ like "${line[2]}" "[0-9.]+,val$"
 out=$(thermobench -O- -s/dev/null -E --exec='(other,key=) printf "other\nkey=val\n"' -- true)
 ok $? "exit code"
 readarray -t line <<<$out
-is "${line[1]}" "time/ms,other,key"
-like "${line[2]}" "[0-9.]+,other,val$"
+is "${line[1]}" "time/ms,key,other"
+like "${line[2]}" "[0-9.]+,val,other$"
 
 out=$(thermobench -O- -s/dev/null -E --exec='(other,key1=,key2=) printf "other\nkey2=val2\nkey1=val1\n"' -- true)
 ok $? "exit code"
 readarray -t line <<<$out
-is "${line[1]}" "time/ms,other,key1,key2"
-like "${line[2]}" "[0-9.]+,other,val1,val2$"
+is "${line[1]}" "time/ms,key1,key2,other"
+like "${line[2]}" "[0-9.]+,val1,val2,other$"
