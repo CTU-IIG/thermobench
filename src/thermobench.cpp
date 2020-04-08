@@ -164,20 +164,20 @@ const string Exec::init_cmd(const string &arg)
         cmd = arg;
     else
         cmd = arg.substr(arg.find_first_of(")") + 1);
-        errx(1, "--exec. no command");
     if (cmd.find_first_not_of(" \t\r\n") == string::npos)
+        errx(1, "--exec: No command");
     return cmd;
 }
 
 vector<string> Exec::get_specs(const string &arg)
 {
     size_t spec_end = arg.find_first_of(")");
-        errx(1, "--exec. missing ')'");
     if (spec_end == string::npos)
+        errx(1, "--exec: Missing ')'");
 
     vector<string> specs = split(arg.substr(1, spec_end - 1), ",");
-        errx(1, "--exec. no columns specified");
     if (specs.empty())
+        errx(1, "--exec: No columns specified");
     return specs;
 }
 
@@ -207,10 +207,10 @@ const CsvColumn * Exec::init_stdout_col(const string &arg, vector<StdoutKeyColum
     vector<string> specs = get_specs(arg);
 
     const CsvColumn *col = nullptr;
-                errx(1, "--exec. multiple stdout definition");
     for (string spec : specs) {
         if (spec.back() != '=') {
             if (col)
+                errx(1, "--exec: Multiple stdout definitions");
             keys.push_back(StdoutKeyColumn(spec));
             col = &(keys.back().column);
         }
