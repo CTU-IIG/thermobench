@@ -767,12 +767,17 @@ static struct argp_option options[] = {
     { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
-    { "exec",           'e', "[(COL[,COL[,...]])]CMD",  0,
-      "Execute CMD (in addition to COMMAND) and store its stdout in a relevant"
-      "CSV column COL. Where COL is COL-header or COL-key=. The COL-header variant" 
-      "must be present at most once, COL-key= can appear multiple times for different" 
-      "keys. If COL is not specified, first word of CMD is used to specify COL-header."
-      "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
+    { "exec",           'e', "[(COL[,...])]CMD",  0,
+
+      "Execute CMD (in addition to COMMAND) and store its stdout in relevant "
+      "CSV columns as specified by COL. If COL ends with '=', such as 'KEY=', "
+      "store the rest of stdout lines starting with KEY= in column KEY. "
+      "Otherwise all non-matching lines will be stored in column COL. If no "
+      "COL is specified, first word of CMD is used as COL specification. "
+
+      "Example: --exec '(amb1=,amb2=,amb_other) ssh ambient@turbot read_temp'"
+
+    },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
     { 0 }

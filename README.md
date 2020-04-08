@@ -74,15 +74,15 @@ sensors in a .csv file.
 
   -c, --column=STR           Add column to CSV populated by STR=val lines from
                              COMMAND stdout
-  -e, --exec=[(COL[,COL[,...]])]CMD
-                             Execute CMD (in addition to COMMAND) and store its
-                             stdout in a relevantCSV column COL. Where COL is
-                             COL-header or COL-key=. The COL-header variantmust
-                             be present at most once, COL-key= can appear
-                             multiple times for differentkeys. If COL is not
-                             specified, first word of CMD is used to specify
-                             COL-header.Example: --exec "(ambient) ssh
-                             ambient@turbot read_temp"
+  -e, --exec=[(COL[,...])]CMD   Execute CMD (in addition to COMMAND) and store
+                             its stdout in relevant CSV columns as specified by
+                             COL. If COL ends with '=', such as 'KEY=', store
+                             the rest of stdout lines starting with KEY= in
+                             column KEY. Otherwise all non-matching lines will
+                             be stored in column COL. If no COL is specified,
+                             first word of CMD is used as COL specification.
+                             Example: --exec '(amb1=,amb2=,amb_other) ssh
+                             ambient@turbot read_temp'
   -E, --exec-wait            Wait for --exec processes to finish. Do not kill
                              them (useful for testing).
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
