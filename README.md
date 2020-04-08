@@ -31,7 +31,7 @@ Then build thermobench:
 
 	make aarch64
 
-The resulting binary `build-aarch64/src/demos-sched` can be copied to
+The resulting binary `build-aarch64/src/thermobench` can be copied to
 the target ARM system.
 
 ## Usage
