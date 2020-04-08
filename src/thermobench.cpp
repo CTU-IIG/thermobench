@@ -131,11 +131,11 @@ struct Exec {
     const CsvColumn *stdout_col {nullptr};
 
     Exec(const string &arg)
-        // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
-        : cmd(init_cmd(arg)),
-        keys(init_columns(arg)),
-        stdout_col(init_stdout_col(arg, keys))
-    {}
+        : cmd(init_cmd(arg))
+        , keys(init_columns(arg))
+        , stdout_col(init_stdout_col(arg, keys))
+    {
+    }
 
     Exec(const Exec&) = delete;
     void operator=(const Exec&) = delete;
@@ -160,24 +160,24 @@ private:
 const string Exec::init_cmd(const string &arg)
 {
     string cmd;
-    if(arg[0] != '(')
+    if (arg[0] != '(')
         cmd = arg;
     else
         cmd = arg.substr(arg.find_first_of(")") + 1);
-    if(cmd.find_first_not_of(" \t\r\n") == string::npos)
         errx(1, "--exec. no command");
+    if (cmd.find_first_not_of(" \t\r\n") == string::npos)
     return cmd;
 }
 
 vector<string> Exec::get_specs(const string &arg)
 {
     size_t spec_end = arg.find_first_of(")");
-    if(spec_end == string::npos) 
         errx(1, "--exec. missing ')'");
+    if (spec_end == string::npos)
 
     vector<string> specs = split(arg.substr(1, spec_end - 1), ",");
-    if(specs.empty())
         errx(1, "--exec. no columns specified");
+    if (specs.empty())
     return specs;
 }
 
@@ -185,14 +185,11 @@ vector<StdoutKeyColumn> Exec::init_columns(const string &arg)
 {
     vector<StdoutKeyColumn> keys;
 
-    if(arg[0] == '(')
-    { 
+    if (arg[0] == '(') {
         vector<string> specs = get_specs(arg);
 
-        for(string spec : specs)
-        {
-            if(spec.back() == '=')
-            {
+        for (string spec : specs) {
+            if (spec.back() == '=') {
                 spec.pop_back();
                 keys.push_back(StdoutKeyColumn(spec));
             }
@@ -203,20 +200,17 @@ vector<StdoutKeyColumn> Exec::init_columns(const string &arg)
 
 const CsvColumn * Exec::init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys)
 {
-    if(arg[0] != '(')
-    { 
+    if (arg[0] != '(') {
         keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t"))));
         return &(keys.back().column);
     }
     vector<string> specs = get_specs(arg);
 
     const CsvColumn *col = nullptr;
-    for(string spec : specs)
-    {
-        if(spec.back() != '=')
-        {
-            if(col)
                 errx(1, "--exec. multiple stdout definition");
+    for (string spec : specs) {
+        if (spec.back() != '=') {
+            if (col)
             keys.push_back(StdoutKeyColumn(spec));
             col = &(keys.back().column);
         }
@@ -519,21 +513,19 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         size_t index = line.find_first_of('=');
         const CsvColumn *column = nullptr;
 
-        if(index != string::npos)
+        if (index != string::npos)
             column = get_stdout_column((line.substr(0, index)).c_str(), this->keys);
 
-        if(column)
+        if (column)
             line = line.substr(index + 1);
         else
             column = this->stdout_col;
 
-        if(column)
-        {
-            if(row.empty())
+        if (column) {
+            if (row.empty())
                 row.set(time_column, curr_time);
 
-            if(!row.getValue(*column).empty())
-            {
+            if (!row.getValue(*column).empty()) {
                 row.write(state.out_fp);
                 row.clear();
                 row.set(time_column, curr_time);
@@ -542,7 +534,7 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         }
     }
 
-    if(!row.empty())
+    if (!row.empty())
         row.write(state.out_fp);
 
     if (pipe_in.eof())
