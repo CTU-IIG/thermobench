@@ -2,9 +2,9 @@
 
 # This is a Meson cross build definition file
 
-# This file assumes that path to the arm compiler toolchain is added
-# to the environment(PATH) variable, so that Meson can find
-# the armcc, armlink and armar while building.
+# This file assumes that the path to the arm compiler toolchain is
+# added to the environment (PATH) variable, so that Meson can find the
+# listed binaries while building.
 [binaries]
 c = 'aarch64-linux-gnu-gcc'
 cpp = 'aarch64-linux-gnu-g++'
@@ -12,8 +12,6 @@ ar = 'aarch64-linux-gnu-ar'
 strip = 'aarch64-linux-gnu-strip'
 
 [properties]
-# The '--cpu' option with the appropriate target type should be mentioned
-# to cross compile c/c++ code with armcc,.
 cpp_link_args = ['-static']
 
 [host_machine]
