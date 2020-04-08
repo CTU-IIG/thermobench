@@ -76,9 +76,13 @@ sensors in a .csv file.
                              COMMAND stdout
   -e, --exec=[(COL[,COL[,...]])]CMD
                              Execute CMD (in addition to COMMAND) and store its
-                             stdout in a relevantCSV column COL. If COL is not
-                             specified, first word of CMD is used. Example:
-                             --exec "(ambient) ssh ambient@turbot read_temp"
+                             stdout in a relevantCSV column COL. Where COL is
+                             COL-header or COL-key=. The COL-header variantmust
+                             be present at most once, COL-key= can appear
+                             multiple times for differentkeys. If COL is not
+                             specified, first word of CMD is used to specify
+                             COL-header.Example: --exec "(ambient) ssh
+                             ambient@turbot read_temp"
   -E, --exec-wait            Wait for --exec processes to finish. Do not kill
                              them (useful for testing).
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
