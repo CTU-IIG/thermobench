@@ -118,22 +118,22 @@ bool calc_cpu_usage = false;
 bool exec_wait = false;
 
 struct StdoutKeyColumn {
-    const string key;
     const CsvColumn &column;
-    StdoutKeyColumn(const string key) : key(key), column(columns.add(key)) {};
+    const string key;
+    StdoutKeyColumn(const string header, const string key) : column(columns.add(header)), key(key) {};
 };
 
 vector<string> split(const string str, const char *delimiters);
 
 struct Exec {
     const string cmd;
-    vector<StdoutKeyColumn> keys;
-    const CsvColumn *stdout_col {nullptr};
+    vector<StdoutKeyColumn> columns;
+    const CsvColumn *stdout_col ;
 
     Exec(const string &arg)
-        : cmd(init_cmd(arg))
-        , keys(init_columns(arg))
-        , stdout_col(init_stdout_col(arg, keys))
+        : cmd(parse_cmd(arg))
+        , columns(parse_columns(arg))
+        , stdout_col(find_stdout_col(columns))
     {
     }
 
@@ -145,9 +145,9 @@ struct Exec {
 
 private:
     static vector<string> get_specs(const string &arg);
-    static const string init_cmd(const string &arg);
-    static const CsvColumn * init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys);
-    static vector<StdoutKeyColumn> init_columns(const string &arg);
+    static const string parse_cmd(const string &arg);
+    static vector<StdoutKeyColumn> parse_columns(const string &arg);
+    static const CsvColumn * find_stdout_col(const vector<StdoutKeyColumn> &keys);
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
     ev::child child = {};
@@ -157,7 +157,7 @@ private:
     void child_exit_cb(ev::child &w, int revents);
 };
 
-const string Exec::init_cmd(const string &arg)
+const string Exec::parse_cmd(const string &arg)
 {
     string cmd;
     if (arg[0] != '(')
@@ -181,41 +181,38 @@ vector<string> Exec::get_specs(const string &arg)
     return specs;
 }
 
-vector<StdoutKeyColumn> Exec::init_columns(const string &arg)
+vector<StdoutKeyColumn> Exec::parse_columns(const string &arg)
 {
     vector<StdoutKeyColumn> keys;
 
     if (arg[0] == '(') {
         vector<string> specs = get_specs(arg);
 
+        const StdoutKeyColumn *catch_all = nullptr;
+
         for (string spec : specs) {
             if (spec.back() == '=') {
                 spec.pop_back();
-                keys.push_back(StdoutKeyColumn(spec));
+                keys.push_back(StdoutKeyColumn(spec, spec));
+            } else {
+                if (catch_all != nullptr)
+                    errx(1, "--exec: At most one COL wit '=' allowed");
+                keys.push_back(StdoutKeyColumn(spec, ""));
+                catch_all = &keys.back();
             }
         }
+    } else {
+        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t")), ""));
     }
     return keys;
 }
 
-const CsvColumn * Exec::init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys)
+const CsvColumn * Exec::find_stdout_col(const vector<StdoutKeyColumn> &columns)
 {
-    if (arg[0] != '(') {
-        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t"))));
-        return &(keys.back().column);
-    }
-    vector<string> specs = get_specs(arg);
-
-    const CsvColumn *col = nullptr;
-    for (string spec : specs) {
-        if (spec.back() != '=') {
-            if (col)
-                errx(1, "--exec: Multiple stdout definitions");
-            keys.push_back(StdoutKeyColumn(spec));
-            col = &(keys.back().column);
-        }
-    }
-    return col;
+    for (auto &col : columns)
+        if (col.key.empty())
+            return &col.column;
+    return nullptr;
 }
 
 struct measure_state {
@@ -514,7 +511,7 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
         const CsvColumn *column = nullptr;
 
         if (index != string::npos)
-            column = get_stdout_column((line.substr(0, index)).c_str(), this->keys);
+            column = get_stdout_column((line.substr(0, index)).c_str(), this->columns);
 
         if (column)
             line = line.substr(index + 1);
@@ -703,7 +700,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.stdoutColumns.push_back(StdoutKeyColumn(arg));
+        state.stdoutColumns.push_back(StdoutKeyColumn(arg, arg));
         break;
     case 't':
         terminate_time = atoi(arg);
