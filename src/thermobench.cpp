@@ -98,7 +98,6 @@ private:
 
 #define MAX_CPUS 256
 unsigned n_cpus;
-//struct cpu_usage cpu_usage[MAX_CPUS];
 vector<struct cpu> cpus;
 
 const CsvColumn &time_column = columns.add("time/ms");
@@ -118,45 +117,120 @@ int terminate_time = 0;
 bool calc_cpu_usage = false;
 bool exec_wait = false;
 
-struct Exec {
-    const string col;
-    const string cmd;
+struct StdoutKeyColumn {
+    const string key;
     const CsvColumn &column;
+    StdoutKeyColumn(const string key) : key(key), column(columns.add(key)) {};
+};
+
+vector<string> split(const string str, const char *delimiters);
+
+struct Exec {
+    const string cmd;
+    vector<StdoutKeyColumn> keys;
+    const CsvColumn *stdout_col {nullptr};
 
     Exec(const string &arg)
         // TODO: Handle errors - e.g. when arg lacks ')' (use static methods for arg parsing)
-        : col(arg[0] == '(' ? arg.substr(1, arg.find_first_of(")") - 1)
-                            : arg.substr(0, arg.find_first_of(" \t")))
-        , cmd(arg[0] != '(' ? arg : arg.substr(arg.find_first_of(")") + 1))
-        , column(columns.add(col))
+        : cmd(init_cmd(arg)),
+        keys(init_columns(arg)),
+        stdout_col(init_stdout_col(arg, keys))
     {}
+
+    Exec(const Exec&) = delete;
+    void operator=(const Exec&) = delete;
 
     void start(ev::loop_ref loop);
     void kill();
 
 private:
+    static vector<string> get_specs(const string &arg);
+    static const string init_cmd(const string &arg);
+    static const CsvColumn * init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys);
+    static vector<StdoutKeyColumn> init_columns(const string &arg);
     pid_t pid = 0;
-    unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf;
-    ev::child child;
-    ev::io child_stdout;
+    unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
+    ev::child child = {};
+    ev::io child_stdout = {};
 
     void child_stdout_cb(ev::io &w, int revents);
     void child_exit_cb(ev::child &w, int revents);
 };
 
-struct StdoutColumn {
-    const char *key;
-    const CsvColumn &column;
-    StdoutColumn(const char *key) : key(key), column(columns.add(key)) {};
-};
+const string Exec::init_cmd(const string &arg)
+{
+    string cmd;
+    if(arg[0] != '(')
+        cmd = arg;
+    else
+        cmd = arg.substr(arg.find_first_of(")") + 1);
+    if(cmd.find_first_not_of(" \t\r\n") == string::npos)
+        errx(1, "--exec. no command");
+    return cmd;
+}
+
+vector<string> Exec::get_specs(const string &arg)
+{
+    size_t spec_end = arg.find_first_of(")");
+    if(spec_end == string::npos) 
+        errx(1, "--exec. missing ')'");
+
+    vector<string> specs = split(arg.substr(1, spec_end - 1), ",");
+    if(specs.empty())
+        errx(1, "--exec. no columns specified");
+    return specs;
+}
+
+vector<StdoutKeyColumn> Exec::init_columns(const string &arg)
+{
+    vector<StdoutKeyColumn> keys;
+
+    if(arg[0] == '(')
+    { 
+        vector<string> specs = get_specs(arg);
+
+        for(string spec : specs)
+        {
+            if(spec.back() == '=')
+            {
+                spec.pop_back();
+                keys.push_back(StdoutKeyColumn(spec));
+            }
+        }
+    }
+    return keys;
+}
+
+const CsvColumn * Exec::init_stdout_col(const string &arg, vector<StdoutKeyColumn> keys)
+{
+    if(arg[0] != '(')
+    { 
+        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t"))));
+        return &(keys.back().column);
+    }
+    vector<string> specs = get_specs(arg);
+
+    const CsvColumn *col = nullptr;
+    for(string spec : specs)
+    {
+        if(spec.back() != '=')
+        {
+            if(col)
+                errx(1, "--exec. multiple stdout definition");
+            keys.push_back(StdoutKeyColumn(spec));
+            col = &(keys.back().column);
+        }
+    }
+    return col;
+}
 
 struct measure_state {
-    struct timespec start_time;
-    vector<sensor> sensors;
-    FILE *out_fp;
-    vector<StdoutColumn> stdoutColumns;
-    vector<unique_ptr<Exec>> execs;
-    pid_t child;
+    struct timespec start_time = {0};
+    vector<sensor> sensors = {};
+    FILE *out_fp = nullptr;
+    vector<StdoutKeyColumn> stdoutColumns = {};
+    vector<unique_ptr<Exec>> execs = {};
+    pid_t child = 0;
 } state;
 
 ev_timer measure_timer;
@@ -339,10 +413,10 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(char *key, const vector<StdoutColumn> &stdoutColumns)
+const CsvColumn *get_stdout_column(const char *key, const vector<StdoutKeyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i){
-        if (strcmp(key, stdoutColumns[i].key) == 0)
+        if (stdoutColumns[i].key == key)
             return &(stdoutColumns[i].column);
     }
     return nullptr;
@@ -438,19 +512,39 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
 {
     istream pipe_in(buf.get());
     string line;
-
-    auto it = find_if(state.execs.begin(), state.execs.end(),
-                      [this](const unique_ptr<Exec> &p){ return p.get() == this; });
-    int my_index = distance(state.execs.begin(), it);
-
     double curr_time = get_current_time();
+    CsvRow row;
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
-        CsvRow row;
-        row.set(time_column, curr_time);
-        row.set(state.execs[my_index]->column, line.c_str());
-        row.write(state.out_fp);
+        size_t index = line.find_first_of('=');
+        const CsvColumn *column = nullptr;
+
+        if(index != string::npos)
+            column = get_stdout_column((line.substr(0, index)).c_str(), this->keys);
+
+        if(column)
+            line = line.substr(index + 1);
+        else
+            column = this->stdout_col;
+
+        if(column)
+        {
+            if(row.empty())
+                row.set(time_column, curr_time);
+
+            if(!row.getValue(*column).empty())
+            {
+                row.write(state.out_fp);
+                row.clear();
+                row.set(time_column, curr_time);
+            }
+            row.set(*column, line.c_str());
+        }
     }
+
+    if(!row.empty())
+        row.write(state.out_fp);
+
     if (pipe_in.eof())
         w.stop();
 }
@@ -617,7 +711,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.stdoutColumns.push_back(StdoutColumn(arg));
+        state.stdoutColumns.push_back(StdoutKeyColumn(arg));
         break;
     case 't':
         terminate_time = atoi(arg);
@@ -681,9 +775,11 @@ static struct argp_option options[] = {
     { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
-    { "exec",           'e', "[(COL)]CMD",  0,
-      "Execute CMD (in addition to COMMAND) and store its stdout in CSV "
-      "column COL. If COL is not specified, first word of CMD is used. "
+    { "exec",           'e', "[(COL[,COL[,...]])]CMD",  0,
+      "Execute CMD (in addition to COMMAND) and store its stdout in a relevant"
+      "CSV column COL. Where COL is COL-header or COL-key=. The COL-header variant" 
+      "must be present at most once, COL-key= can appear multiple times for different" 
+      "keys. If COL is not specified, first word of CMD is used to specify COL-header."
       "Example: --exec \"(ambient) ssh ambient@turbot read_temp\"" },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
@@ -744,6 +840,25 @@ vector<string> split_words(const string str)
         words.push_back(word);
     return words;
 }
+
+vector<string> split(const string str, const char *delimiters)
+{
+    vector<string> words;
+
+    for (size_t start = 0, end = 0;;) {
+        start = str.find_first_not_of(delimiters, end);
+        if (start == string::npos)
+            break;
+
+        end = str.find_first_of(delimiters, start);
+        if (end == string::npos)
+            end = str.size();
+
+        words.push_back(str.substr(start, end - start));
+    }
+    return words;
+}
+
 
 string sensor::extractPath(const string spec)
 {
