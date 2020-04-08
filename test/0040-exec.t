@@ -1,6 +1,6 @@
 #!/bin/bash
 . testlib
-plan_tests 17
+plan_tests 19
 
 out=$(thermobench -O- -s/dev/null -E --exec="echo value" -- true)
 okx grep -E "time/ms,echo" <<<$out
@@ -38,3 +38,9 @@ ok $? "exit code"
 readarray -t line <<<$out
 is "${line[1]}" "time/ms,other,key1,key2"
 like "${line[2]}" "[0-9.]+,other,val1,val2$"
+
+out=$(thermobench -O- -s/dev/null -E --exec='(other,other2) echo' -- true)
+is $? 1 "exit code"
+
+out=$(thermobench -O- -s/dev/null -E --exec='() echo' -- true)
+is $? 1 "exit code"
