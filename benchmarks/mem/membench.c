@@ -276,6 +276,7 @@ static void run_benchmark(struct cfg *cfg)
 	}
 	pthread_barrier_destroy(&barrier);
 
+	double sum = 0;
 	printf("%d", cfg->size);
 	for (i = 0; i < cfg->num_threads; i++) {
 		double number;
@@ -283,8 +284,11 @@ static void run_benchmark(struct cfg *cfg)
 			number = thread[i].result;
 		else
 			number = CACHE_LINE_SIZE / thread[i].result * 1e9 / cfg->report_bandwidth;
+		sum += number;
 		printf("\t%#.3g", number);
 	}
+	if (cfg->num_threads > 1 && cfg->report_bandwidth != 0)
+		printf("\t∑%#.3g", sum);
 	printf("\n");
 	fflush(stdout);
 	print = false;
