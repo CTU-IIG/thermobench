@@ -39,6 +39,7 @@ struct cfg {
 	bool write;
 	unsigned ofs;
 	bool use_cycles; /* instead of ns */
+	unsigned report_bandwidth; /* 0 = disabled, 1 = B/s, 1024 = KiB/s, 1024^2 = MiB/s, ... */
 	bool forever;
 };
 
@@ -277,7 +278,12 @@ static void run_benchmark(struct cfg *cfg)
 
 	printf("%d", cfg->size);
 	for (i = 0; i < cfg->num_threads; i++) {
-		printf("\t%#.3g", thread[i].result);
+		double number;
+		if (cfg->report_bandwidth == 0)
+			number = thread[i].result;
+		else
+			number = CACHE_LINE_SIZE / thread[i].result * 1e9 / cfg->report_bandwidth;
+		printf("\t%#.3g", number);
 	}
 	printf("\n");
 	fflush(stdout);
@@ -291,6 +297,9 @@ static void print_help(char *argv[], struct cfg *dflt)
 	       "Tool for measuring memory latency.\n"
 	       "\n"
 	       "Supported options are:\n"
+	       "  -b[unit]    Report memory bandwidth instead of latency. Reported\n"
+	       "              numbers are in bytes/s (default), or bigger units as\n"
+	       "              specified by [unit] (one of K, M, G).\n"
 	       "  -c <count>  Count of read (or read-write) operations per benchmark\n"
 	       "              (default is %#x)\n"
 	       "  -C <CPU#>   Run the benchmark on given CPU# (can be specified\n"
@@ -332,8 +341,22 @@ int main(int argc, char *argv[])
 	CPU_ZERO(&cfg.cpu_set);
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:C:fho:rs:t:wy")) != -1) {
+	while ((opt = getopt(argc, argv, "b::c:C:fho:rs:t:wy")) != -1) {
 		switch (opt) {
+		case 'b':
+			if (!optarg) {
+				cfg.report_bandwidth = 1;
+			} else {
+				if (strlen(optarg) != 1)
+					errx(1, "-b unit should be one letter. not '%s'", optarg);
+				switch (*optarg) {
+				case 'K': cfg.report_bandwidth = 1024; break;
+				case 'M': cfg.report_bandwidth = 1024*1024; break;
+				case 'G': cfg.report_bandwidth = 1024*1024*1024; break;
+				default: errx(1, "Unsupported unit: %s", optarg);
+				}
+			}
+			break;
 		case 'c':
 			cfg.read_count = atol(optarg);
 			break;
@@ -378,6 +401,8 @@ int main(int argc, char *argv[])
 		assert(cfg.ofs < ARRAY_SIZE(s.dummy));
 	}
 
+	if (cfg.use_cycles && cfg.report_bandwidth)
+		errx(1, "Flags -y and -b are not compatible");
 	if (cfg.use_cycles)
 		ccntr_init();
 
