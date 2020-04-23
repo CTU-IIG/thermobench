@@ -28,6 +28,8 @@
 #define CHECKFGETS(s, size, stream) ({ void *ptr = fgets(s, size, stream); if (ptr == NULL) { if (feof(stream)) fprintf(stderr, LOC "fgets(" #s "): Unexpected end of stream\n"); else perror(LOC "fgets(" #s ")"); exit(1); }; ptr; })
 #define CHECKTRUE(bool, msg) ({ if (!(bool)) { fprintf(stderr, "Error: " msg "\n"); exit(1); }; })
 
+#define CACHE_LINE_SIZE 64
+
 struct cfg {
 	bool sequential;
 	unsigned size;
@@ -42,10 +44,10 @@ struct cfg {
 
 struct s {
         struct s *ptr;
-        uint32_t dummy[(64 - sizeof(struct s*))/sizeof(uint32_t)];
+        uint32_t dummy[(CACHE_LINE_SIZE - sizeof(struct s*))/sizeof(uint32_t)];
 };
 
-static_assert(sizeof(struct s) == 64, "Struct size differs from cacheline size");
+static_assert(sizeof(struct s) == CACHE_LINE_SIZE, "Struct size differs from cacheline size");
 
 #define MAX_CPUS 8
 
