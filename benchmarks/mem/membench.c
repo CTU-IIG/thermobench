@@ -283,6 +283,8 @@ static void print_help(char *argv[], struct cfg *dflt)
 {
 	printf("Usage: %s [ options ]\n"
 	       "\n"
+	       "Tool for measuring memory latency.\n"
+	       "\n"
 	       "Supported options are:\n"
 	       "  -c <count>  Count of read (or read-write) operations per benchmark\n"
 	       "              (default is %#x)\n"
@@ -301,6 +303,9 @@ static void print_help(char *argv[], struct cfg *dflt)
 	       "              reads)\n"
 	       "  -y          Report the memory access duration in clock cycles rather\n"
 	       "              then in nanoseconds\n"
+	       "\n"
+	       "Memory latency is reported as nanoseconds (with -y as clock cycles)\n"
+	       "per memory operation.\n"
 	       ,
 	       argv[0],
 	       dflt->read_count);
