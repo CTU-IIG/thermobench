@@ -66,7 +66,10 @@ static uint64_t ccntr_get(void)
 	return MRS64(PMCCNTR_EL0);
 }
 #else
-static void ccntr_init(void) {}
+static void ccntr_init(void)
+{
+	errx(1, "Reporting in clock cycles is not supported on this architecture\n");
+}
 static uint64_t ccntr_get(void) { return 0; }
 #endif
 
