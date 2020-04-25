@@ -751,12 +751,13 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec = HistoryRecord()
                 lbl = lbls[col]
                 scale = scales[col]
-                data_y = df[col] * scale
+                data_y = df[col].dropna() * scale
                 subtract_col = self.get_subtract_column()
 
                 if self.get_subtract() and subtract_col:  # subtract the selected column
                     subtract_scale = self.get_subtract_column_scale()
-                    data_y -= df[subtract_col] * subtract_scale
+                    y_sub = data_y.interpolate() - df[subtract_col].interpolate() * subtract_scale
+                    data_y = y_sub[data_y.dropna().index]  # keep only non-interpolated values
 
                     cur_rec.set_scale_data(subtract_col, subtract_scale)  # set subtract column in the history
 
@@ -773,7 +774,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
                 records.append(cur_rec)
 
-                self.plot_data(data_y.dropna(), lbl)
+                self.plot_data(data_y, lbl)
 
             self.plot_history.add_records(records)
         else:
