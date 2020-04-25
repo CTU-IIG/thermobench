@@ -382,7 +382,11 @@ class FramePlottingSelector(tk.LabelFrame):
                 self.y_axis_labels[col] = lbl
 
                 scl = tk.Entry(self, width=8)
-                scl.insert(tk.END, "1")
+                if col.endswith('/m°C'):
+                    sc = '1e-3'
+                else:
+                    sc = '1'
+                scl.insert(tk.END, sc)
                 scl.grid(row=row_id, column=3, padx=1, stick=tk.EW)
                 self.y_axis_scale[col] = scl
 
