@@ -308,7 +308,7 @@ class FrameOpenFile(tk.Frame):
             self.csv_path.set(file_name)
             write_text_and_disable(self.txt_open, file_name)
             if os.path.exists(file_name):  # Read csv file
-                self.df = pd.read_csv(file_name, comment="#")
+                self.df = pd.read_csv(file_name, comment="#", index_col=0)
                 #self.df = pd.DataFrame(data={'col1' : [1, 2], 'col2': [3, 4], 'col3': [3, 4], 'col4': [3, 4]})
                 self.df_cols = sorted(list(self.df.columns.values))
                 self.update_plotting_selector_method(self.df_cols)
@@ -629,9 +629,9 @@ class ThermacVisualizer(tk.Frame):
         """:return the path to the selected .csv data file"""
         return self.frame_open_file.get_csv_path()
 
-    def plot_data(self, data_x, data_y, label: str):
+    def plot_data(self, series, label: str):
         """Plot the data onto the axis"""
-        self.frame_figure.plot(data_x, data_y, label)
+        self.frame_figure.plot(series.index.values, series.values, label)
 
     def set_labels(self):
         """Set x/y-labels and figure title"""
@@ -742,7 +742,6 @@ class ThermacVisualizer(tk.Frame):
         df = self.get_df()
 
         if df is not None:
-            data_x = df[self.get_x_column_name()]
             lbls = self.get_y_column_labels()
             scales = self.get_y_column_scales()
 
@@ -774,7 +773,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
                 records.append(cur_rec)
 
-                self.plot_data(data_x, data_y, lbl)
+                self.plot_data(data_y.dropna(), lbl)
 
             self.plot_history.add_records(records)
         else:
