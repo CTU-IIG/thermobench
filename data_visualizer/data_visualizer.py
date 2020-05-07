@@ -9,6 +9,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
+# Default plot colors (i-th plot is assigned i-th color from this list)
+# The list corresponds to category10 from Vega (https://github.com/vega/vega/wiki/Scales#scale-range-literals)
+default_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+                  "#bcbd22", "#17becf"]
+
 
 def write_text_and_disable(widget_txt: tk.Text, txt: str):
     widget_txt.configure(state=tk.NORMAL)
@@ -53,6 +58,7 @@ class HistoryRecord:
         self.y_col_name = None  # name of the column used for y-axis
         self.y_scale = 1  # scale of the y-axis
         self.y_label = None  # label (legend) for the y-axis data
+        self.color = None  # color of the plot
 
         self.y_subtract = None  # column to be subtracted from y_col_name data
         self.y_subtract_scale = 1  # scale of the subtracted column
@@ -94,6 +100,10 @@ class HistoryRecord:
         assert isinstance(x_scale, (int, float)), "x_scale should be int or float"
         self.x_scale = x_scale
 
+    def set_color(self, color: str):
+        assert isinstance(color, str), "color should be a string (e.g., #FFFFFF)."
+        self.color = color
+
     def set_smoothing_window_size(self, size: int):
         self.smoothing_window_size = size
 
@@ -104,6 +114,7 @@ class HistoryRecord:
                 "y_col_name": self.y_col_name,
                 "y_scale": self.y_scale,
                 "y_label": self.y_label,
+                "color": self.color,
                 "y_subtract": self.y_subtract,
                 "y_subtract_scale": self.y_subtract_scale,
                 "smoothing_window_size": self.smoothing_window_size}
@@ -115,6 +126,7 @@ class HistoryRecord:
         self.y_col_name = dct["y_col_name"]
         self.y_scale = dct["y_scale"]
         self.y_label = dct["y_label"]
+        self.color = dct["color"]
         self.y_subtract = dct["y_subtract"]
         self.y_subtract_scale = dct["y_subtract_scale"]
         self.smoothing_window_size = dct["smoothing_window_size"]
@@ -318,8 +330,8 @@ class FrameFigure(tk.Frame):
     def clear_axis(self):
         self.axis.clear()
 
-    def plot(self, data_x, data_y, label):
-        self.axis.plot(data_x, data_y, label=label)
+    def plot(self, data_x, data_y, label, color):
+        self.axis.plot(data_x, data_y, label=label, color=color)
 
     def set_x_axis_label(self, label):
         self.axis.set_xlabel(label)
@@ -329,6 +341,9 @@ class FrameFigure(tk.Frame):
 
     def set_title(self, title):
         self.axis.set_title(title)
+
+    def get_num_lines(self) -> int:
+        return len(self.axis.lines)
 
     def update_figure(self):
         """Update the canvas and toolbar history and create the legend"""
@@ -373,6 +388,14 @@ class FrameOpenFile(tk.Frame):
                 self.df = pd.read_csv(file_name, comment="#")
                 self.df_cols = sorted(list(self.df.columns.values))
                 self.update_plotting_selector_method(self.df_cols)
+
+                # Check if the first column starts with "time/"
+                if len(self.df.columns) < 1 or not self.df.columns[0].startswith("time/"):
+                    print("Warning: the first column's name does not start with 'time/', subtract functionality might not work properly.")
+
+                # Check if all data are present in the first column
+                if self.df[self.df.columns[0]].isnull().values.any():
+                    print("Warning: the first column contains NAN or empty values, subtract functionality might not work properly.")
 
     def get_df(self) -> pd.DataFrame:
         return self.df
@@ -662,6 +685,13 @@ class ThermacVisualizer(tk.Frame):
         """:return list of the df column names"""
         return self.frame_open_file.get_df_cols()
 
+    def get_num_lines(self) -> int:
+        """:return the number of currently plotted lines"""
+        return self.frame_figure.get_num_lines()
+
+    def get_next_color(self) -> str:
+        return default_colors[self.get_num_lines() % len(default_colors)]
+
     def get_x_axis_scale(self) -> float:
         """:retrn the scaling factor which should be applied to x-axis data"""
         return self.frame_plot_selector.get_x_axis_scale()
@@ -706,11 +736,11 @@ class ThermacVisualizer(tk.Frame):
         """:return the path to the selected .csv data file"""
         return self.frame_open_file.get_csv_path()
 
-    def plot_data(self, data_x, data_y, label: str, path: str):
+    def plot_data(self, data_x, data_y, label: str, color: str, path: str):
         """Plot the data onto the axis"""
         rel_path = os.path.relpath(path, os.getcwd())  # Get relative path
 
-        self.frame_figure.plot(data_x, data_y, label)
+        self.frame_figure.plot(data_x, data_y, label, color)
         self.frame_history.add_history_element(label + " : " + rel_path)
 
     def set_labels(self):
@@ -773,7 +803,7 @@ class ThermacVisualizer(tk.Frame):
             if record.use_smoothing():
                 data_y = data_y.rolling(window=record.smoothing_window_size).mean()
 
-            self.plot_data(data_x, data_y, lbl, data_path)
+            self.plot_data(data_x, data_y, lbl, record.color, data_path)
         # update the axis
         self.frame_figure.set_x_axis_label(self.plot_history.x_axis_title)
         self.frame_figure.set_y_axis_label(self.plot_history.y_axis_title)
@@ -826,6 +856,7 @@ class ThermacVisualizer(tk.Frame):
 
             for col in self.get_y_column_names_selected():
                 cur_rec = HistoryRecord()
+                nxt_clr = self.get_next_color()
                 lbl = lbls[col]
                 scale = scales[col]
                 data_y = df[col] * scale
@@ -848,9 +879,10 @@ class ThermacVisualizer(tk.Frame):
                     print("History paths were not set properly.")
                 cur_rec.set_x_data(self.get_x_column_name(), 1)  # set history for x-axis
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
+                cur_rec.set_color(nxt_clr)
                 records.append(cur_rec)
 
-                self.plot_data(data_x, data_y, lbl, self.get_csv_path())
+                self.plot_data(data_x, data_y, lbl, nxt_clr, self.get_csv_path())
             self.plot_history.add_records(records)
         else:
             print("No data were loaded.")
