@@ -230,11 +230,11 @@ class ScrollFrame(tk.Frame):
         self.on_frame_configure(None)
 
     def on_frame_configure(self, event):
-        '''Reset the scroll region to encompass the inner frame (whenever the size of the frame changes)'''
+        """Reset the scroll region to encompass the inner frame (whenever the size of the frame changes)"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def on_canvas_configure(self, event):
-        '''Reset the canvas window to encompass inner frame when required'''
+        """Reset the canvas window to encompass inner frame when required"""
         canvas_width = event.width
         self.canvas.itemconfig(self.canvas_window, width=canvas_width)
 
@@ -366,13 +366,11 @@ class FrameOpenFile(tk.Frame):
 
     def open_csv(self):
         file_name = tkfile.askopenfilename(filetypes=[("CSV files", "*.csv")])
-        #file_name = "/home/benedond/Doktorat/Vyzkum/Projects/thermac-experiments-and-visualizations/experiments/assign-fp64div/data/imx8/core1.csv"
         if file_name:
             self.csv_path.set(file_name)
             write_text_and_disable(self.txt_open, file_name)
             if os.path.exists(file_name):  # Read csv file
                 self.df = pd.read_csv(file_name, comment="#")
-                #self.df = pd.DataFrame(data={'col1' : [1, 2], 'col2': [3, 4], 'col3': [3, 4], 'col4': [3, 4]})
                 self.df_cols = sorted(list(self.df.columns.values))
                 self.update_plotting_selector_method(self.df_cols)
 
@@ -399,7 +397,8 @@ class FramePlottingSelector(tk.LabelFrame):
         self.x_axis_control = None  # placeholder for variable deciding x-axis data (radiobutton)
         self.y_axis_chck = []  # list of checkbuttons for plotting data (df column) selection
         self.y_axis_labels = dict()  # user-defined labels of the data
-        self.y_axis_scale = dict()  # user-defined scaling of the data
+        self.y_axis_scale = dict()  # user-defined scaling of the y-data
+        self.x_axis_scale = None  # user-defined scaling of the x-data
         self.df_cols = []
         
         self.subtract = tk.BooleanVar(value=0)  # true if some column should be subtracted
@@ -436,7 +435,8 @@ class FramePlottingSelector(tk.LabelFrame):
                 var = tk.StringVar()
 
                 tk.Radiobutton(self, variable=self.x_axis_control, value=col).grid(row=row_id, column=0, stick=tk.W)
-                tk.Checkbutton(self, text=col, variable=var, onvalue=col, offvalue="").grid(row=row_id, column=1, stick=tk.W, padx=1)
+                tk.Checkbutton(self, text=col, variable=var, onvalue=col, offvalue="").grid(row=row_id, column=1,
+                                                                                            stick=tk.W, padx=1)
                 self.y_axis_chck.append(var)
 
                 lbl = tk.Entry(self, width=20, justify=tk.LEFT)
@@ -638,7 +638,6 @@ class ThermacVisualizer(tk.Frame):
     def update_plotting_selector(self, cols):
         """Update the plotting selector frame"""
         self.frame_plot_selector.update_plotting_selector(cols)
-        #self.frame_plot_selector.update_idletasks()
 
     def get_clear(self) -> bool:
         """Finds whether the plotting area should be cleared before the next plot.
