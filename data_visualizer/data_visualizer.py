@@ -830,7 +830,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
                 records.append(cur_rec)
 
-                self.plot_data(data_x[data_y_notnull], data_y, lbl, self.get_csv_path())
+                self.plot_data(data_x, data_y, lbl, self.get_csv_path())
             self.plot_history.add_records(records)
         else:
             print("No data were loaded.")
