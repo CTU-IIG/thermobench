@@ -90,6 +90,10 @@ class HistoryRecord:
         self.y_subtract = y_subtract
         self.y_subtract_scale = y_subtract_scale
 
+    def set_x_scale(self, x_scale: float):
+        assert isinstance(x_scale, (int, float)), "x_scale should be int or float"
+        self.x_scale = x_scale
+
     def set_smoothing_window_size(self, size: int):
         self.smoothing_window_size = size
 
@@ -422,7 +426,7 @@ class FramePlottingSelector(tk.LabelFrame):
             tk.Label(self, text="x", padx=5).grid(row=row_id, column=0, stick=tk.W)
             tk.Label(self, text="y", padx=5).grid(row=row_id, column=1, stick=tk.W)
             tk.Label(self, text="label").grid(row=row_id, column=2, stick=tk.W)
-            tk.Label(self, text="scale").grid(row=row_id, column=3, stick=tk.W)
+            tk.Label(self, text="y-scale").grid(row=row_id, column=3, stick=tk.W)
             row_id += 1
 
             x_axis_default = "time/ms" if "time/ms" in df_cols else df_cols[0]
@@ -447,6 +451,13 @@ class FramePlottingSelector(tk.LabelFrame):
 
                 row_id += 1
 
+            # x-axis scale
+            tk.Label(self, text="x-scale").grid(row=row_id, column=1, columnspan=2, stick=tk.E)
+            self.x_axis_scale = tk.Entry(self, width=8)
+            self.x_axis_scale.insert(tk.END, "0.001")
+            self.x_axis_scale.grid(row=row_id, column=3, stick=tk.EW, padx=1)
+
+            row_id += 1
 
             # subtract menu
             tk.Checkbutton(self, text="subtract:", variable=self.subtract).grid(row=row_id, column=1, pady=10,
@@ -460,6 +471,9 @@ class FramePlottingSelector(tk.LabelFrame):
             self.columnconfigure(1, weight=0)
             self.columnconfigure(2, weight=1)
             self.columnconfigure(3, weight=1)
+
+    def get_x_axis_scale(self) -> float:
+        return parse_float(self.x_axis_scale, 0.001)
 
     def get_x_column_name(self) -> str:
         return self.x_axis_control.get()
@@ -649,6 +663,10 @@ class ThermacVisualizer(tk.Frame):
         """:return list of the df column names"""
         return self.frame_open_file.get_df_cols()
 
+    def get_x_axis_scale(self) -> float:
+        """:retrn the scaling factor which should be applied to x-axis data"""
+        return self.frame_plot_selector.get_x_axis_scale()
+
     def get_x_column_name(self) -> str:
         """:return the label (name of the column in the df) of the data used for x-axis"""
         return self.frame_plot_selector.get_x_column_name()
@@ -799,7 +817,9 @@ class ThermacVisualizer(tk.Frame):
         df = self.get_df()
 
         if df is not None:
-            data_x = df[self.get_x_column_name()]
+            scale_x = self.get_x_axis_scale()
+            data_x = df[self.get_x_column_name()] * scale_x
+
             lbls = self.get_y_column_labels()
             scales = self.get_y_column_scales()
 
