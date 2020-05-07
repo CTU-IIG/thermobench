@@ -3,6 +3,7 @@ import json
 import os
 import tkinter as tk
 from tkinter import filedialog as tkfile
+from tkinter.ttk import Combobox
 from typing import List, Dict
 from tkinter import colorchooser
 
@@ -60,6 +61,7 @@ class HistoryRecord:
         self.y_scale = 1  # scale of the y-axis
         self.y_label = None  # label (legend) for the y-axis data
         self.color = None  # color of the plot
+        self.linestyle = None  # line-style of the plot
 
         self.y_subtract = None  # column to be subtracted from y_col_name data
         self.y_subtract_scale = 1  # scale of the subtracted column
@@ -105,6 +107,10 @@ class HistoryRecord:
         assert isinstance(color, str), "color should be a string (e.g., #FFFFFF)."
         self.color = color
 
+    def set_linestyle(self, linestyle: str):
+        assert isinstance(linestyle, str), "linestyle should be a string (e.g., 'solid')."
+        self.linestyle = linestyle
+
     def set_smoothing_window_size(self, size: int):
         self.smoothing_window_size = size
 
@@ -116,6 +122,7 @@ class HistoryRecord:
                 "y_scale": self.y_scale,
                 "y_label": self.y_label,
                 "color": self.color,
+                "linestyle": self.linestyle,
                 "y_subtract": self.y_subtract,
                 "y_subtract_scale": self.y_subtract_scale,
                 "smoothing_window_size": self.smoothing_window_size}
@@ -128,6 +135,7 @@ class HistoryRecord:
         self.y_scale = dct["y_scale"]
         self.y_label = dct["y_label"]
         self.color = dct["color"]
+        self.linestyle = dct["linestyle"]
         self.y_subtract = dct["y_subtract"]
         self.y_subtract_scale = dct["y_subtract_scale"]
         self.smoothing_window_size = dct["smoothing_window_size"]
@@ -331,8 +339,8 @@ class FrameFigure(tk.Frame):
     def clear_axis(self):
         self.axis.clear()
 
-    def plot(self, data_x, data_y, label, color):
-        self.axis.plot(data_x, data_y, label=label, color=color)
+    def plot(self, data_x, data_y, label, color, linestyle):
+        self.axis.plot(data_x, data_y, label=label, color=color, linestyle=linestyle)
 
     def set_x_axis_label(self, label):
         self.axis.set_xlabel(label)
@@ -533,6 +541,7 @@ class FramePlottingOptions(tk.LabelFrame):
         self.fig_desc = tk.StringVar(value="")  # title of the figure
         self.color = tk.StringVar(value="Default")  # plotting color
         self.color_lbl = None
+        self.linestyle = None
 
         self.make_widgets()
 
@@ -548,21 +557,47 @@ class FramePlottingOptions(tk.LabelFrame):
         chck_smoothing = tk.Checkbutton(frame_check_buttons, text="use smoothing", variable=self.smoothing)
         chck_smoothing.pack(side=tk.LEFT, anchor=tk.W, expand=False, padx=10)
 
+
+        frame_plt_opts = tk.Frame(self)  # Frame for horizontal alignment of check buttons
+        frame_plt_opts.pack(side=tk.TOP, anchor=tk.NW, fill=tk.X, expand=True, padx=10, pady=5)
         # - smoothing width (slider)
-        frame_scale = tk.Frame(self)
-        frame_scale.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, pady=5, padx=10)
-        tk.Label(frame_scale, text="Smoothing window size:").pack(side=tk.LEFT)
-        tk.Scale(frame_scale, orient=tk.HORIZONTAL, variable=self.smoothing_window, from_=1, to=100).pack(side=tk.LEFT,
-                                                                                                          fill=tk.X,
-                                                                                                          expand=True)
+        tk.Label(frame_plt_opts, text="Smoothing window size:").grid(row=0, column=0, stick=tk.W)
+        tk.Scale(frame_plt_opts, orient=tk.HORIZONTAL, variable=self.smoothing_window, from_=1, to=100).grid(row=0, column=1, columnspan=3, stick=tk.EW)
+        # Plot color
+        tk.Label(frame_plt_opts, text="Plot color:").grid(row=1, column=0, stick=tk.W)
+        tk.Button(frame_plt_opts, text="Pick a color", command=self.pick_color).grid(row=1, column=1, padx=2, stick=tk.EW)
+        self.color_lbl = tk.Label(frame_plt_opts, text="   ")
+        self.color_lbl.grid(row=1, column=2, stick=tk.E)
+        tk.Label(frame_plt_opts, textvariable=self.color).grid(row=1, column=3, stick=tk.W, padx=2)
+        # Line style
+        tk.Label(frame_plt_opts, text="Linestyle:").grid(row=2, column=0, stick=tk.W)
+        self.linestyle = Combobox(frame_plt_opts, values=["solid", "dotted", "dashed", "dashdot"], state="readonly")
+        self.linestyle.current(0)
+        self.linestyle.grid(row=2, column=1, columnspan=3, stick=tk.EW, padx=2, pady=2)
+
+        frame_plt_opts.grid_rowconfigure(0, weight=1)
+        frame_plt_opts.grid_columnconfigure(0, weight=1)
+        frame_plt_opts.grid_columnconfigure(1, weight=1)
+        frame_plt_opts.grid_columnconfigure(2, weight=1)
+        frame_plt_opts.grid_columnconfigure(3, weight=1)
+        """
         # Plot color
         frame_color = tk.Frame(self)  # Frame for horizontal alignment of check buttons
-        frame_color.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10)
+        frame_color.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10, pady=5)
         tk.Label(frame_color, text="Plot color:").pack(side=tk.LEFT)
         tk.Button(frame_color, text="Pick a color", command=self.pick_color).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
         self.color_lbl = tk.Label(frame_color, text="   ")
         self.color_lbl.pack(side=tk.LEFT)
         tk.Label(frame_color, textvariable=self.color).pack(side=tk.LEFT)
+
+        # Line style
+        frame_linestyle = tk.Frame(self)  # Frame for horizontal alignment of check buttons
+        frame_linestyle.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10, pady=5)
+        tk.Label(frame_linestyle, text="Linestyle:").pack(side=tk.LEFT)
+        self.linestyle = Combobox(frame_linestyle, values=["solid", "dotted", "dashed", "dashdot"], state="readonly")
+        self.linestyle.current(0)
+        self.linestyle.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        """
 
         # Plot descriptions
         make_horizontal_entry_with_label(self, "X-axis title:", self.x_desc)
@@ -582,6 +617,10 @@ class FramePlottingOptions(tk.LabelFrame):
         """:return a string representing the last selected color or None is none was selected"""
         clr = self.color.get()
         return None if clr == "Default" else clr
+
+    def get_linestyle(self) -> str:
+        """:return a selected linestyle"""
+        return self.linestyle.get()
 
     def get_clear(self) -> bool:
         """:return the state of the <clear> checkbox"""
@@ -722,6 +761,10 @@ class ThermacVisualizer(tk.Frame):
         """:return the selected plotting color or None if the color was not selected"""
         return self.frame_plot_options.get_color()
 
+    def get_selected_linestyle(self) -> str:
+        """:return the selected linestyle of the plot"""
+        return self.frame_plot_options.get_linestyle()
+
     def get_x_axis_scale(self) -> float:
         """:retrn the scaling factor which should be applied to x-axis data"""
         return self.frame_plot_selector.get_x_axis_scale()
@@ -766,11 +809,11 @@ class ThermacVisualizer(tk.Frame):
         """:return the path to the selected .csv data file"""
         return self.frame_open_file.get_csv_path()
 
-    def plot_data(self, data_x, data_y, label: str, color: str, path: str):
+    def plot_data(self, data_x, data_y, label: str, color: str, linestyle: str, path: str):
         """Plot the data onto the axis"""
         rel_path = os.path.relpath(path, os.getcwd())  # Get relative path
 
-        self.frame_figure.plot(data_x, data_y, label, color)
+        self.frame_figure.plot(data_x, data_y, label, color, linestyle)
         self.frame_history.add_history_element(label + " : " + rel_path)
 
     def set_labels(self):
@@ -889,6 +932,7 @@ class ThermacVisualizer(tk.Frame):
                 nxt_clr = self.get_selected_color()
                 if nxt_clr is None:
                     nxt_clr = self.get_next_color()
+                linestyle = self.get_selected_linestyle()
                 lbl = lbls[col]
                 scale = scales[col]
                 data_y = df[col] * scale
@@ -914,7 +958,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_color(nxt_clr)
                 records.append(cur_rec)
 
-                self.plot_data(data_x, data_y, lbl, nxt_clr, self.get_csv_path())
+                self.plot_data(data_x, data_y, lbl, nxt_clr, linestyle, self.get_csv_path())
             self.plot_history.add_records(records)
         else:
             print("No data were loaded.")
