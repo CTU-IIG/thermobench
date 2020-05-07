@@ -46,9 +46,7 @@ class HistoryRecord:
     """ Single record of a plot-line containing references to the experiment-data, columns and scales.
     """
     def __init__(self):
-        self.experiment_name = None  # name of the experiment
-        self.platform_name = None  # name of the platform
-        self.data_file_name = None  # name of the source .csv file containing data
+        self.data_path = None  # name of the source .csv file containing data
 
         self.x_col_name = None  # name of the column used for x-axis
         self.x_scale = 1  # scale of the x-axis
@@ -61,18 +59,11 @@ class HistoryRecord:
 
         self.smoothing_window_size = None  # size of the smoothing window
 
-    def set_data_paths(self, experiment_name: str, platform_name: str, data_file_name: str):
-        assert isinstance(experiment_name, str), "experiment_name must be a string."
-        assert len(experiment_name) > 0, "experiment_name must not be empty."
-        assert isinstance(platform_name, str), "platform_name must be a string."
-        assert len(platform_name) > 0, "platform_name must not be empty."
-        assert isinstance(data_file_name, str), "data_file_name must be a string."
-        assert len(data_file_name) > 0, "data_file_name must not be empty."
-        assert data_file_name.endswith(".csv"), "data_file_name must end with '.csv'."
+    def set_data_path(self, data_path: str):
+        assert os.path.isfile(data_path), "File data_path {:s} does not exist".format(data_path)
+        assert data_path.endswith(".csv"), "data_path must end with '.csv'."
 
-        self.experiment_name = experiment_name
-        self.platform_name = platform_name
-        self.data_file_name = data_file_name
+        self.data_path = data_path
 
     def set_x_data(self, x_col_name: str, x_scale: float):
         assert isinstance(x_col_name, str), "x_col_name must be a string."
@@ -103,12 +94,18 @@ class HistoryRecord:
         self.smoothing_window_size = size
 
     def to_dict(self) -> dict:
-        return self.__dict__
+        return {"data_path": self.data_path,
+                "x_col_name": self.x_col_name,
+                "x_scale": self.x_scale,
+                "y_col_name": self.y_col_name,
+                "y_scale": self.y_scale,
+                "y_label": self.y_label,
+                "y_subtract": self.y_subtract,
+                "y_subtract_scale": self.y_subtract_scale,
+                "smoothing_window_size": self.smoothing_window_size}
 
     def from_dict(self, dct: dict):
-        self.experiment_name = dct["experiment_name"]
-        self.platform_name = dct["platform_name"]
-        self.data_file_name = dct["data_file_name"]
+        self.data_path = dct["data_path"]
         self.x_col_name = dct["x_col_name"]
         self.x_scale = dct["x_scale"]
         self.y_col_name = dct["y_col_name"]
@@ -118,16 +115,9 @@ class HistoryRecord:
         self.y_subtract_scale = dct["y_subtract_scale"]
         self.smoothing_window_size = dct["smoothing_window_size"]
 
-    def get_path(self, experiments_root: str) -> str:
+    def get_path(self) -> str:
         """:return path to the experiment file or empty string if such does not exists"""
-        if not self.experiment_name or not self.platform_name or not self.data_file_name:
-            return ""
-        path = os.path.join(experiments_root, self.experiment_name, "data", self.platform_name, self.data_file_name)
-        if os.path.exists(path):
-            return path
-        else:
-            print("Path '{:s}' does not exist". format(path))
-            return ""
+        return self.data_path
 
     def use_smoothing(self) -> bool:
         return True if self.smoothing_window_size else False
@@ -153,7 +143,11 @@ class PlotHistory:
         self.list_of_records = self.list_of_records[:-1]
 
     def add_records(self, records: List[HistoryRecord]):
-        self.list_of_records.append(records)
+        for rec in records:
+            self.add_record(rec)
+
+    def add_record(self, record: HistoryRecord):
+        self.list_of_records.append(record)
 
     def set_x_title(self, title: str):
         self.x_axis_title = title
@@ -168,28 +162,43 @@ class PlotHistory:
         return {"x_axis_title": self.x_axis_title,
                 "y_axis_title": self.y_axis_title,
                 "figure_title": self.figure_title,
-                "list_of_records": [[rec.to_dict() for rec in records] for records in self.list_of_records]}
+                "list_of_records": [rec.to_dict() for rec in self.list_of_records]}
 
     def save_to_file(self, outfile):
-        json.dump(self.to_dict(), outfile, indent=2)
+        dct = self.to_dict()
 
-    def load_from_file(self, file_path):
-        data = json.load(file_path)
+        # Make the paths relative
+        directory = os.path.dirname(outfile.name)  # Selected directory
+        for r in dct["list_of_records"]:
+            r["data_path"] = os.path.relpath(r["data_path"], directory)
+
+        json.dump(dct, outfile, indent=2)
+
+    def load_from_file(self, file):
+        data = json.load(file)
         self.x_axis_title = data["x_axis_title"]
         self.y_axis_title = data["y_axis_title"]
         self.figure_title = data["figure_title"]
         self.list_of_records = []
 
-        for records in data["list_of_records"]:
-            lst = []
-            for dct in records:
-                rec = HistoryRecord()
-                rec.from_dict(dct)
-                lst.append(rec)
-            self.list_of_records.append(lst)
+        for record in data["list_of_records"]:
+            rec = HistoryRecord()
+            rec.from_dict(record)
+
+            # Make the path absolute
+            directory = os.path.dirname(file.name)  # Selected directory
+            rec.data_path = os.path.join(directory, rec.data_path)
+
+            self.list_of_records.append(rec)
 
     def history_not_empty(self) -> bool:
         return len(self.list_of_records) > 0
+
+    def remove_element(self, idx: int):
+        self.list_of_records.pop(idx)
+
+    def remove_elements_following_idx(self, idx):
+        self.list_of_records = self.list_of_records[:idx + 1]
 
 
 class ScrollFrame(tk.Frame):
@@ -226,7 +235,56 @@ class ScrollFrame(tk.Frame):
         self.canvas.itemconfig(self.canvas_window, width=canvas_width)
 
 
-class FigureFrame(tk.Frame):
+class FrameHistory(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        inner_frame = tk.Frame(self)
+        inner_frame.pack(side=tk.TOP, fill=tk.BOTH, padx=5, pady=2, expand=True)
+
+        scrollbar = tk.Scrollbar(inner_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.listbox = tk.Listbox(inner_frame, selectmode=tk.SINGLE, height=8)
+        self.listbox.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # attach listbox to scrollbar
+        self.listbox.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.listbox.yview)
+
+        # catch event when changing
+        self.listbox.bind('<<ListboxSelect>>', self.on_select)
+
+        self.set_focus_last()
+        self.listbox.configure(justify=tk.LEFT)
+
+    def on_select(self, event):
+        """This method is called every time an element of the listbox is selected."""
+        pass
+
+    def set_focus_last(self):
+        last_id = self.listbox.size() - 1
+        self.listbox.select_clear(0, "end")
+        self.listbox.selection_set(last_id, last_id)
+        self.listbox.see(last_id)
+        self.listbox.activate(last_id)
+
+    def clear_history(self):
+        self.listbox.delete(0, self.listbox.size() - 1)
+
+    def add_history_element(self, label: str):
+        self.listbox.insert(tk.END, label)
+        self.set_focus_last()
+
+    def get_selection(self):
+        sel = self.listbox.curselection()
+        if sel:
+            return int(sel[0])
+        else:
+            return None
+
+
+class FrameFigure(tk.Frame):
     """Frame containing a (matplotlib) figure and the toolbar for plotting graphs."""
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)  # create a frame (self)
@@ -497,15 +555,10 @@ class FrameExponentialFitting(tk.Frame):
 
 
 class ThermacVisualizer(tk.Frame):
-    def __init__(self, parent, experiments_root_path: str, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
-        if experiments_root_path is not None:
-            assert os.path.exists(experiments_root_path), "Root path to the experiments folder must be specified."
-            assert len(experiments_root_path) > 0, "Root path to the experiments folder must not be empty."
-        else:
-            print("Path to the experiments root was not specified. Templating functions will be disabled.")
+
         self.parent = parent
-        self.experiments_root_path = experiments_root_path
         self.configure(background='white')
         self.winfo_toplevel().title("Thermac Data Visualizer")
 
@@ -524,6 +577,28 @@ class ThermacVisualizer(tk.Frame):
         self.frame_open_file = FrameOpenFile(self.frame_menu, self.update_plotting_selector)
         self.frame_open_file.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True, padx=5, pady=2)
 
+        # -- history
+        history_wrapper = tk.LabelFrame(self.frame_menu, text="History")
+        history_wrapper.pack(side=tk.TOP, expand=True, fill=tk.X, padx=5, pady=2)
+
+        self.frame_history = FrameHistory(history_wrapper)
+        self.frame_history.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW, padx=5, pady=2)
+
+        # - clear button
+        tk.Button(history_wrapper, text="Remove selected", command=self.history_remove_element).grid(row=1, column=0,
+                                                                                                     sticky=tk.NSEW)
+        tk.Button(history_wrapper, text="Remove all following",
+                  command=self.history_remove_elements_following_idx).grid(row=1, column=1, sticky=tk.NSEW)
+        tk.Button(history_wrapper, text="Save as template", command=self.save_history_to_file).grid(row=2, column=0,
+                                                                                                    sticky=tk.NSEW,
+                                                                                                    pady=5)
+        tk.Button(history_wrapper, text="Load template", command=self.load_history_from_file).grid(row=2, column=1,
+                                                                                                   sticky=tk.NSEW,
+                                                                                                   pady=5)
+
+        history_wrapper.grid_columnconfigure(0, weight=1)
+        history_wrapper.grid_columnconfigure(1, weight=1)
+
         # -- plotting selector
         self.frame_plot_selector = FramePlottingSelector(self.frame_menu)
         self.frame_plot_selector.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True,  padx=5, pady=2)
@@ -533,35 +608,17 @@ class ThermacVisualizer(tk.Frame):
         self.frame_plot_options.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True, padx=5, pady=2)
 
         # - frame with the figure
-        self.frame_figure = FigureFrame(self)
+        self.frame_figure = FrameFigure(self)
         self.frame_figure.grid(row=0, column=1, stick="nsew")
 
-        self.make_widgets()
+        # - plotting button
+        btn_plot = tk.Button(self.frame_menu, text="Plot", command=self.plot)
+        btn_plot.pack(side=tk.TOP, expand=True, fill=tk.X, pady=5)
 
         # Configure the grid
         self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, minsize=400, weight=5)
-        self.grid_columnconfigure(1, minsize=400, weight=15)
-
-    def make_widgets(self):
-        # - save history button
-        frame_plot_history = tk.LabelFrame(self.frame_menu, text="Plotting:")
-        frame_plot_history.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True, padx=5, pady=5)
-
-        # - plotting button
-        btn_plot = tk.Button(frame_plot_history, text="Plot", command=self.plot)
-        btn_plot.grid(row=0, column=0, columnspan=3, sticky=tk.NSEW, pady=5)
-
-        if self.experiments_root_path is not None:
-            tk.Button(frame_plot_history, text="Back", command=self.history_step_back).grid(row=1, column=0, sticky=tk.NSEW, pady=5)
-            tk.Button(frame_plot_history, text="Save as template", command=self.save_history_to_file).grid(row=1, column=1, sticky=tk.NSEW, pady=5)
-            tk.Button(frame_plot_history, text="Load template", command=self.load_history_from_file).grid(row=1, column=2, sticky=tk.NSEW, pady=5)
-
-            frame_plot_history.grid_columnconfigure(0, weight=1)
-            frame_plot_history.grid_columnconfigure(1, weight=1)
-            frame_plot_history.grid_columnconfigure(2, weight=1)
-        else:
-            frame_plot_history.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(0, minsize=450, weight=5)
+        self.grid_columnconfigure(1, minsize=450, weight=15)
 
     def update_plotting_selector(self, cols):
         """Update the plotting selector frame"""
@@ -581,6 +638,7 @@ class ThermacVisualizer(tk.Frame):
         """Clear axis of the figure and the plot history."""
         self.clear_figure()
         self.plot_history.clear()
+        self.frame_history.clear_history()
 
     def get_df(self) -> pd.DataFrame:
         """:return the current dataframe"""
@@ -630,9 +688,12 @@ class ThermacVisualizer(tk.Frame):
         """:return the path to the selected .csv data file"""
         return self.frame_open_file.get_csv_path()
 
-    def plot_data(self, data_x, data_y, label: str):
+    def plot_data(self, data_x, data_y, label: str, path: str):
         """Plot the data onto the axis"""
+        rel_path = os.path.relpath(path, os.getcwd())  # Get relative path
+
         self.frame_figure.plot(data_x, data_y, label)
+        self.frame_history.add_history_element(label + " : " + rel_path)
 
     def set_labels(self):
         """Set x/y-labels and figure title"""
@@ -645,65 +706,56 @@ class ThermacVisualizer(tk.Frame):
         self.plot_history.set_figure_title(self.frame_plot_options.get_figure_title())
 
     def set_history_paths(self, record: HistoryRecord) -> bool:
-        """This function supposes that the .csv data file is located in
-        .../experiments/<experiment_name>/data/<platform_name>/<datafile.csv> -> this path is parsed from the
-        end to obtain <experiment_name>, <platform_name> and <datafile.csv>, which are set to the record.
-        Return True if paths were set."""
+        """This function sets the data_path of the recors to csv_path of the currently opened file"""
         csv_path = self.get_csv_path()
         if os.path.exists(csv_path):
-            csv_path_components = os.path.normpath(csv_path).split(os.sep)
-            if len(csv_path_components) < 5:
-                print("Path {:s} contains less than 5 elements; however, structure like /experiments/<experiment-name>/data/<platform>/<file.csv> was expected.".format(csv_path))
-                return False
-
-            file_name = str(csv_path_components[-1])
-            platform_name = str(csv_path_components[-2])
-            experiment_name = str(csv_path_components[-4])
-            if not file_name.endswith(".csv"):
-                print("Filename {:s} does not end with '.csv'.".format(csv_path_components[-1]))
-                return False
-            if csv_path_components[-3] != "data":
-                print("Structure like /experiments/<experiment-name>/data/<platform>/<file.csv> was expected, but got {:s} instead.".format(csv_path))
-                return False
-            if csv_path_components[-5] != "experiments":
-                print("Structure like /experiments/<experiment-name>/data/<platform>/<file.csv> was expected, but got {:s} instead.".format(csv_path))
-                return False
-
-            record.set_data_paths(experiment_name, platform_name, file_name)
+            record.set_data_path(csv_path)
             return True
 
     def update_figure(self):
         """Update the frame figure"""
         self.frame_figure.update_figure()
 
-    def history_step_back(self):
-        """Go back one step in the history"""
-        self.plot_history.remove_last()  # Remove the last element
-        self.history_plot()  # Plot the history
+    def history_remove_element(self):
+        """Clear the plot on the given idx"""
+        idx = self.frame_history.get_selection()
+        if idx is not None:
+            self.frame_history.clear_history()
+            self.plot_history.remove_element(idx)
+            self.history_plot()
+
+    def history_remove_elements_following_idx(self):
+        """Remove all history elements following the element with given idx"""
+        idx = self.frame_history.get_selection()
+        if idx is not None:
+            self.frame_history.clear_history()
+            self.plot_history.remove_elements_following_idx(idx)
+            self.history_plot()
 
     def history_plot(self):
         """Redraw the plot according to the current history."""
         self.clear_figure()
         # plot the data stored in the history
-        for records in self.plot_history.list_of_records:
-            for record in records:
-                data_path = record.get_path(self.experiments_root_path)
-                if not data_path:
-                    print("Data path was not reconstructed, skipping record.")
-                    continue
-                df = pd.read_csv(data_path, comment="#")
+        for record in self.plot_history.list_of_records:
+            data_path = record.get_path()
+            if not data_path:
+                print("Data path was not reconstructed, skipping record.")
+                continue
 
-                data_x = df[record.x_col_name] * record.x_scale
-                data_y = df[record.y_col_name] * record.y_scale
-                lbl = record.y_label
+            df = pd.read_csv(data_path, comment="#")
 
-                if record.use_subtract():
-                    data_y -= df[record.y_subtract] * record.y_subtract_scale
+            data_y_notnull = df[record.y_col_name].notnull()
+            data_x = df[record.x_col_name][data_y_notnull] * record.x_scale
+            data_y = df[record.y_col_name][data_y_notnull] * record.y_scale
+            lbl = record.y_label
 
-                if record.use_smoothing():
-                    data_y = data_y.rolling(window=record.smoothing_window_size).mean()
+            if record.use_subtract():
+                data_y -= df[record.y_subtract][data_y_notnull] * record.y_subtract_scale
 
-                self.plot_data(data_x, data_y, lbl)
+            if record.use_smoothing():
+                data_y = data_y.rolling(window=record.smoothing_window_size).mean()
+
+            self.plot_data(data_x, data_y, lbl, data_path)
         # update the axis
         self.frame_figure.set_x_axis_label(self.plot_history.x_axis_title)
         self.frame_figure.set_y_axis_label(self.plot_history.y_axis_title)
@@ -713,27 +765,30 @@ class ThermacVisualizer(tk.Frame):
     def save_history_to_file(self):
         """Save the plotting history to file."""
         if self.plot_history.history_not_empty():
-            file = tkfile.asksaveasfile(mode="w", defaultextension=".txt")
+            file = tkfile.asksaveasfile(mode="w", defaultextension=".tdvt",
+                                        filetypes=[("Thermobench Data Visualizer template", "*.tdvt")])
             if file:
                 self.plot_history.save_to_file(file)
                 file.close()
 
     def load_history_from_file(self):
         """Load the history from history file"""
-        file = tkfile.askopenfile(mode="r", defaultextension=".txt")
+        file = tkfile.askopenfile(mode="r", defaultextension=".tdvt",
+                                  filetypes=[("Thermobench Data Visualizer template", "*.tdvt")])
         if file:
             self.plot_history.load_from_file(file)
 
-        self.history_plot()
+            # set axis labels and figure title
+            self.frame_plot_options.set_x_axis_label(self.plot_history.x_axis_title)
+            self.frame_plot_options.set_y_axis_label(self.plot_history.y_axis_title)
+            self.frame_plot_options.set_figure_title(self.plot_history.figure_title)
 
-        # set axis labels and figure title
-        self.frame_plot_options.set_x_axis_label(self.plot_history.x_axis_title)
-        self.frame_plot_options.set_y_axis_label(self.plot_history.y_axis_title)
-        self.frame_plot_options.set_figure_title(self.plot_history.figure_title)
+            # clear frames
+            self.frame_plot_selector.clear_options()
+            self.frame_history.clear_history()
+            self.frame_open_file.clear_selection()
 
-        # clear frames
-        self.frame_plot_selector.clear_options()
-        self.frame_open_file.clear_selection()
+            self.history_plot()
 
     def plot(self):
         """Plot the selected data to the figure."""
@@ -775,8 +830,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
                 records.append(cur_rec)
 
-                self.plot_data(data_x, data_y, lbl)
-
+                self.plot_data(data_x[data_y_notnull], data_y, lbl, self.get_csv_path())
             self.plot_history.add_records(records)
         else:
             print("No data were loaded.")
@@ -785,23 +839,8 @@ class ThermacVisualizer(tk.Frame):
         self.update_figure()
 
 
-def parse_commandline():
-    import argparse
-    p = argparse.ArgumentParser(description='Plot and save graphs from csv.')
-    p.add_argument('-p', '--root_path',
-                   help='Path to the root of the experiments folder.',
-                   dest="root_path",
-                   type=str,
-                   required=False
-                   )
-    p.parse_args('-p /root/asd/what'.split())
-    return p.parse_args()
-
-
 # Run the visualizer
 if __name__ == "__main__":
-    parsed_args = parse_commandline()
-
     # Set matplotlib fonts
     plt.rc('xtick', labelsize=8)
     plt.rc('ytick', labelsize=8)
@@ -809,5 +848,5 @@ if __name__ == "__main__":
 
     # Create GUI root, and run the application
     root = tk.Tk()
-    ThermacVisualizer(root, parsed_args.root_path).pack(side="top", fill="both", expand=True)
+    ThermacVisualizer(root).pack(side="top", fill="both", expand=True)
     root.mainloop()
