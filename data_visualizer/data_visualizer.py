@@ -128,7 +128,7 @@ class HistoryRecord:
 
 class PlotHistory:
     def __init__(self):
-        self.list_of_records = []  # List containing List[HistoryRecord] elements
+        self.list_of_records = []  # List containing HistoryRecord elements
         self.x_axis_title = ""  # title of the x-axis
         self.y_axis_title = ""  # title of the y-axis
         self.figure_title = ""  # title of the figure
@@ -449,7 +449,8 @@ class FramePlottingSelector(tk.LabelFrame):
 
 
             # subtract menu
-            tk.Checkbutton(self, text="subtract:", variable=self.subtract).grid(row=row_id, column=1, pady=10, stick=tk.W)
+            tk.Checkbutton(self, text="subtract:", variable=self.subtract).grid(row=row_id, column=1, pady=10,
+                                                                                stick=tk.W)
             tk.OptionMenu(self, self.subtract_col, *self.df_cols).grid(row=row_id, column=2, pady=10, stick=tk.W)
             self.subtract_scale = tk.Entry(self, width=8)
             self.subtract_scale.insert(tk.END, "1")
@@ -469,7 +470,7 @@ class FramePlottingSelector(tk.LabelFrame):
     def get_y_column_scales(self) -> Dict[str, float]:
         return {col: parse_float(self.y_axis_scale[col], 1) for col in self.df_cols}
 
-    def get_y_column_labels(self) -> Dict[str,str]:
+    def get_y_column_labels(self) -> Dict[str, str]:
         return {col: parse_string(self.y_axis_labels[col], "") for col in self.df_cols}
 
     def get_subtract(self) -> bool:
@@ -601,7 +602,7 @@ class ThermacVisualizer(tk.Frame):
 
         # -- plotting selector
         self.frame_plot_selector = FramePlottingSelector(self.frame_menu)
-        self.frame_plot_selector.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True,  padx=5, pady=2)
+        self.frame_plot_selector.pack(side=tk.TOP, fill=tk.X, anchor=tk.NW, expand=True, padx=5, pady=2)
 
         # -- plot options
         self.frame_plot_options = FramePlottingOptions(self.frame_menu)
@@ -656,11 +657,11 @@ class ThermacVisualizer(tk.Frame):
         """:return list of the selected df column names used for y-axis plot"""
         return self.frame_plot_selector.get_y_column_names_selected()
 
-    def get_y_column_scales(self) -> Dict[str,float]:
+    def get_y_column_scales(self) -> Dict[str, float]:
         """:return dcitionary containing column_name -> scaling factor mapping"""
         return self.frame_plot_selector.get_y_column_scales()
 
-    def get_y_column_labels(self) -> Dict[str,str]:
+    def get_y_column_labels(self) -> Dict[str, str]:
         """:return dcitionary containing column_name -> scaling factor mapping"""
         return self.frame_plot_selector.get_y_column_labels()
 
