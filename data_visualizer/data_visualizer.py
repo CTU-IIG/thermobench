@@ -273,6 +273,7 @@ class FigureFrame(tk.Frame):
         handles, labels = self.axis.get_legend_handles_labels()
         if labels:
             self.axis.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        self.axis.grid(True)
         self.axis.autoscale(tight=False)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
