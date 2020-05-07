@@ -4,6 +4,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog as tkfile
 from typing import List, Dict
+from tkinter import colorchooser
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -530,6 +531,8 @@ class FramePlottingOptions(tk.LabelFrame):
         self.x_desc = tk.StringVar(value="")  # title of the x-axis
         self.y_desc = tk.StringVar(value="")  # title of the y-axis
         self.fig_desc = tk.StringVar(value="")  # title of the figure
+        self.color = tk.StringVar(value="Default")  # plotting color
+        self.color_lbl = None
 
         self.make_widgets()
 
@@ -552,10 +555,33 @@ class FramePlottingOptions(tk.LabelFrame):
         tk.Scale(frame_scale, orient=tk.HORIZONTAL, variable=self.smoothing_window, from_=1, to=100).pack(side=tk.LEFT,
                                                                                                           fill=tk.X,
                                                                                                           expand=True)
+        # Plot color
+        frame_color = tk.Frame(self)  # Frame for horizontal alignment of check buttons
+        frame_color.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10)
+        tk.Label(frame_color, text="Plot color:").pack(side=tk.LEFT)
+        tk.Button(frame_color, text="Pick a color", command=self.pick_color).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        self.color_lbl = tk.Label(frame_color, text="   ")
+        self.color_lbl.pack(side=tk.LEFT)
+        tk.Label(frame_color, textvariable=self.color).pack(side=tk.LEFT)
+
         # Plot descriptions
         make_horizontal_entry_with_label(self, "X-axis title:", self.x_desc)
         make_horizontal_entry_with_label(self, "Y-axis title:", self.y_desc)
         make_horizontal_entry_with_label(self, "Figure title:", self.fig_desc)
+
+    def pick_color(self):
+        clr = colorchooser.askcolor()
+        if clr is not None and clr[1]:
+            self.color.set(clr[1])
+            self.color_lbl.config(bg=clr[1])
+        else:
+            self.color.set("Default")
+            self.color_lbl.config(bg=self.master["bg"])
+
+    def get_color(self) -> str:
+        """:return a string representing the last selected color or None is none was selected"""
+        clr = self.color.get()
+        return None if clr == "Default" else clr
 
     def get_clear(self) -> bool:
         """:return the state of the <clear> checkbox"""
@@ -691,6 +717,10 @@ class ThermacVisualizer(tk.Frame):
 
     def get_next_color(self) -> str:
         return default_colors[self.get_num_lines() % len(default_colors)]
+
+    def get_selected_color(self) -> str:
+        """:return the selected plotting color or None if the color was not selected"""
+        return self.frame_plot_options.get_color()
 
     def get_x_axis_scale(self) -> float:
         """:retrn the scaling factor which should be applied to x-axis data"""
@@ -856,7 +886,9 @@ class ThermacVisualizer(tk.Frame):
 
             for col in self.get_y_column_names_selected():
                 cur_rec = HistoryRecord()
-                nxt_clr = self.get_next_color()
+                nxt_clr = self.get_selected_color()
+                if nxt_clr is None:
+                    nxt_clr = self.get_next_color()
                 lbl = lbls[col]
                 scale = scales[col]
                 data_y = df[col] * scale
