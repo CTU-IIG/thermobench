@@ -426,7 +426,7 @@ class FrameOpenFile(tk.Frame):
 class FramePlottingSelector(tk.LabelFrame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)  # create a frame (self)
-        self.configure(text="Plotting selection:")
+        self.configure(text="Plotting selection")
         self.x_axis_control = None  # placeholder for variable deciding x-axis data (radiobutton)
         self.y_axis_chck = []  # list of checkbuttons for plotting data (df column) selection
         self.y_axis_labels = dict()  # user-defined labels of the data
