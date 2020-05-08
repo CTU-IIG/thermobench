@@ -535,7 +535,7 @@ class FramePlottingSelector(tk.LabelFrame):
 class FramePlottingOptions(tk.LabelFrame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)  # create a frame (self)
-        self.configure(text="Options:")
+        self.configure(text="Options")
         self.smoothing = tk.BooleanVar(value=False)  # use smoothing (rolling window mean) for plotting the data
         self.smoothing_window = tk.IntVar(value=10)  # size of the smoothing window
         self.clear = tk.BooleanVar(value=False)  # clear the figure before the next plot
