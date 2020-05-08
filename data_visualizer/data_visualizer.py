@@ -844,10 +844,9 @@ class ThermacVisualizer(tk.Frame):
         interp_1 = df[[name_x, name_y]].dropna()
         interp_2 = df[[name_x, name_subtract]].dropna()
         # Subtract data
-        data_sub = df[[name_x, name_y, name_subtract]]
-        data_sub[name_y] = np.interp(data_sub[name_x], interp_1[name_x], interp_1[name_y])
-        data_sub[name_subtract] = np.interp(data_sub[name_x], interp_2[name_x], interp_2[name_subtract])
-        data_sub["sub"] = data_sub[name_y] * scale_y - data_sub[name_subtract] * scale_subtract
+        sub1 = np.interp(df[name_x], interp_1[name_x], interp_1[name_y])
+        sub2 = np.interp(df[name_x], interp_2[name_x], interp_2[name_subtract])
+        data_sub = pd.DataFrame({name_x: df[name_x], "sub": sub1 * scale_y - sub2 * scale_subtract}).dropna()
 
         data_x = data_sub[name_x] * scale_x
         data_y = data_sub["sub"]
