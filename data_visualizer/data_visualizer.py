@@ -2,6 +2,7 @@
 import json
 import os
 import tkinter as tk
+import numpy as np
 from tkinter import filedialog as tkfile
 from tkinter.ttk import Combobox
 from typing import List, Dict
@@ -559,7 +560,6 @@ class FramePlottingOptions(tk.LabelFrame):
         chck_smoothing = tk.Checkbutton(frame_check_buttons, text="use smoothing", variable=self.smoothing)
         chck_smoothing.pack(side=tk.LEFT, anchor=tk.W, expand=False, padx=10)
 
-
         frame_plt_opts = tk.Frame(self)  # Frame for horizontal alignment of check buttons
         frame_plt_opts.pack(side=tk.TOP, anchor=tk.NW, fill=tk.X, expand=True, padx=10, pady=5)
         # - smoothing width (slider)
@@ -837,6 +837,30 @@ class ThermacVisualizer(tk.Frame):
             self.plot_history.remove_elements_following_idx(idx)
             self.history_plot()
 
+    def subtract_data(self, df, name_x, name_y, name_subtract, scale_x, scale_y, scale_subtract):
+        """Interpolate data in columns 'name_y' and 'name_subtract' at points in 'name_x' column,
+        subtract the columns and return data x and subtracted data"""
+        # Interpolate data w.r.t. x-axis
+        interp_1 = df[[name_x, name_y]].dropna()
+        interp_2 = df[[name_x, name_subtract]].dropna()
+        # Subtract data
+        data_sub = df[[name_x, name_y, name_subtract]]
+        data_sub[name_y] = np.interp(data_sub[name_x], interp_1[name_x], interp_1[name_y])
+        data_sub[name_subtract] = np.interp(data_sub[name_x], interp_2[name_x], interp_2[name_subtract])
+        data_sub["sub"] = data_sub[name_y] * scale_y - data_sub[name_subtract] * scale_subtract
+
+        data_x = data_sub[name_x] * scale_x
+        data_y = data_sub["sub"]
+        return data_x, data_y
+
+    @staticmethod
+    def get_data_witnout_nan(df, name_x, name_y, scale_x, scale_y):
+        """:return the scaled data_x and data_y without nan values"""
+        data = df[[name_x, name_y]].dropna()
+        data_x = data[name_x] * scale_x
+        data_y = data[name_y] * scale_y
+        return data_x, data_y
+
     def history_plot(self):
         """Redraw the plot according to the current history."""
         self.clear_figure()
@@ -848,17 +872,17 @@ class ThermacVisualizer(tk.Frame):
                 continue
 
             df = pd.read_csv(data_path, comment="#")
-
-            data_y_notnull = df[record.y_col_name].notnull()
-            data_x = df[record.x_col_name][data_y_notnull] * record.x_scale
-            data_y = df[record.y_col_name][data_y_notnull] * record.y_scale
             lbl = record.y_label
 
             if record.use_subtract():
-                data_y -= df[record.y_subtract][data_y_notnull] * record.y_subtract_scale
+                data_x, data_y = self.subtract_data(df, record.x_col_name, record.y_col_name, record.y_subtract,
+                                                    record.x_scale, record.y_scale, record.y_subtract_scale)
+            else:
+                data_x, data_y = self.get_data_witnout_nan(df, record.x_col_name, record.y_col_name,
+                                                           record.x_scale, record.y_scale)
 
             if record.use_smoothing():
-                data_y = data_y.rolling(window=record.smoothing_window_size).mean()
+                data_y = data_y.rolling(window=record.smoothing_window_size, min_periods=1).mean()
 
             self.plot_data(data_x, data_y, lbl, record.color, record.linestyle, data_path)
         # update the axis
@@ -903,12 +927,11 @@ class ThermacVisualizer(tk.Frame):
         df = self.get_df()
 
         if df is not None:
+            name_x = self.get_x_column_name()
             scale_x = self.get_x_axis_scale()
-            data_x = df[self.get_x_column_name()] * scale_x
 
             lbls = self.get_y_column_labels()
             scales = self.get_y_column_scales()
-
             records = []
 
             for col in self.get_y_column_names_selected():
@@ -919,18 +942,19 @@ class ThermacVisualizer(tk.Frame):
                 linestyle = self.get_selected_linestyle()
                 lbl = lbls[col]
                 scale = scales[col]
-                data_y = df[col] * scale
                 subtract_col = self.get_subtract_column()
 
+                # Get plotting data if subtraction is selected
                 if self.get_subtract() and subtract_col:  # subtract the selected column
                     subtract_scale = self.get_subtract_column_scale()
-                    data_y -= df[subtract_col] * subtract_scale
-
+                    data_x, data_y = self.subtract_data(df, name_x, col, subtract_col, scale_x, scale, subtract_scale)
                     cur_rec.set_scale_data(subtract_col, subtract_scale)  # set subtract column in the history
+                else:  # Get plotting data (without subtraction)
+                    data_x, data_y = self.get_data_witnout_nan(df, name_x ,col, scale_x, scale)
 
                 if self.get_smoothing():  # do the smoothing
                     win_size = self.get_smoothing_window_size()
-                    data_y = data_y.rolling(window=win_size).mean()
+                    data_y = data_y.rolling(window=win_size, min_periods=1).mean()
                     lbl = lbl + "-smooth" + str(win_size)
 
                     cur_rec.set_smoothing_window_size(win_size)  # set smoothing window size in the history
@@ -940,6 +964,7 @@ class ThermacVisualizer(tk.Frame):
                 cur_rec.set_x_data(self.get_x_column_name(), 1)  # set history for x-axis
                 cur_rec.set_y_data(col, scale, lbl)  # set history for y-axis
                 cur_rec.set_color(nxt_clr)
+                cur_rec.set_linestyle(linestyle)
                 records.append(cur_rec)
 
                 self.plot_data(data_x, data_y, lbl, nxt_clr, linestyle, self.get_csv_path())
