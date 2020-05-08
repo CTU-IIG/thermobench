@@ -898,7 +898,7 @@ string sensor::extractUnits(const string spec)
 string cpu::getHeader(unsigned idx)
 {
     stringstream header;
-    header << "CPU" << idx << "_load/%%";
+    header << "CPU" << idx << "_load/%";
     return header.str();
 }
 
