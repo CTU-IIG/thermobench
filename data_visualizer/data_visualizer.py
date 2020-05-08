@@ -580,24 +580,6 @@ class FramePlottingOptions(tk.LabelFrame):
         frame_plt_opts.grid_columnconfigure(1, weight=1)
         frame_plt_opts.grid_columnconfigure(2, weight=1)
         frame_plt_opts.grid_columnconfigure(3, weight=1)
-        """
-        # Plot color
-        frame_color = tk.Frame(self)  # Frame for horizontal alignment of check buttons
-        frame_color.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10, pady=5)
-        tk.Label(frame_color, text="Plot color:").pack(side=tk.LEFT)
-        tk.Button(frame_color, text="Pick a color", command=self.pick_color).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
-        self.color_lbl = tk.Label(frame_color, text="   ")
-        self.color_lbl.pack(side=tk.LEFT)
-        tk.Label(frame_color, textvariable=self.color).pack(side=tk.LEFT)
-
-        # Line style
-        frame_linestyle = tk.Frame(self)  # Frame for horizontal alignment of check buttons
-        frame_linestyle.pack(side=tk.TOP, anchor=tk.NW, expand=True, fill=tk.X, padx=10, pady=5)
-        tk.Label(frame_linestyle, text="Linestyle:").pack(side=tk.LEFT)
-        self.linestyle = Combobox(frame_linestyle, values=["solid", "dotted", "dashed", "dashdot"], state="readonly")
-        self.linestyle.current(0)
-        self.linestyle.pack(side=tk.LEFT, expand=True, fill=tk.X)
-        """
 
         # Plot descriptions
         make_horizontal_entry_with_label(self, "X-axis title:", self.x_desc)
@@ -876,7 +858,7 @@ class ThermacVisualizer(tk.Frame):
             if record.use_smoothing():
                 data_y = data_y.rolling(window=record.smoothing_window_size).mean()
 
-            self.plot_data(data_x, data_y, lbl, record.color, data_path)
+            self.plot_data(data_x, data_y, lbl, record.color, record.linestyle, data_path)
         # update the axis
         self.frame_figure.set_x_axis_label(self.plot_history.x_axis_title)
         self.frame_figure.set_y_axis_label(self.plot_history.y_axis_title)
