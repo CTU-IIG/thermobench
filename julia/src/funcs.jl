@@ -99,6 +99,15 @@ function interpolate(df::AbstractDataFrame)
     return d
 end
 
+"""
+    thermocam_correct!(df::AbstractDataFrame)
+
+Estimate correction for thermocamera temperatures and apply it. Return
+the correction coefficients.
+
+Correction is calculated from `CPU_0_temp_°C` and `cam_cpu` columns.
+This and the names of modified columns are currently hard coded.
+"""
 function thermocam_correct!(df::AbstractDataFrame)
     di = interpolate(df)
     match_cols = [:CPU_0_temp_°C, :cam_cpu]
