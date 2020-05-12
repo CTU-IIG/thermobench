@@ -11,6 +11,7 @@ The application is written in `Python3` in `tkinter` framework.
 The application also uses
  - `matplotlib` package for plotting;
  - `pandas` package for loading the `.csv` files;
+ - `numpy` package for interpolation;
  - `json` package for working with the figure templates.
  
 ## How to run
@@ -19,32 +20,6 @@ Just run the Python script:
   ```python3 data_visualizer.py```
   If all dependencies are correctly installed, the GUI will appear.  
  
- It is also possible to run the script with path argument `-p`
-
- ```python3 data_visualizer.py -p <path-to-the-root-of-experiments>```
-
- where `<path-to-the-root-of-experiments>` is path to the folder containing Thermobench experiments data. The expected structure of the experiments folder is:
- 
- ```bash
-.
-├── experiments
-│   ├── experiment-name
-│   │   ├── data
-│   │   │   ├── imx8
-│   │   │   │   ├── data_file1.csv
-│   │   │   │   ├── data_file2.csv
-│   │   │   │   └── ...
-│   │   │   └── <other-platform-name>
-│   │   │       ├── some_data.csv
-│   │   │       ├── other_data.csv
-│   │   │       └── ...
-│   └── another_experiment_name
-│       └── ...
-└── ...
-```
-
-If the path `-p` is provided, the structure of the current figure can be saved to a text file (`.json`), and loaded later.
-
 
 ## GUI description
 
@@ -55,8 +30,17 @@ The GUI consists of two major frames, including `menu` (1-4), and `plotting area
 1. File selection
     - By clicking on the `Open` button, file dialog appears, allowing the user to select the `.csv` file.
     - After selecting the file, the selected filepath is displayed in the text area below the `Open` button.
+
+2. Plotting history
+    - The individual lines plotted into the plotting area are logged in the listbox widget.
+    - Below the logging area, there are several buttons allowing the user to
+        - Remove a selected line.
+        - Remove a selected line and all other following the selected one.
+        - Save the currect plot as into `.tdvt` file (basically `.json` file containing the information needed to make the plot).
+            - When the current plot is saved, user selects the file path where the template will be saved. All paths to plotted data are then stored relatively to this path.
+        - Load `.tdvt` file.
     
-2. Data-plotting selection
+3. Data-plotting selection
     - When some `.csv` file is selected, Plotting selection section appears, showing all columns of the `.csv` file.
         - In `x` column, user specifies, which data should be used for x-axis.
         - In `y` column, user can select one or multiple data columns to be used for y-axis.
@@ -64,15 +48,13 @@ The GUI consists of two major frames, including `menu` (1-4), and `plotting area
         - The `scale` is a factor, by which the data is multiplied before plotting.
     - `Subtract` option can be selected to subtract some column data from the selected `y` columns before plotting.
     
-3. Plotting options
+4. Plotting options
     - `clear before plotting option` clears the figure before plotting the selected data. If this option is not selected, the figure will just be updated - this way, data from multiple `.csv` files can be plotted in a single figure.
     - When the `smoothing` option is selected, the `rolling window` (mean) is used to pre-process the data before plotting. The size of the window is specified by `rolling window size` slidebar (number from 1 to 100).
+    - Style of the plot can be adjusted by selecting the linestyle and plot color. If no color is selected, default colorscheme defined in the global array `default_colors` is used.
     - Descriptions of the figure can be set in `x-axis title`, `y-axis title` and `figure title` fields. Note that the descriptions will be updated after clicking on the `Plot` button.
-     
-4. Plot button (plus templating options)   
-    - The `Plot` button causes the figure to be re-plotted, possible adding selected data from data-plotting section, and/or updating the labels set in the plotting options.
-    - If the root path to the experiments folder is set, the structure of the current graph can be saved to a text file, which can be loaded later on (e.g., after the data files are updated with new data).
-    
+    - The `Plot` button causes the figure to be re-plotted, possibly adding selected data from data-plotting section, and/or updating the labels set in the plotting options.
+
 5. Figure
     - The data are plotted here, by using the matplotlib.pyplot `plot` function.
  
