@@ -1,0 +1,15 @@
+name = "Thermobench"
+uuid = "3a96b4a6-6e4a-4364-a7da-ae35f19f70eb"
+authors = ["Michal Sojka <michal.sojka@cvut.cz>"]
+version = "0.1.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Gnuplot = "dc211083-a33a-5b79-959f-2ff34033469d"
+LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"
+PrettyPrinting = "54e16d92-306c-5ea0-a30b-337be88ac337"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
