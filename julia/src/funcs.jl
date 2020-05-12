@@ -14,11 +14,12 @@ function normalize_units!(df::AbstractDataFrame)
     end
 end
 
-"Read thermobech CSV file, optionally normalizing units and return it as DataFrame"
+"""
+    read(source; normalizeunits=true)
 
-```julia
-read(source; normalizeunits=true)
-```
+Read thermobech CSV file, optionally normalizing units and return it
+as DataFrame"
+"""
 function read(source; normalizeunits=true)
     df = CSV.read(source; comment="#", normalizenames=true,
                   silencewarnings=true, copycols=true,
