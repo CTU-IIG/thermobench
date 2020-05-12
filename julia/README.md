@@ -53,7 +53,7 @@ Thermobench.printfit(f)
 ```
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L166-L184' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L166-L184' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.interpolate!-Tuple{DataFrames.AbstractDataFrame}' href='#Thermobench.interpolate!-Tuple{DataFrames.AbstractDataFrame}'>#</a>
 **`Thermobench.interpolate!`** &mdash; *Method*.
@@ -67,7 +67,7 @@ interpolate!(df::AbstractDataFrame)
 In-place version of [`interpolate`](index.md#Thermobench.interpolate-Tuple{DataFrames.AbstractDataFrame}).
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L33-L37' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L33-L37' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.interpolate-Tuple{DataFrames.AbstractDataFrame}' href='#Thermobench.interpolate-Tuple{DataFrames.AbstractDataFrame}'>#</a>
 **`Thermobench.interpolate`** &mdash; *Method*.
@@ -106,7 +106,7 @@ julia> interpolate(x)
 ```
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L65-L95' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L65-L95' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.plot_fit' href='#Thermobench.plot_fit'>#</a>
 **`Thermobench.plot_fit`** &mdash; *Function*.
@@ -133,7 +133,7 @@ plot_fit(
 ```
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L262-L280' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L262-L280' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.printfit-Tuple{Any}' href='#Thermobench.printfit-Tuple{Any}'>#</a>
 **`Thermobench.printfit`** &mdash; *Method*.
@@ -147,7 +147,7 @@ printfit(fit; minutes = false)
 Return the fitted function as Gnuplot enhanced string. Time constants (τᵢ) are sorted from smallest to largest.
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L133-L138' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L133-L138' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.@symarray-Tuple' href='#Thermobench.@symarray-Tuple'>#</a>
 **`Thermobench.@symarray`** &mdash; *Macro*.
@@ -163,7 +163,7 @@ Useful for constructing column names, e.g.,
 ```
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L251-L258' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L251-L258' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.normalize_units!-Tuple{DataFrames.AbstractDataFrame}' href='#Thermobench.normalize_units!-Tuple{DataFrames.AbstractDataFrame}'>#</a>
 **`Thermobench.normalize_units!`** &mdash; *Method*.
@@ -173,7 +173,7 @@ Useful for constructing column names, e.g.,
 Normalize units to seconds and °C
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L1' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L1' class='documenter-source'>source</a><br>
 
 <a id='Thermobench.thermocam_correct!-Tuple{DataFrames.AbstractDataFrame}' href='#Thermobench.thermocam_correct!-Tuple{DataFrames.AbstractDataFrame}'>#</a>
 **`Thermobench.thermocam_correct!`** &mdash; *Method*.
@@ -189,7 +189,7 @@ Estimate correction for thermocamera temperatures and apply it. Return the corre
 Correction is calculated from `CPU_0_temp_°C` and `cam_cpu` columns. This and the names of modified columns are currently hard coded.
 
 
-<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/f63c53cbfc19997c9697673d0fbc167f164da7fb/julia/src/funcs.jl#L102-L110' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/CTU-IIG/thermobench/blob/ed68fed99e92a458a439d9727501653dd4c763ad/julia/src/funcs.jl#L102-L110' class='documenter-source'>source</a><br>
 
 
 
