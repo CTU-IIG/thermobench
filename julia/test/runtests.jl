@@ -95,7 +95,7 @@ tau_bounds = [
 ]
 
 df = T.read("thermocam/thermocam-gpu.csv")
-T.plot_fit(filter(df) do row; 26 <= row.time_s/60 <= 48 end, :cam_cpu, order=2)
+T.plot_fit(filter(df) do row; 26 <= row.time_s/60 <= 48 end, :cam_cpu, order=3)
 
 T.plot_fit("./thermocam/thermocam.csv", :cam_cpu)
 
