@@ -200,6 +200,8 @@ function fit(time_s::Vector{Float64}, data;
     ub = bounds[:,2]
     df = DataFrame(time=time_s, data=data) |> dropmissing
 
+    rng = MersenneTwister(length(time_s));
+
     if p0 === nothing
         p₀ = @. lb + (ub - lb)/2
         p₀[1] = df.data[end]
@@ -207,7 +209,7 @@ function fit(time_s::Vector{Float64}, data;
             p₀[2i] = (df.data[1] - df.data[end])
         end
     elseif p0 === :random
-        p₀ = @. lb + (ub - lb) * rand()
+        p₀ = @. lb + (ub - lb) * rand() # Default rng
     else
         p₀ = p0
     end
@@ -226,8 +228,8 @@ function fit(time_s::Vector{Float64}, data;
             catch e
                 @warn sprint(showerror, e)
             end
-            # Another attempt with different initial solution
-            p₀ = @. lb + (ub - lb) * rand()
+            # Another attempt with different initial solution (use local deterministic rng)
+            p₀ = @. lb + (ub - lb) * rand(rng)
         end
         best_result
     end
