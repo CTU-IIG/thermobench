@@ -264,13 +264,18 @@ macro symarray(sym...)
 end
 """
     plot_fit(sources, columns = :CPU_0_temp_°C;
-                      kwargs...)
+             timecol = :time_s,
+             kwargs...)
 
 Call [`fit`](@ref) for all `sources` and `columns` and produce a graph
 using gnuplot.
 
 `sources` can be a file name (`String`) or a `DataFrame` or an array
 of these.
+
+`timecol` is the columns with time of measurement.
+
+Other `kwargs` are passed to [`fit`](@ref).
 
 # Example
 ```julia
@@ -282,6 +287,7 @@ plot_fit(
 ```
 """
 function plot_fit(sources, columns = :CPU_0_temp_°C;
+                  timecol = :time_s,
                   kwargs...)
     local prefix = ""
     if isa(sources, Array) && eltype(sources) <: AbstractString
@@ -313,15 +319,15 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                         title = ""
                     end
                     color = weighted_color_mean(0.4, color, colorant"white")
-                    df2 = df[:, [:time_s, col]] |> dropmissing
+                    df2 = df[:, [timecol, col]] |> dropmissing
                     @gp(:-,
-                        df2.time_s./60, df2[:, col],
+                        df2[!, timecol]./60, df2[:, col],
                         "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced")
                 end
                 if plot == :fit
-                    f = fit(df.time_s, df[:, col]; kwargs...)
+                    f = fit(df[!, timecol], df[:, col]; kwargs...)
                     @gp(:-,
-                        df.time_s./60, model(df.time_s .- df.time_s[1], coef(f)),
+                        df[!, timecol]./60, model(df[!, timecol] .- df[1, timecol], coef(f)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(f, minutes=true))'")
                     @show rss(f) #f.converged
                 end
