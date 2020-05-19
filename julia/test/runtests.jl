@@ -74,7 +74,7 @@ cols = [:CPU_0_temp_°C #, :CPU_1_temp_°C, :GPU_0_temp_°C, :GPU_1_temp_°C, :D
         ]
 T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0_°C, order=2)
 
-f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3)
+f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, plotexp=true)
 
 T.plot_fit(["memory-bandwidth/data-fan/seq-all-t6-s$(s).csv" for s in ["16k" "256k" "4M"]], cols, order=2)
 

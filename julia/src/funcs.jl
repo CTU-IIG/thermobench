@@ -275,6 +275,9 @@ of these.
 
 `timecol` is the columns with time of measurement.
 
+Setting `plotexp` to `true` causes the individual fitted exponentials to
+be plotted in addition to the compete fitted function.
+
 Other `kwargs` are passed to [`fit`](@ref).
 
 # Example
@@ -288,6 +291,7 @@ plot_fit(
 """
 function plot_fit(sources, columns = :CPU_0_temp_°C;
                   timecol = :time_s,
+                  plotexp = false,
                   kwargs...)
     local prefix = ""
     if isa(sources, Array) && eltype(sources) <: AbstractString
@@ -325,11 +329,24 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                         "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced")
                 end
                 if plot == :fit
+                    t₀ = df[1, timecol]
                     f = fit(df[!, timecol], df[:, col]; kwargs...)
                     @gp(:-,
-                        df[!, timecol]./60, model(df[!, timecol] .- df[1, timecol], coef(f)),
+                        df[!, timecol]./60, model(df[!, timecol] .- t₀, coef(f)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(f, minutes=true))'")
                     @show rss(f) #f.converged
+                    if plotexp
+                        expcolor = weighted_color_mean(0.4, color, colorant"white")
+                        local c = coef(f)
+                        for i in 1:length(c)÷2
+                            cc = zeros(size(c))
+                            idx = [1, 2i, 2i+1]
+                            cc[idx] = c[idx]
+                            @gp(:-,
+                                df[!, timecol]./60, model(df[!, timecol] .- t₀, cc),
+                                """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i]))'""")
+                        end
+                    end
                 end
                 plotno += 1
             end
