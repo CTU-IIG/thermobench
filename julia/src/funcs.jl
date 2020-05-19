@@ -188,8 +188,8 @@ Thermobench.printfit(f)
 function fit(time_s::Vector{Float64}, data;
              order::Int64 = 2,
              p0 = nothing,
-             tau_bounds = [(1, 60*60)]
-             )
+             tau_bounds = [(1, 60*60)],
+             kwargs...)
     bounds = zeros(1 + 2*order, 2)
     bounds[1, :] = [0 120]      # p[1]: °C
     for i in 1:order
@@ -217,7 +217,8 @@ function fit(time_s::Vector{Float64}, data;
         for attempt in 1:10
             try
                 result = curve_fit(model, jacobian_model,
-                                   df.time, df.data, p₀, lower=lb, upper=ub)
+                                   df.time, df.data, p₀; lower=lb, upper=ub,
+                                   kwargs...)
                 if rss(result) < best_rss
                     best_result = result
                     best_rss = rss(result)
