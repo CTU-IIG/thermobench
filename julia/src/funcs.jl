@@ -198,7 +198,7 @@ function fit(time_s::Vector{Float64}, data;
     end
     lb = bounds[:,1]
     ub = bounds[:,2]
-    df = DataFrame(time=time_s .- time_s[1], data=data) |> dropmissing
+    df = DataFrame(time=time_s, data=data) |> dropmissing
 
     if p0 === nothing
         p₀ = @. lb + (ub - lb)/2
@@ -315,6 +315,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
             df = if isa(source, AbstractString); read(source) else source end
             for col in ensurearray(columns)
                 color = colors[(plotno - 1) % length(colors) + 1]
+                series = DataFrame(time = df[!, timecol], val = df[!, col]) |> dropmissing
                 if plot == :points
                     if isa(source, AbstractString)
                         title = source[1+length(prefix):end]
@@ -323,16 +324,15 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                         title = ""
                     end
                     color = weighted_color_mean(0.4, color, colorant"white")
-                    df2 = df[:, [timecol, col]] |> dropmissing
                     @gp(:-,
-                        df2[!, timecol]./60, df2[:, col],
+                        series.time./60, series.val,
                         "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced")
                 end
                 if plot == :fit
-                    t₀ = df[1, timecol]
-                    f = fit(df[!, timecol], df[:, col]; kwargs...)
+                    t₀ = series[1, :time]
+                    f = fit(series[!, :time] .- t₀, series.val; kwargs...)
                     @gp(:-,
-                        df[!, timecol]./60, model(df[!, timecol] .- t₀, coef(f)),
+                        series.time./60, model(series.time .- t₀, coef(f)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(f, minutes=true))'")
                     @show rss(f) #f.converged
                     if plotexp
@@ -343,7 +343,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                             idx = [1, 2i, 2i+1]
                             cc[idx] = c[idx]
                             @gp(:-,
-                                df[!, timecol]./60, model(df[!, timecol] .- t₀, cc),
+                                series.time./60, model(series.time .- t₀, cc),
                                 """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i]))'""")
                         end
                     end
