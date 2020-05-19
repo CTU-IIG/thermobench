@@ -1,15 +1,17 @@
+Base.endswith(sym::Symbol, str::AbstractString) = endswith(String(sym), str)
+
 "Normalize units to seconds and °C"
 function normalize_units!(df::AbstractDataFrame)
-    for col in String.(names(df))
-        if col == "time_ms"
+    for col in propertynames(df)
+        if col == :time_ms
             df[!, col] ./= 1000
             rename!(df, col => "time_s")
         elseif endswith(col, "_m°C")
             df[!, col] ./= 1000
-            rename!(df, col => replace(col, r"_m°C$" => "_°C"))
+            rename!(df, col => replace(String(col), r"_m°C$" => "_°C"))
         elseif endswith(col, "_mC") # Older thermobench version
             df[!, col] ./= 1000
-            rename!(df, col => replace(col, r"_mC$" => "_°C"))
+            rename!(df, col => replace(String(col), r"_mC$" => "_°C"))
         end
     end
 end
