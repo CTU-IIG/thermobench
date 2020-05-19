@@ -344,7 +344,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                             cc[idx] = c[idx]
                             @gp(:-,
                                 series.time./60, model(series.time .- t₀, cc),
-                                """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i]))'""")
+                                """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i+1]/60))'""")
                         end
                     end
                 end
