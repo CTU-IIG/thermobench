@@ -583,23 +583,33 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     row.write(state.out_fp);
 }
 
+// send KILL signal after the TERM signal in case the benchmarked program
+// didn't exit yet
+static ev_timer kill_timer;
+const ev_tstamp kill_timeout = 3;
+
+static void kill_timer_cb(EV_P_ ev_timer *w, int revents)
+{
+    kill(state.child, SIGKILL);
+}
+
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
 {
-    if (state.child != 0) {
-        kill(state.child, SIGTERM);
-        state.child = 0;
-    }
+    ev_timer_init(&kill_timer, kill_timer_cb, kill_timeout, 0);
+    ev_timer_start(loop, &kill_timer);
+
+    kill(state.child, SIGTERM);
 }
 
 static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
+    ev_timer_init(&kill_timer, kill_timer_cb, kill_timeout, 0);
+    ev_timer_start(loop, &kill_timer);
+
     // Ignore SIGINT. But our child will not ignore it and exits. We
     // detect that in child_exit_cb and break the event loop.
     fprintf(stderr, "Waiting for child to terminate...\n");
-    if (state.child != 0) {
-        kill(state.child, SIGTERM);
-        state.child = 0;
-    }
+    kill(state.child, SIGTERM);
 }
 
 void measure(int measure_period_ms)
