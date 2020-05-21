@@ -123,14 +123,28 @@ function thermocam_correct!(df::AbstractDataFrame)
     x
 end
 
-# Function to fit: f(x) = p₀ + ∑ᵢ(kᵢ·e^(-x/τᵢ))
+# Function to fit: f(x) = T∞ + ∑ᵢ(kᵢ·e^(-x/τᵢ))
 
 # - n is the system order, i.e., i ∈ 1:n
-# - p = [ p₀, k₁, τ₁, k₂, τ₂, …, kₙ, τₙ]
+# - p = [ T∞, k₁, τ₁, k₂, τ₂, …, kₙ, τₙ]
 function model(x, p)
     order = length(p) ÷ 2
     @. e(x, k, τ) = k*exp(-x/τ)
     p[1] .+ sum(i->e.(x, p[2i], p[2i+1]), 1:order)
+end
+
+# Jacobian of model to fit
+function jacobian_model(x, p)
+    order = length(p) ÷ 2
+    J = Array{Float64}(undef, length(x), length(p))
+    @. J[:,1] = 1                          # dmodel/dp[1]
+    for i in 1:order
+        p₂ = p[2i+0]
+        p₃ = p[2i+1]
+        @. J[:,2i+0] = exp(-x/p₃)           # dmodel/dp[2]
+        @. J[:,2i+1] = p₂*x*exp(-x/p₃)/p₃^2 # dmodel/dp[3]
+    end
+    J
 end
 
 """
@@ -150,21 +164,6 @@ function printfit(fit; minutes = false)
           [@sprintf("%4.2f⋅e^{−t/%4.2f}", k[i], τ[i]) for i in 1:length(τ)]],
          " + ")
 end
-
-# Jacobian of model to fit
-function jacobian_model(x, p)
-    order = length(p) ÷ 2
-    J = Array{Float64}(undef, length(x), length(p))
-    @. J[:,1] = 1                          # dmodel/dp[1]
-    for i in 1:order
-        p₂ = p[2i+0]
-        p₃ = p[2i+1]
-        @. J[:,2i+0] = exp(-x/p₃)           # dmodel/dp[2]
-        @. J[:,2i+1] = p₂*x*exp(-x/p₃)/p₃^2 # dmodel/dp[3]
-    end
-    J
-end
-
 
 """
     fit(
