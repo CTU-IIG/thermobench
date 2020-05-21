@@ -367,10 +367,10 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                         "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced")
                 end
                 if plot == :fit
-                    t₀ = series[1, :time]
+                    t₀ = series.time[1]
+                    x = range(t₀, series.time[end], length=min(length(series.time), 1000))
                     f = fit(series[!, :time] .- t₀, series.val; kwargs...)
-                    @gp(:-,
-                        series.time./60, model(series.time .- t₀, coef(f)),
+                    @gp(:-, x./60, model(x .- t₀, coef(f)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(f, minutes=true))'")
                     @show rss(f) #f.converged
                     if plotexp
@@ -380,8 +380,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                             cc = zeros(size(c))
                             idx = [1, 2i, 2i+1]
                             cc[idx] = c[idx]
-                            @gp(:-,
-                                series.time./60, model(series.time .- t₀, cc),
+                            @gp(:-, x ./ 60, model(x .- t₀, cc),
                                 """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i+1]/60))'""")
                         end
                     end
