@@ -195,6 +195,7 @@ function fit(time_s::Vector{Float64}, data;
              order::Int64 = 2,
              p0 = nothing,
              tau_bounds = [(1, 60*60)],
+             attempts::Integer = 10,
              use_cmpfit::Bool = false,
              kwargs...)
     bounds = zeros(1 + 2*order, 2)
@@ -221,7 +222,7 @@ function fit(time_s::Vector{Float64}, data;
         p₀ = p0
     end
     let best_result, best_rss = Inf
-        for attempt in 1:10
+        for attempt in 1:attempts
             if use_cmpfit == false
                 # LsqFit
                 try
