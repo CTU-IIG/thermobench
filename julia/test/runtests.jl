@@ -10,6 +10,18 @@ doctest(Thermobench, manual=false)
 using Gnuplot, LsqFit, DataFrames
 cd("/home/wsh/thermac/devel/experiments")
 
+## test bad fit
+f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp_°C,
+               order=2, plotexp=true, attempts = 1,
+               tau_bounds=[(30, 120), (10*60, 20*60)],
+#                T_bounds=(46, 47),
+#                k_bounds=[(-8,-7), (0,2)],
+               show_trace = true,
+               use_cmpfit = true,
+               );
+
+
+## Rest
 csvs=String[]
 for (root, dirs, files) in walkdir("memory-bandwidth/data-fan-nowork")
     for file in files
@@ -67,8 +79,6 @@ d_amb = df[:, [:time_s, :ambient_°C]] |> dropmissing
     d.time_s, d.cam_table, "w lp title 'table'"
     )
 x
-
-
 
 cols = [:CPU_0_temp_°C #, :CPU_1_temp_°C, :GPU_0_temp_°C, :GPU_1_temp_°C, :DRC_temp_°C,
         ]

@@ -147,6 +147,9 @@ function jacobian_model(x, p)
     J
 end
 
+coef(res::CMPFit.Result) = res.param
+rss(res::CMPFit.Result) = res.bestnorm # Probably incorrect - just to make my code happy
+
 """
     printfit(fit; minutes = false)
 
@@ -172,9 +175,13 @@ end
         order::Int64 = 2,
         p0 = nothing,
         tau_bounds = [(1, 60*60)],
+        use_cmpfit::Bool = false,
      )
 
 Fit a thermal model to time series.
+
+If `use_cmpfit` is true, use CMPFit.jl package rather than LsqFit.jl.
+LsqFit doesn't work well in constrained fit.
 
 # Example
 ```julia
@@ -188,6 +195,7 @@ function fit(time_s::Vector{Float64}, data;
              order::Int64 = 2,
              p0 = nothing,
              tau_bounds = [(1, 60*60)],
+             use_cmpfit::Bool = false,
              kwargs...)
     bounds = zeros(1 + 2*order, 2)
     bounds[1, :] = [0 120]      # p[1]: °C
@@ -214,19 +222,33 @@ function fit(time_s::Vector{Float64}, data;
     end
     let best_result, best_rss = Inf
         for attempt in 1:10
-            try
-                result = curve_fit(model, jacobian_model,
-                                   df.time, df.data, p₀; lower=lb, upper=ub,
-                                   kwargs...)
-                if rss(result) < best_rss
-                    best_result = result
-                    best_rss = rss(result)
+            if use_cmpfit == false
+                # LsqFit
+                try
+                    result = curve_fit(model, jacobian_model,
+                                       df.time, df.data, p₀; lower=lb, upper=ub,
+                                       kwargs...)
+                    if rss(result) < best_rss
+                        best_result = result
+                        best_rss = rss(result)
+                    end
+                    if stderror(best_result)[1] < 0.1
+                        break
+                    end
+                catch e
+                    @warn sprint(showerror, e)
                 end
-                if stderror(best_result)[1] < 0.1
-                    break
+            else
+                # CMPFit
+                e = fill(0.5, size(df.data))
+                pinfo = CMPFit.Parinfo(length(p₀))
+                for i in 1:length(pinfo)
+                    pinfo[i].limited = (1,1)
+                    pinfo[i].limits = (lb[i], ub[i])
+                    #@show pinfo[i]
                 end
-            catch e
-                @warn sprint(showerror, e)
+                best_result = cmpfit(df.time, df.data, e, model, p₀, parinfo=pinfo)
+                break
             end
             # Another attempt with different initial solution (use local deterministic rng)
             p₀ = @. lb + (ub - lb) * rand(rng)
