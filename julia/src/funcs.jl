@@ -175,6 +175,8 @@ end
         order::Int64 = 2,
         p0 = nothing,
         tau_bounds = [(1, 60*60)],
+        k_bounds = [(-120, 120)],
+        T_bounds = (0, 120),
         use_cmpfit::Bool = false,
      )
 
@@ -182,6 +184,13 @@ Fit a thermal model to time series.
 
 If `use_cmpfit` is true, use CMPFit.jl package rather than LsqFit.jl.
 LsqFit doesn't work well in constrained fit.
+
+You can limit the values of fitted parameters with `*_bounds`
+parameters. Each bound is a tuple of lower and upper limit. `T_bounds`
+limits the T∞ parameter. `tau_bounds` and `k_bounds` limit the
+coefficients of exponential functions ``k·e^{-t/τ}``. If you specify
+less tuples than the order of the model, the last limit will be
+repeated.
 
 # Example
 ```julia
@@ -194,14 +203,17 @@ Thermobench.printfit(f)
 function fit(time_s::Vector{Float64}, data;
              order::Int64 = 2,
              p0 = nothing,
-             tau_bounds = [(1, 60*60)],
+             tau_bounds::Vector{Tuple{T, T}} = [(1, 60*60)],
+             k_bounds::Vector{Tuple{T, T}} = [(-120, 120)],
+             T_bounds::Tuple{T, T} = (0, 120),
              attempts::Integer = 10,
              use_cmpfit::Bool = false,
-             kwargs...)
+             kwargs...) where {T<:Real}
+
     bounds = zeros(1 + 2*order, 2)
-    bounds[1, :] = [0 120]      # p[1]: °C
+    bounds[1, :] = [T_bounds[1] T_bounds[2]] # p[1]: °C
     for i in 1:order
-        bounds[2i, :] = [ -120 120 ] # p[2i]: °C
+        bounds[2i, :] =  [k_bounds[min(i, length(k_bounds))]...] # p[2i]: °C
         bounds[2i + 1, :] = [tau_bounds[min(i, length(tau_bounds))]...] # p[2i+1]: seconds
     end
     lb = bounds[:,1]
@@ -246,6 +258,7 @@ function fit(time_s::Vector{Float64}, data;
                 for i in 1:length(pinfo)
                     pinfo[i].limited = (1,1)
                     pinfo[i].limits = (lb[i], ub[i])
+                    p₀[i] = clamp(p₀[i], lb[i], ub[i])
                     #@show pinfo[i]
                 end
                 best_result = cmpfit(df.time, df.data, e, model, p₀, parinfo=pinfo)

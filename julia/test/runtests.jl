@@ -14,8 +14,8 @@ cd("/home/wsh/thermac/devel/experiments")
 f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp_°C,
                order=2, plotexp=true, attempts = 1,
                tau_bounds=[(30, 120), (10*60, 20*60)],
-#                T_bounds=(46, 47),
-#                k_bounds=[(-8,-7), (0,2)],
+               T_bounds=(30, 50),
+               k_bounds=[(-10,+10), (-5,+5)],
                show_trace = true,
                use_cmpfit = true,
                );
