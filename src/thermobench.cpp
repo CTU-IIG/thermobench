@@ -459,6 +459,8 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     if(!row.empty())
         row.write(state.out_fp);
 
+    // Stop the watcher if the pipe is closed. If this was the last
+    // watcher, the event loop terminates.
     if (feof(workfp))
         ev_io_stop(EV_A_ w);
 }
@@ -534,6 +536,8 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     if (!row.empty())
         row.write(state.out_fp);
 
+    // Stop the watcher if the pipe is closed. If this was the last
+    // watcher, the event loop terminates.
     if (pipe_in.eof())
         w.stop();
 }
@@ -562,6 +566,9 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
     // after all terminate.
     for (const auto &exec : state.execs)
         exec->kill();
+
+    // Now, we wait for children stdout pipes to be closed. After all
+    // are closed, our event loop exits.
 }
 
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -586,20 +593,26 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     if (state.child != 0) {
+        fprintf(stderr, "Waiting for child to terminate...\n");
         kill(state.child, SIGTERM);
         state.child = 0;
     }
 }
 
+// Called as a response to SIGINT and SIGTERM
 static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-    // Ignore SIGINT. But our child will not ignore it and exits. We
-    // detect that in child_exit_cb and break the event loop.
     fprintf(stderr, "Waiting for child to terminate...\n");
+
     if (state.child != 0) {
-        kill(state.child, SIGTERM);
+        // Ignore SIGINT, because tty sends it to all processes it
+        // controls - our child too.
+        if (w != &sigint_watcher)
+            kill(state.child, SIGTERM);
         state.child = 0;
     }
+
+    // When the child terminates, we get notified via child_exit_cb.
 }
 
 void measure(int measure_period_ms)
