@@ -32,13 +32,19 @@ public:
     const CsvColumn &add(string header);
 
     void setHeader(CsvRow &row);
+
+    size_t count() const { return columns.size(); }
 };
 
 class CsvRow {
 private:
-    vector<string> row = {};
+    size_t num_columns;
+    vector<string> row { num_columns };
+    bool m_empty = true;
 
 public:
+    CsvRow(const CsvColumns &cols) : num_columns(cols.count()) { clear(); }
+
     void set(const CsvColumn &column, double data);
     void set(const CsvColumn &column, string data);
 
@@ -50,6 +56,6 @@ public:
 
     void clear();
 
-    bool empty() const;
+    bool empty() const { return m_empty; }
 };
 #endif

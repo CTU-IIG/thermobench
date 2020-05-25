@@ -45,6 +45,7 @@ void CsvRow::set(const CsvColumn &column, string data)
 {
     const unsigned int order = column.getOrder();
     data = csvEscape(data);
+    m_empty = false;
     if (order < row.size()) {
         row[order] = data;
     } else {
@@ -82,11 +83,8 @@ void CsvRow::write(FILE *fp)
 void CsvRow::clear()
 {
     row.clear();
-}
-
-bool CsvRow::empty() const
-{
-    return row.empty();
+    row.resize(num_columns);
+    m_empty = true;
 }
 
 string csvEscape(string unsafe)

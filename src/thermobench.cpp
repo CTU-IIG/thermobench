@@ -427,7 +427,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     char *line = NULL;
     size_t len = 0;
     ssize_t nread;
-    CsvRow row;
+    CsvRow row(columns);
     double curr_time = get_current_time();
     while ((nread = getline(&line, &len, workfp)) != -1) {
         if (nread > 0 && line[nread - 1] == '\n')
@@ -511,7 +511,7 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     istream pipe_in(buf.get());
     string line;
     double curr_time = get_current_time();
-    CsvRow row;
+    CsvRow row(::columns);
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
         size_t index = line.find_first_of('=');
@@ -578,7 +578,7 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
-    CsvRow row;
+    CsvRow row(columns);
     row.set(time_column, get_current_time());
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
@@ -949,7 +949,7 @@ int main(int argc, char **argv)
 
     if(write_stdout)
         stdout_column = &(columns.add("stdout"));
-    CsvRow row;
+    CsvRow row(columns);
     columns.setHeader(row);
     row.write(state.out_fp);
 
