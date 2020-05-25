@@ -424,14 +424,18 @@ static double get_current_time()
 static void child_stdout_cb(EV_P_ ev_io *w, int revents)
 {
     FILE *workfp = fdopen(w->fd, "r");
-    char buf[200];
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t nread;
     CsvRow row;
     double curr_time = get_current_time();
-    while (fscanf(workfp, "%[^\n]", buf) > 0) {
-        char *eq = strchr(buf, '=');
+    while ((nread = getline(&line, &len, workfp)) != -1) {
+        if (nread > 0 && line[nread - 1] == '\n')
+            line[nread - 1] = '\0';
+        char *eq = strchr(line, '=');
         if (eq) {
             *eq = 0;
-            char *key = buf;
+            char *key = line;
             char *value = eq + 1;
             const CsvColumn *col = get_stdout_column(key, state.stdoutColumns);
 
@@ -450,11 +454,12 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
         }
         if (write_stdout){
             row.set(time_column, curr_time);
-            row.set(*stdout_column, buf);
+            row.set(*stdout_column, line);
             row.write(state.out_fp);
             row.clear();
         }
     }
+    free(line);
 
     if(!row.empty())
         row.write(state.out_fp);
