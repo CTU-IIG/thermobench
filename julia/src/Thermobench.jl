@@ -351,7 +351,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
     elseif typeof(sources) <: AbstractString
         prefix = sources
     end
-    @gp("set term qt noraise", "set grid", "set minussign",
+    @gp("set grid", "set minussign",
         "set key below left Left reverse horizontal maxcols 2",
         "set title '$prefix*'",
         "set xlabel 'Time [min]'", "set ylabel 'Temperature [°C]'",
@@ -360,7 +360,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
     colors = distinguishable_colors(
         length(ensurearray(sources)) * length(ensurearray(columns)),
         [RGB(1,1,1)], dropseed=true)
-    local f
+    local fit
     for plot in (:points, :fit)
         local plotno = 1
         for source in ensurearray(sources)
@@ -378,24 +378,27 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                     color = weighted_color_mean(0.4, color, colorant"white")
                     @gp(:-,
                         series.time./60, series.val,
-                        "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced")
+                        "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced",
+                        :-)
                 end
                 if plot == :fit
                     t₀ = series.time[1]
                     x = range(t₀, series.time[end], length=min(length(series.time), 1000))
-                    f = fit(series[!, :time] .- t₀, series.val; kwargs...)
-                    @gp(:-, x./60, model(x .- t₀, coef(f)),
-                        "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(f, minutes=true))'")
-                    @show rss(f) #f.converged
+                    fit = Thermobench.fit(series[!, :time] .- t₀, series.val; kwargs...)
+                    @gp(:-, x./60, model(x .- t₀, coef(fit)),
+                        "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(fit, minutes=true))'",
+                        :-)
+                    @show rss(fit) #fit.converged
                     if plotexp
                         expcolor = weighted_color_mean(0.4, color, colorant"white")
-                        local c = coef(f)
+                        local c = coef(fit)
                         for i in 1:length(c)÷2
                             cc = zeros(size(c))
                             idx = [1, 2i, 2i+1]
                             cc[idx] = c[idx]
                             @gp(:-, x ./ 60, model(x .- t₀, cc),
-                                """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i+1]/60))'""")
+                                """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i+1]/60))'""",
+                                :-)
                         end
                     end
                 end
@@ -403,7 +406,8 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
             end
         end
     end
-    f
+    fig = @gp()
+    return fit
 end
 
 end # module
