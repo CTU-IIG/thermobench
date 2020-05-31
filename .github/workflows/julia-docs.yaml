@@ -7,11 +7,6 @@ on:
     tags: '*'
   pull_request:
 
-defaults:
-  run:
-    shell: bash
-    working-directory: julia
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,9 +16,11 @@ jobs:
         with:
           version: 1.4
       - name: Install dependencies
+        working-directory: julia
         run: julia --project=. -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
+        working-directory: julia
         run: julia --project=. docs/make.jl
