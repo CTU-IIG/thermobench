@@ -469,6 +469,7 @@ plot_fit(
 function plot_fit(sources, columns = :CPU_0_temp_°C;
                   timecol = :time_s,
                   plotexp = false,
+                  ambient = nothing,
                   kwargs...)
     local prefix = ""
     if isa(sources, Array) && eltype(sources) <: AbstractString
@@ -481,6 +482,9 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
         "set title '$prefix*'",
         "set xlabel 'Time [min]'", "set ylabel 'Temperature [°C]'",
         :-)
+    if ambient != nothing
+        @gp :- "set multiplot layout 2,1" 1 :-
+    end
     gnuplot_escape(s) = replace(s, r"([_^@&~])" => s"\\\1")
     colors = distinguishable_colors(
         length(ensurearray(sources)) * length(ensurearray(columns)),
@@ -500,17 +504,27 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                     else
                         title = ""
                     end
-                    color = weighted_color_mean(0.4, color, colorant"white")
-                    @gp(:-,
+                    ptcolor = weighted_color_mean(0.4, color, colorant"white")
+                    @gp(:-, 1,
                         series.time./60, series.val,
-                        "w p ps 1 lt $plotno lc rgb '#$(hex(color))' title '$title$(String(col))' noenhanced",
+                        "w p ps 1 lt $plotno lc rgb '#$(hex(ptcolor))' title '$title$(String(col))' noenhanced",
                         :-)
+                    if ambient != nothing
+                        if ambient === true
+                            ambient = :ambient_°C
+                        end
+                        series = DataFrame(time = df[!, timecol], amb = df[!, ambient]) |> dropmissing
+                        @gp(:-, 2, title="Ambient temperature",
+                            series.time./60, series.amb,
+                            "w l lt $plotno lc rgb '#$(hex(color))' title '$title' noenhanced",
+                        :-)
+                    end
                 end
                 if plot == :fit
                     t₀ = series.time[1]
                     x = range(t₀, series.time[end], length=min(length(series.time), 1000))
                     fit = Thermobench.fit(series[!, :time] .- t₀, series.val; kwargs...)
-                    @gp(:-, x./60, model(x .- t₀, coef(fit)),
+                    @gp(:-, 1, x./60, model(x .- t₀, coef(fit)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(fit, minutes=true))'",
                         :-)
                     @show rss(fit) #fit.converged
@@ -521,7 +535,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                             cc = zeros(size(c))
                             idx = [1, 2i, 2i+1]
                             cc[idx] = c[idx]
-                            @gp(:-, x ./ 60, model(x .- t₀, cc),
+                            @gp(:-, 1, x ./ 60, model(x .- t₀, cc),
                                 """w l lt $plotno lc rgb '#$(hex(expcolor))' lw 1 title 'exp τ=$(@sprintf("%4.2f", cc[2i+1]/60))'""",
                                 :-)
                         end
