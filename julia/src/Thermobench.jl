@@ -92,7 +92,7 @@ end
 Replace missing values with results of linear interpolation
 performed against the first column (time).
 
-```jldoctest; setup = :(using DataFrames, Thermobench)
+```jldoctest
 julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000, 1001], v=[0.0, missing, missing, missing, 1000.0, missing])
 6×2 DataFrame
 │ Row │ t       │ v        │
@@ -347,7 +347,7 @@ etc.) in `DataFrame`. When `use_measurements` is `true`, report
 coefficients with their confidence intervals as `Measurement`
 objects.
 
-```jldoctest; setup = :(using Thermobench; cd(joinpath(dirname(pathof(Thermobench)), "..", "test")))
+```jldoctest
 julia> multi_fit("test.csv", [:CPU_0_temp_°C :CPU_1_temp_°C])
 Prefix: test.csv
 2×8 DataFrame

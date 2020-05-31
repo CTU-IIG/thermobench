@@ -1,13 +1,18 @@
-import Pkg
-Pkg.activate("/home/wsh/thermac/thermobench/julia")
+if isinteractive()
+    import Pkg
+    Pkg.activate("/home/wsh/thermac/thermobench/julia")
+    using Debugger
+end
 using Thermobench
 const T = Thermobench
-
-using Documenter
-doctest(Thermobench, manual=false)
-# doctest(Thermobench, manual=false)
-
-using Gnuplot, LsqFit, DataFrames
+using Gnuplot, LsqFit, DataFrames, Printf
+if ! isinteractive()
+    using Documenter
+    DocMeta.setdocmeta!(Thermobench,
+                        :DocTestSetup, :(using Thermobench, DataFrames; cd(joinpath(dirname(pathof(Thermobench)), "..", "test")));
+                        recursive=true)
+    doctest(Thermobench, manual=false, fix=true)
+end
 cd("/home/wsh/thermac/devel/experiments")
 
 ## test bad fit
