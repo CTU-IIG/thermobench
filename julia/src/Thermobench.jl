@@ -7,12 +7,15 @@ import LsqFit: margin_error, mse
 import LsqFit
 import CMPFit
 import StatsBase: coef, dof, nobs, rss, stderror, weights, residuals
+using Measurements
+using Debugger
 
 export
     @symarray,
     fit,
     interpolate!,
     interpolate,
+    multi_fit,
     plot_fit,
     printfit
 
@@ -310,6 +313,119 @@ function lcp(str::AbstractString...)
         end
     end
     return String(take!(r))
+end
+
+mutable struct MultiFit
+    prefix::String
+    result::DataFrame
+    time
+end
+
+Base.show(io::IO, mf::MultiFit) = begin
+    println(io, "Prefix: ", mf.prefix)
+    print(io, select(mf.result, Not("fit")))
+end
+
+function Gnuplot.recipe(mf::MultiFit)
+    [
+        Gnuplot.PlotElement(
+            data=Gnuplot.DatasetText(mf.time, model(mf.time, coef(mf.result.fit[i]))),
+            plot="w l lw 2 title '$(printfit(mf.result.fit[i], minutes=false))'")
+        for i in 1:nrow(mf.result)
+    ]
+end
+
+"""
+    multi_fit(sources, columns = :CPU_0_temp_°C;
+              timecol = :time_s,
+              use_measurements = false,
+              order::Int64 = 2,
+              kwargs...)::MultiFit
+
+Call `fit()` for all sources and report the results (coefficients
+etc.) in `DataFrame`. When `use_measurements` is `true`, report
+coefficients with their confidence intervals as `Measurement`
+objects.
+
+```jldoctest; setup = :(using Thermobench; cd(joinpath(dirname(pathof(Thermobench)), "..", "test")))
+julia> multi_fit("test.csv", [:CPU_0_temp_°C :CPU_1_temp_°C])
+Prefix: test.csv
+2×8 DataFrame
+│ Row │ name   │ column        │ mse       │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
+│     │ String │ Symbol        │ Float64   │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
+├─────┼────────┼───────────────┼───────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
+│ 1   │        │ CPU_0_temp_°C │ 0.023865  │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
+│ 2   │        │ CPU_1_temp_°C │ 0.0208397 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
+```
+"""
+function multi_fit(sources, columns = :CPU_0_temp_°C;
+                   timecol = :time_s,
+                   use_measurements = false,
+                   order::Int64 = 2,
+                   kwargs...)::MultiFit
+
+    type = use_measurements ? Measurement{Float64} : Float64
+
+    function coef2df(coef)
+        order = length(coef) ÷ 2
+        hcat(DataFrame(Tinf = coef[1]),
+             [DataFrame("k$i" => coef[2i], "tau$i" => coef[2i+1]) for i in 1:order]...)
+    end
+
+    result = hcat(DataFrame(name = String[],
+                            column = Symbol[],
+                            mse = Float64[]),
+                  coef2df(fill(type[], 2order+1)),
+                  DataFrame(fit = Any[]))
+
+    local prefix = ""
+    if isa(sources, Array) && eltype(sources) <: AbstractString
+        prefix = lcp(sources...)
+    elseif typeof(sources) <: AbstractString
+        prefix = sources
+    end
+
+    tmin = +Inf
+    tmax = -Inf
+
+    for source in ensurearray(sources)
+        df, name = if isa(source, AbstractString)
+            (read(source), source[1+length(prefix):end])
+        elseif isa(source, Tuple)
+            (source[1], source[2])
+        else
+            (source, "")
+        end
+        for col in ensurearray(columns)
+            series = DataFrame(time = df[!, timecol], val = df[!, col]) |> dropmissing
+            tmin = min(tmin, first(series.time))
+            tmax = max(tmax, last(series.time))
+            f = fit(series.time, series.val; order=order, kwargs...)
+
+            coefs = coef(f)
+
+            # Sort coefs by increasing τ
+            τ = coefs[3:2:end]
+            idx = sortperm(τ)
+            coefs[2:2:end] = coefs[2idx.+0]
+            coefs[3:2:end] = coefs[2idx.+1]
+
+            local mes
+            if use_measurements
+                mes = margin_error(f)
+                mes[2:2:end] = mes[2idx.+0]
+                mes[3:2:end] = mes[2idx.+1]
+            end
+
+            append!(result,
+                    hcat(DataFrame(name = name,
+                                   column = col,
+                                   mse = mse(f),
+                                   fit = f),
+                         coef2df(use_measurements ? measurement.(coefs, mes) : coefs)))
+        end
+    end
+    MultiFit(prefix, result, range(tmin, tmax, length=1000))
 end
 
 """
