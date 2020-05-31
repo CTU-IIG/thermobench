@@ -247,9 +247,9 @@ function fit(time_s::Vector{Float64}, data;
 
     if p0 === nothing
         p₀ = @. lb + (ub - lb)/2
-        p₀[1] = df.data[end]
+        p₀[1] = clamp(df.data[end], lb[1], ub[1])
         for i in 1:order
-            p₀[2i] = (df.data[1] - df.data[end])
+            p₀[2i] = clamp(df.data[1] - df.data[end], lb[2i], ub[2i])
         end
     elseif p0 === :random
         p₀ = @. lb + (ub - lb) * rand() # Default rng
