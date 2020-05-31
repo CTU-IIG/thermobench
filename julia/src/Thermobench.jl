@@ -226,12 +226,12 @@ Thermobench.printfit(f)
 function fit(time_s::Vector{Float64}, data;
              order::Int64 = 2,
              p0 = nothing,
-             tau_bounds::Vector{Tuple{T, T}} = [(1, 60*60)],
-             k_bounds::Vector{Tuple{T, T}} = [(-120, 120)],
-             T_bounds::Tuple{T, T} = (0, 120),
+             tau_bounds::Vector{<:Tuple{Real,Real}} = [(1, 60*60)],
+             k_bounds::Vector{<:Tuple{Real,Real}} = [(-120, 120)],
+             T_bounds::Tuple{Real,Real} = (0, 120),
              attempts::Integer = 10,
              use_cmpfit::Bool = false,
-             kwargs...) where {T<:Real}
+             kwargs...)
 
     bounds = zeros(1 + 2*order, 2)
     bounds[1, :] = [T_bounds[1] T_bounds[2]] # p[1]: °C
