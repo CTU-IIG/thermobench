@@ -1,7 +1,11 @@
 module Thermobench
 
-using CSV, LsqFit, DataFrames, Printf, Gnuplot, Colors, Random
-using CMPFit
+import CSV
+import DataFrames: DataFrame, AbstractDataFrame, rename!, dropmissing, Not, select
+using Printf, Gnuplot, Colors, Random
+import LsqFit: margin_error, mse
+import LsqFit
+import CMPFit
 import StatsBase: coef, dof, nobs, rss, stderror, weights, residuals
 
 export
@@ -86,8 +90,8 @@ Replace missing values with results of linear interpolation
 performed against the first column (time).
 
 ```jldoctest; setup = :(using DataFrames, Thermobench)
-julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000], v=[0.0, missing, missing, missing, 1000.0])
-5×2 DataFrames.DataFrame
+julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000, 1001], v=[0.0, missing, missing, missing, 1000.0, missing])
+6×2 DataFrame
 │ Row │ t       │ v        │
 │     │ Float64 │ Float64? │
 ├─────┼─────────┼──────────┤
@@ -96,9 +100,10 @@ julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000], v=[0.0, missing, missing, missing, 
 │ 3   │ 2.0     │ missing  │
 │ 4   │ 3.0     │ missing  │
 │ 5   │ 1000.0  │ 1000.0   │
+│ 6   │ 1001.0  │ missing  │
 
 julia> interpolate(x)
-5×2 DataFrames.DataFrame
+6×2 DataFrame
 │ Row │ t       │ v        │
 │     │ Float64 │ Float64? │
 ├─────┼─────────┼──────────┤
@@ -107,6 +112,7 @@ julia> interpolate(x)
 │ 3   │ 2.0     │ 2.0      │
 │ 4   │ 3.0     │ 3.0      │
 │ 5   │ 1000.0  │ 1000.0   │
+│ 6   │ 1001.0  │ missing  │
 
 ```
 """
@@ -162,7 +168,10 @@ function jacobian_model(x, p)
 end
 
 coef(res::CMPFit.Result) = res.param
-rss(res::CMPFit.Result) = res.bestnorm # Probably incorrect - just to make my code happy
+rss(res::CMPFit.Result) = res.bestnorm
+dof(res::CMPFit.Result) = res.dof
+margin_error(res::CMPFit.Result) = res.perror
+mse(res::CMPFit.Result) = rss(res)/dof(res)
 
 """
     printfit(fit; minutes = false)
@@ -252,9 +261,9 @@ function fit(time_s::Vector{Float64}, data;
             if use_cmpfit == false
                 # LsqFit
                 try
-                    result = curve_fit(model, jacobian_model,
-                                       df.time, df.data, p₀; lower=lb, upper=ub,
-                                       kwargs...)
+                    result = LsqFit.curve_fit(model, jacobian_model,
+                                              df.time, df.data, p₀; lower=lb, upper=ub,
+                                              kwargs...)
                     if rss(result) < best_rss
                         best_result = result
                         best_rss = rss(result)
@@ -275,7 +284,7 @@ function fit(time_s::Vector{Float64}, data;
                     p₀[i] = clamp(p₀[i], lb[i], ub[i])
                     #@show pinfo[i]
                 end
-                best_result = cmpfit(df.time, df.data, e, model, p₀, parinfo=pinfo)
+                best_result = CMPFit.cmpfit(df.time, df.data, e, model, p₀, parinfo=pinfo)
                 break
             end
             # Another attempt with different initial solution (use local deterministic rng)
