@@ -383,12 +383,17 @@ Gnuplot.recipe(mf::MultiFit) = plot_mf(mf)
               timecol = :time_s,
               use_measurements = false,
               order::Int64 = 2,
+              subtract = nothing,
               kwargs...)::MultiFit
 
 Call `fit()` for all sources and report the results (coefficients
 etc.) in `DataFrame`. When `use_measurements` is `true`, report
 coefficients with their confidence intervals as `Measurement`
 objects.
+
+`subtract` specifies the column (symbol), which is subtracted from
+data after interpolating its values with [`interpolate`](@ref). This
+intended for subtraction of ambient temperature.
 
 ```jldoctest
 julia> multi_fit("test.csv", [:CPU_0_temp_°C :CPU_1_temp_°C])
@@ -405,6 +410,7 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
                    timecol = :time_s,
                    use_measurements = false,
                    order::Int64 = 2,
+                   subtract = nothing, # column to subtract
                    kwargs...)::MultiFit
 
     type = use_measurements ? Measurement{Float64} : Float64
@@ -440,8 +446,9 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
         else
             (source, "")
         end
+        sub = (subtract != nothing) ? interpolate(df[!, [timecol, subtract]])[!,2] : 0
         for col in ensurearray(columns)
-            series = DataFrame(time = df[!, timecol], val = df[!, col]) |> dropmissing
+            series = DataFrame(time = df[!, timecol], val = df[!, col] .- sub) |> dropmissing
             push!(data, series)
             tmin = min(tmin, first(series.time))
             tmax = max(tmax, last(series.time))

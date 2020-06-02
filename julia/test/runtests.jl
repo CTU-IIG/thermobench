@@ -95,9 +95,19 @@ T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3
 df = T.read("cl-mem/cl-mem-read.csv");
 nrow(df)
 
-csvs = ["long-test/hot.$i.csv" for i in 1:2]
-#csvs = ["long-test-fan/hot.2.csv", "long-test-fan/cold.2.csv"]
-T.plot_fit(csvs, :CPU_0_temp_°C, order=2, use_cmpfit=false, ambient=true, p0=:random)
+csvs = "long-test/" .* vcat([["hot.$i.csv", "cold.$i.csv"] for i in 1:6]...)
+csvs =  [csvs[1:2:end]; csvs[2:2:end]]
+mf1 = T.multi_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+@gp mf1 key="inside bottom" title="Absolute temperatures"
+mf2 = T.multi_fit(csvs, :CPU_0_temp_°C, subtract=:ambient_°C, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+@gp mf2 key="inside bottom" title="Subtraction of ambient temperatures"
+
+T.plot_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=t)
+
+csvs = vcat([["long-test-fan/hot.$i.csv", "long-test-fan/cold.$i.csv"] for i in 1:2]...)
+csvs =  [csvs[1:2:end]; csvs[2:2:end]]
+mf = T.multi_fit(csvs, :CPU_0_temp_°C, subtract=:ambient_°C, order=2, use_cmpfit=false, tau_bounds=[(10,120*60)], use_measurements=true)
+@gp mf
 
 
 df = T.read("long-test/hot.1.csv")
