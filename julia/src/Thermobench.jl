@@ -337,32 +337,46 @@ Base.show(io::IO, mf::MultiFit) = begin
     print(io, select(mf.result, Not([:fit])))
 end
 
-function Gnuplot.recipe(mf::MultiFit)
+function plot_mf(mf::MultiFit;
+                 minutes::Bool = true,
+                 pt_titles::Bool = true,
+                 pt_decim::Int = 1,
+                 pt_size::Real = 1,
+                 )::Vector{Gnuplot.PlotElement}
     colors = distinguishable_colors(
         nrow(mf.result),
         [RGB(1,1,1)], dropseed=true)
     ptcolors = weighted_color_mean.(0.4, colors, colorant"white")
 
+    pt_title(i) = pt_titles ? mf.result.name[i] : ""
+    fit_title(i) = (pt_titles ? "" : mf.result.name[i] * ": ") * printfit(mf.result.fit[i], minutes=minutes)
+
+    time_unit = minutes ? "min" : "s"
+    time_div = minutes ? 60 : 1
+
     vcat(
         Gnuplot.PlotElement(
-            key="below left Left reverse horizontal maxcols 2",
+            key="below left Left reverse horizontal maxcols $(pt_titles ? 2 : 1)",
             title= "$(mf.prefix)*",
-            xlabel="Time [min]", ylabel="Temperature [°C]",
+            xlabel="Time [$time_unit]", ylabel="Temperature [°C]",
             cmds=["set grid", "set minussign"]),
         [
             Gnuplot.PlotElement(
-                data=Gnuplot.DatasetText(mf.data[i].time, mf.data[i].val),
-                plot="w p lt $i lc rgb '#$(hex(ptcolors[i]))' title '$(mf.result.name[i])'",
+                data=Gnuplot.DatasetText(mf.data[i].time[1:pt_decim:end]/time_div,
+                                         mf.data[i].val[1:pt_decim:end]),
+                plot="w p ps $pt_size lt $i lc rgb '#$(hex(ptcolors[i]))' title '$(pt_title(i))'",
             )
             for i in 1:nrow(mf.result)]...,
         [
             Gnuplot.PlotElement(
-                data=Gnuplot.DatasetText(mf.time, model(mf.time, coef(mf.result.fit[i]))),
-                plot="w l lw 2 lc rgb '#$(hex(colors[i]))' title '$(printfit(mf.result.fit[i], minutes=true))'",
+                data=Gnuplot.DatasetText(mf.time/time_div, model(mf.time, coef(mf.result.fit[i]))),
+                plot="w l lw 2 lc rgb '#$(hex(colors[i]))' title '$(fit_title(i))'",
             )
             for i in 1:nrow(mf.result)]...
     )
 end
+
+Gnuplot.recipe(mf::MultiFit) = plot_mf(mf)
 
 """
     multi_fit(sources, columns = :CPU_0_temp_°C;
