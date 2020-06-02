@@ -189,8 +189,8 @@ function printfit(fit; minutes = false)
     i = sortperm(τ)
     τ = τ[i]
     k = p[2:2:end][i]
-    join([@sprintf("%4.2f", T∞);
-          [@sprintf("%4.2f⋅e^{−t/%4.2f}", k[i], τ[i]) for i in 1:length(τ)]],
+    join([@sprintf("%3.1f", T∞);
+          [@sprintf("%3.1f⋅e^{−t/%3.1f}", k[i], τ[i]) for i in 1:length(τ)]],
          " + ")
 end
 

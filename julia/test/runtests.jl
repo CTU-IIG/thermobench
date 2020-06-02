@@ -91,6 +91,52 @@ T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0_°C, order=
 
 f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, plotexp=true)
 
+T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, use_measurements=true)
+df = T.read("cl-mem/cl-mem-read.csv");
+nrow(df)
+
+csvs = ["long-test/hot.$i.csv" for i in 1:2]
+#csvs = ["long-test-fan/hot.2.csv", "long-test-fan/cold.2.csv"]
+T.plot_fit(csvs, :CPU_0_temp_°C, order=2, use_cmpfit=false, ambient=true, p0=:random)
+
+
+df = T.read("long-test/hot.1.csv")
+Gnuplot.options.term = "qt noraise"
+times = range(10*60, last(df.time_s), length=25)
+f=T.multi_fit(df, :CPU_0_temp_°C, order=3, use_cmpfit=true, tau_bounds=[(30, 60*60)])
+Tinf=f.result.Tinf[1]
+taus = (f.result.tau1[1], f.result.tau2[1], f.result.tau3[1])
+plots = [
+    (title = "3rd order, constrained τ", order = 3, tau_bounds=[(0.95tau, 1.05tau) for tau in taus])
+    (title = "3rd order", order = 3, tau_bounds=[(30, 60*60)])
+    (title = "2nd order", order = 2, tau_bounds=[(10,13000)])
+]
+@gp "set multiplot layout 5,1" :-
+for p in 1:length(plots)
+    mf = T.multi_fit([(filter(r->r.time_s < t, df), """$(@sprintf("%4.0f min", t/60))""") for t in times],
+                     [:CPU_0_temp_°C], use_measurements=true, use_cmpfit=true,
+                     tau_bounds=plots[p].tau_bounds, order=plots[p].order)
+    @show mf
+#     @gp :- 1 "set grid" key="bottom" xlab="time [min]" ylab="Temperature [°C]" :-
+#     @gp :-    df.time_s/60 df.CPU_0_temp_°C "ps 1 lc rgb '#cc000000' t 'data'" :-
+#     for i in 1:length(times)
+#         @gp :- mf.time/60 T.model(mf.time, coef(mf.result.fit[i])) """w l lw 2 title '$(mf.result.name[i])' """ :-
+#     end
+    @gp :- 1 ylab="T∞ [°C]" "set grid" key="reverse Left left" xr=[0,60] yr=[Tinf-3,Tinf+3] :- #yr=[78,88]
+    @gp :-   times/60 [m.val for m in mf.result.Tinf] [m.err for m in mf.result.Tinf] "w errorlines t '$(plots[p].title)'"
+    @gp :- 2 ylab="k₁,₂ [°C]" "set grid" key="reverse Left left" xr=[0,60] yr=[-30,0] :-
+    @gp :-   times/60 [m.val for m in mf.result.k1] [m.err for m in mf.result.k1] "lc $p w points t 'k₁ $(plots[p].title)'"
+    @gp :-   times/60 [m.val for m in mf.result.k2] [m.err for m in mf.result.k2] "lc $p w points t 'k₂ $(plots[p].title)'"
+    @gp :- 3 ylab="τ₁ [min]" "set grid" key="reverse Left left" xr=[0,60] yr=[0,2] :-
+    @gp :-   times/60 [m.val/60 for m in mf.result.tau1] [m.err/60 for m in mf.result.tau1] "lc $p w errorlines t 'τ₁ $(plots[p].title)'"
+    @gp :- 4 ylab="τ₂ [min]" "set grid" key="reverse Left left" xr=[0,60] yr=[0,10] :-
+    @gp :-   times/60 [m.val/60 for m in mf.result.tau2] [m.err/60 for m in mf.result.tau2] "lc $p w errorlines t 'τ₂ $(plots[p].title)'"
+    if plots[p].order == 3
+        @gp :- 5 xlab="time [min]" ylab="τ₃ [min]" "set grid" key="reverse Left left" xr=[0,60] yr=[5,30] :-
+        @gp :-   times/60 [m.val/60 for m in mf.result.tau3] [m.err/60 for m in mf.result.tau3] "lc $p w errorlines t 'τ₃ $(plots[p].title)'"
+    end
+end
+
 T.plot_fit(["memory-bandwidth/data-fan/seq-all-t6-s$(s).csv" for s in ["16k" "256k" "4M"]], cols, order=2)
 
 T.plot_fit(["memory-bandwidth/data-fan/seq-a53-t$t-s$(s).csv" for s in ["16k" "256k" "4M"] for t in 1:2], cols, order=2)
