@@ -183,15 +183,25 @@ Return the fitted function as Gnuplot enhanced string. Time constants
 (τᵢ) are sorted from smallest to largest.
 """
 function printfit(fit; minutes = false)
+    function print_exp(k, tau)
+        sign = " + "
+        if k < 0
+            sign = " – "
+            k = -k
+        end
+        tau_str = @sprintf "%3.1f" tau
+        if match(r"^[0.]*$", tau_str) != nothing
+            tau_str = @sprintf "%3.2f" tau
+        end
+        sign * @sprintf("%3.1f⋅e^{−t/%s}", k, tau_str)
+    end
     p = coef(fit)
     T∞ = p[1]
     τ = p[3:2:end] ./ (minutes ? 60 : 1)
     i = sortperm(τ)
     τ = τ[i]
     k = p[2:2:end][i]
-    join([@sprintf("%3.1f", T∞);
-          [@sprintf("%3.1f⋅e^{−t/%3.1f}", k[i], τ[i]) for i in 1:length(τ)]],
-         " + ")
+    *(@sprintf("%3.1f", T∞), print_exp.(k[i], τ[i])...)
 end
 
 """
