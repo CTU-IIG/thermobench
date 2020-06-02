@@ -123,3 +123,19 @@ fs=[
 T.plot_fit("joel/glob-shared/" .* fs,
            @T.symarray(Cortex_A57_temp_°C),#,Denver2_temp_°C,GPU_temp_°C,PLL_temp_°C,Tboard_temp_°C,Tdiode_temp_°C,Thfan_temp_°C),
            order=2)
+
+
+T.plot_fit("joel-xavier/" .* ["do_some_light_GPU_30_times.sh.fan.csv"
+                              "do_some_stress_20min.sh.fan.csv"
+                              "do_some_light_GPU_30_times.sh.nofan.csv"
+                              "do_some_stress_20min.sh.nofan.csv"],
+           :GPU_therm_°C, #@T.symarray CPU-therm GPU-therm AUX-therm AO-therm PMIC-Die Tboard_tegra Tdiode_tegra thermal-fan-est,
+           order=3, use_cmpfit=true, p0=:random)
+@gp :- key="invert"
+
+dfs = [(T.read("joel-xavier-fan-speed/do_some_stress_30min.sh.fan$i.csv") |> df->df[!, r"therm"] ./= 1e3,
+        "fan$i")
+       for i in 0:32:256];
+tau_bounds=[(3,60), (3*60,60*60)]
+mf = T.multi_fit(dfs, :GPU_therm, use_cmpfit=true, tau_bounds=tau_bounds)
+@gp mf "set title 'Xavier with different fan speeds'"

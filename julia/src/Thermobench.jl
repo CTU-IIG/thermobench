@@ -1,7 +1,7 @@
 module Thermobench
 
 import CSV
-import DataFrames: DataFrame, AbstractDataFrame, rename!, dropmissing, Not, select
+import DataFrames: DataFrame, AbstractDataFrame, rename!, dropmissing, Not, select, nrow
 using Printf, Gnuplot, Colors, Random
 import LsqFit: margin_error, mse
 import LsqFit
@@ -317,22 +317,41 @@ end
 
 mutable struct MultiFit
     prefix::String
+    data::Vector{DataFrame}
     result::DataFrame
     time
 end
 
 Base.show(io::IO, mf::MultiFit) = begin
     println(io, "Prefix: ", mf.prefix)
-    print(io, select(mf.result, Not("fit")))
+    print(io, select(mf.result, Not([:fit])))
 end
 
 function Gnuplot.recipe(mf::MultiFit)
-    [
+    colors = distinguishable_colors(
+        nrow(mf.result),
+        [RGB(1,1,1)], dropseed=true)
+    ptcolors = weighted_color_mean.(0.4, colors, colorant"white")
+
+    vcat(
         Gnuplot.PlotElement(
-            data=Gnuplot.DatasetText(mf.time, model(mf.time, coef(mf.result.fit[i]))),
-            plot="w l lw 2 title '$(printfit(mf.result.fit[i], minutes=false))'")
-        for i in 1:nrow(mf.result)
-    ]
+            key="below left Left reverse horizontal maxcols 2",
+            title= "$(mf.prefix)*",
+            xlabel="Time [min]", ylabel="Temperature [°C]",
+            cmds=["set grid", "set minussign"]),
+        [
+            Gnuplot.PlotElement(
+                data=Gnuplot.DatasetText(mf.data[i].time, mf.data[i].val),
+                plot="w p lt $i lc rgb '#$(hex(ptcolors[i]))' title '$(mf.result.name[i])'",
+            )
+            for i in 1:nrow(mf.result)]...,
+        [
+            Gnuplot.PlotElement(
+                data=Gnuplot.DatasetText(mf.time, model(mf.time, coef(mf.result.fit[i]))),
+                plot="w l lw 2 lc rgb '#$(hex(colors[i]))' title '$(printfit(mf.result.fit[i], minutes=true))'",
+            )
+            for i in 1:nrow(mf.result)]...
+    )
 end
 
 """
@@ -372,6 +391,7 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
              [DataFrame("k$i" => coef[2i], "tau$i" => coef[2i+1]) for i in 1:order]...)
     end
 
+    data = Vector{DataFrame}()
     result = hcat(DataFrame(name = String[],
                             column = Symbol[],
                             mse = Float64[]),
@@ -398,6 +418,7 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
         end
         for col in ensurearray(columns)
             series = DataFrame(time = df[!, timecol], val = df[!, col]) |> dropmissing
+            push!(data, series)
             tmin = min(tmin, first(series.time))
             tmax = max(tmax, last(series.time))
             f = fit(series.time, series.val; order=order, kwargs...)
@@ -425,7 +446,7 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
                          coef2df(use_measurements ? measurement.(coefs, mes) : coefs)))
         end
     end
-    MultiFit(prefix, result, range(tmin, tmax, length=1000))
+    MultiFit(prefix, data, result, range(tmin, tmax, length=1000))
 end
 
 """
