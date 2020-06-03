@@ -47,7 +47,8 @@ csvs=["memory-bandwidth/data-$data/$ord-$cpu-t$t-s$s.csv"
       for t in tasks[cpu]
       for ord in ["seq" "rnd"]
       ];
-T.plot_fit(csvs, :CPU_0_temp_°C, order=2)
+mf = T.multi_fit(csvs, :CPU_0_temp_°C, use_cmpfit=false, order=2)
+@gp mf
 
 # Thermocam calibration/correction
 tasks = Dict("a53" => 1:4,
@@ -91,7 +92,7 @@ T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0_°C, order=
 
 f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, plotexp=true)
 
-T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, use_measurements=true)
+@gp T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, use_measurements=true)
 df = T.read("cl-mem/cl-mem-read.csv");
 nrow(df)
 
@@ -102,7 +103,7 @@ mf1 = T.multi_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=false, tau_bounds=[
 mf2 = T.multi_fit(csvs, :CPU_0_temp_°C, subtract=:ambient_°C, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
 @gp mf2 key="inside bottom" title="Subtraction of ambient temperatures"
 
-T.plot_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=t)
+T.plot_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=true)
 
 csvs = vcat([["long-test-fan/hot.$i.csv", "long-test-fan/cold.$i.csv"] for i in 1:2]...)
 csvs =  [csvs[1:2:end]; csvs[2:2:end]]
@@ -181,7 +182,7 @@ T.plot_fit("joel/glob-shared/" .* fs,
            order=2)
 
 
-T.plot_fit("joel-xavier/" .* ["do_some_light_GPU_30_times.sh.fan.csv"
+@gp T.multi_fit("joel-xavier/" .* ["do_some_light_GPU_30_times.sh.fan.csv"
                               "do_some_stress_20min.sh.fan.csv"
                               "do_some_light_GPU_30_times.sh.nofan.csv"
                               "do_some_stress_20min.sh.nofan.csv"],

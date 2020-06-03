@@ -7,6 +7,7 @@ import LsqFit: margin_error, mse
 import LsqFit
 import CMPFit
 import StatsBase: coef, dof, nobs, rss, stderror, weights, residuals
+import Statistics: quantile
 using Measurements
 using Debugger
 
@@ -343,14 +344,21 @@ function plot_mf(mf::MultiFit;
                  pt_titles::Bool = true,
                  pt_decim::Int = 1,
                  pt_size::Real = 1,
+                 stddev::Bool = true,
                  )::Vector{Gnuplot.PlotElement}
     colors = distinguishable_colors(
         nrow(mf.result),
         [RGB(1,1,1)], dropseed=true)
     ptcolors = weighted_color_mean.(0.4, colors, colorant"white")
 
+    stderr = sqrt.(mf.result.mse)
+    bad = 2 * quantile(stderr, 0.90)
+    stddev_title(i) = """ {/*0.8 (±$(@sprintf "%.2g" stderr[i])$(stderr[i] > bad ? "{/:Bold*1.25 !!!}" : ""))}"""
     pt_title(i) = pt_titles ? mf.result.name[i] : ""
-    fit_title(i) = (pt_titles ? "" : mf.result.name[i] * ": ") * printfit(mf.result.fit[i], minutes=minutes)
+    fit_title(i) = (pt_titles ? "" : mf.result.name[i] * ": ") *
+        printfit(mf.result.fit[i], minutes=minutes) *
+        (stddev ? stddev_title(i) : "")
+
 
     time_unit = minutes ? "min" : "s"
     time_div = minutes ? 60 : 1
