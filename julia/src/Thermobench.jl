@@ -330,6 +330,7 @@ mutable struct MultiFit
     data::Vector{DataFrame}
     result::DataFrame
     time
+    subtract::Bool
 end
 
 Base.show(io::IO, mf::MultiFit) = begin
@@ -358,7 +359,7 @@ function plot_mf(mf::MultiFit;
         Gnuplot.PlotElement(
             key="below left Left reverse horizontal maxcols $(pt_titles ? 2 : 1)",
             title= "$(mf.prefix)*",
-            xlabel="Time [$time_unit]", ylabel="Temperature [°C]",
+            xlabel="Time [$time_unit]", ylabel=(mf.subtract ? "Rel. temperature" : "Temperature") * " [°C]",
             cmds=["set grid", "set minussign"]),
         [
             Gnuplot.PlotElement(
@@ -477,7 +478,7 @@ function multi_fit(sources, columns = :CPU_0_temp_°C;
                          coef2df(use_measurements ? measurement.(coefs, mes) : coefs)))
         end
     end
-    MultiFit(prefix, data, result, range(tmin, tmax, length=1000))
+    MultiFit(prefix, data, result, range(tmin, tmax, length=1000), subtract != nothing)
 end
 
 """
