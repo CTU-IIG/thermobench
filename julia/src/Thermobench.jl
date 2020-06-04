@@ -595,7 +595,6 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                     @gp(:-, 1, x./60, model(x .- t₀, coef(fit)),
                         "w l lt $plotno lc rgb '#$(hex(color))' lw 2 title '$(printfit(fit, minutes=true))'",
                         :-)
-                    @show rss(fit) #fit.converged
                     if plotexp
                         expcolor = weighted_color_mean(0.4, color, colorant"white")
                         local c = coef(fit)
