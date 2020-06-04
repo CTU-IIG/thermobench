@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         working-directory: julia
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
-      - name: Install gnuploy
+      - name: Install gnuplot
         run: sudo apt install gnuplot
       - name: Build and deploy
         env:
