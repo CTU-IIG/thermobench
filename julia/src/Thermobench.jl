@@ -38,20 +38,28 @@ function normalize_units!(df::AbstractDataFrame)
     end
 end
 
+"Strip unit names from column names"
+function strip_units!(df::AbstractDataFrame)
+    for col in propertynames(df)
+        for unit in "_" .* [ "ms", "s", "m°C", "°C", "Hz", "%" ]
+            endswith(col, unit) && rename!(df, col => (String(col)[1:end-lastindex(unit)]))
+        end
+    end
+end
+
 """
     read(source; normalizeunits=true)
 
 Read thermobech CSV file, optionally normalizing units and return it
 as DataFrame"
 """
-function read(source; normalizeunits=true)
+function read(source; normalizeunits=true, stripunits=true)
     df = CSV.read(source; comment="#", normalizenames=true,
                   silencewarnings=true, copycols=true,
                   typemap=Dict(Int64 => Float64), # Needed for interpolation
                   )
-    if normalizeunits
-        normalize_units!(df)
-    end
+    normalizeunits && normalize_units!(df)
+    stripunits     && strip_units!(df)
     return df
 end
 
@@ -132,12 +140,12 @@ end
 Estimate correction for thermocamera temperatures and apply it. Return
 the correction coefficients.
 
-Correction is calculated from `CPU_0_temp_°C` and `cam_cpu` columns.
+Correction is calculated from `CPU_0_temp` and `cam_cpu` columns.
 This and the names of modified columns are currently hard coded.
 """
 function thermocam_correct!(df::AbstractDataFrame)
     di = interpolate(df)
-    match_cols = [:CPU_0_temp_°C, :cam_cpu]
+    match_cols = [:CPU_0_temp, :cam_cpu]
     d = di[:, match_cols] |> dropmissing
     N = size(d, 1)
     x = [d[!, match_cols[2]] ones(N)] \ d[!, match_cols[1]]
@@ -232,7 +240,7 @@ repeated.
 # Example
 ```julia
 df = read("test.csv")
-f = fit(df.time_s, df.CPU_0_temp_°C)
+f = fit(df.time, df.CPU_0_temp)
 coef(f)
 Thermobench.printfit(f)
 ```
@@ -388,8 +396,8 @@ end
 Gnuplot.recipe(mf::MultiFit) = plot_mf(mf)
 
 """
-    multi_fit(sources, columns = :CPU_0_temp_°C;
-              timecol = :time_s,
+    multi_fit(sources, columns = :CPU_0_temp;
+              timecol = :time,
               use_measurements = false,
               order::Int64 = 2,
               subtract = nothing,
@@ -405,18 +413,18 @@ data after interpolating its values with [`interpolate`](@ref). This
 intended for subtraction of ambient temperature.
 
 ```jldoctest
-julia> multi_fit("test.csv", [:CPU_0_temp_°C :CPU_1_temp_°C])
+julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Prefix: test.csv
-2×8 DataFrame
-│ Row │ name   │ column        │ mse       │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
-│     │ String │ Symbol        │ Float64   │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
-├─────┼────────┼───────────────┼───────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
-│ 1   │        │ CPU_0_temp_°C │ 0.023865  │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
-│ 2   │        │ CPU_1_temp_°C │ 0.0208397 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
+2×8 DataFrame. Omitted printing of 1 columns
+│ Row │ name   │ column     │ mse       │ Tinf    │ k1       │ tau1    │ k2       │
+│     │ String │ Symbol     │ Float64   │ Float64 │ Float64  │ Float64 │ Float64  │
+├─────┼────────┼────────────┼───────────┼─────────┼──────────┼─────────┼──────────┤
+│ 1   │        │ CPU_0_temp │ 0.023865  │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │
+│ 2   │        │ CPU_1_temp │ 0.0208397 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │
 ```
 """
-function multi_fit(sources, columns = :CPU_0_temp_°C;
-                   timecol = :time_s,
+function multi_fit(sources, columns = :CPU_0_temp;
+                   timecol = :time,
                    use_measurements = false,
                    order::Int64 = 2,
                    subtract = nothing, # column to subtract
@@ -494,15 +502,15 @@ Construct array of symbols from arguments.
 
 Useful for constructing column names, e.g.,
 ```julia
-@symarray Cortex_A57_temp_°C Denver2_temp_°C
+@symarray Cortex_A57_temp Denver2_temp
 ```
 """
 macro symarray(sym...)
     return [sym...]
 end
 """
-    plot_fit(sources, columns = :CPU_0_temp_°C;
-             timecol = :time_s,
+    plot_fit(sources, columns = :CPU_0_temp;
+             timecol = :time,
              kwargs...)
 
 Call [`fit`](@ref) for all `sources` and `columns` and produce a graph
@@ -522,20 +530,18 @@ Other `kwargs` are passed to [`fit`](@ref).
 ```julia
 plot_fit(
     ["file\$i.csv" for i in 1:3],
-    [:CPU_0_temp_°C, :GPU_0_temp_°C],
+    [:CPU_0_temp, :GPU_0_temp],
     order = 2
 )
 ```
 
 ```jldoctest
-julia> plot_fit("test.csv", [:CPU_0_temp_°C :CPU_1_temp_°C])
-rss(fit) = 16.824847736915736
-rss(fit) = 14.692012083459852
+julia> plot_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 LsqFit.LsqFitResult{Array{Float64,1},Array{Float64,1},Array{Float64,2},Array{Float64,1}}([54.05270193617456, -14.300579425822987, 277.6871572171704, -7.170707187492722, 51.1449427363974], [0.4814153228588438, 0.48210393166134935, -0.02827469472873645, 0.1590733915246858, -0.25639810428151577, -0.2745094012142104, -0.29552833686121005, -0.3190430919820457, 0.054645980053877, -0.1740621999878087  …  -0.10112334959897851, -0.09697970488952024, -0.09284269210126439, 0.11127121083011815, 0.11537443369089573, 0.11946698541304812, -0.0764592578095602, -0.07240014726207278, 0.1316443697488907, -0.26432565427360544], [1.0 1.0 … 1.0 -0.0; 1.0 0.9999870640586986 … 0.9999297674088051 -9.84651920490284e-6; … ; 1.0 0.07839196015996269 … 9.920656343511463e-7 -1.9227241374458278e-6; 1.0 0.07811016470837553 … 9.728568932023543e-7 -1.8881625354797446e-6], true, Float64[])
 ```
 """
-function plot_fit(sources, columns = :CPU_0_temp_°C;
-                  timecol = :time_s,
+function plot_fit(sources, columns = :CPU_0_temp;
+                  timecol = :time,
                   plotexp = false,
                   ambient = nothing,
                   kwargs...)
@@ -579,7 +585,7 @@ function plot_fit(sources, columns = :CPU_0_temp_°C;
                         :-)
                     if ambient != nothing
                         if ambient === true
-                            ambient = :ambient_°C
+                            ambient = :ambient
                         end
                         series = DataFrame(time = df[!, timecol], amb = df[!, ambient]) |> dropmissing
                         @gp(:-, 2, title="Ambient temperature",

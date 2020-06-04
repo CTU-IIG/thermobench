@@ -17,7 +17,7 @@ end
 cd("/home/wsh/thermac/devel/experiments")
 
 ## test bad fit
-f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp_°C,
+f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp,
                order=2, plotexp=true, attempts = 1,
                tau_bounds=[(30, 120), (10*60, 20*60)],
                T_bounds=(30, 50),
@@ -36,7 +36,7 @@ for (root, dirs, files) in walkdir("memory-bandwidth/data-fan-nowork")
         end
     end
 end
-f = T.plot_fit(csvs, :CPU_0_temp_°C, order=2)
+f = T.plot_fit(csvs, :CPU_0_temp, order=2)
 
 mf1 = T.multi_fit(csvs, use_cmpfit=false, use_measurements=true)
 mf2 = T.multi_fit(csvs, use_cmpfit=true)
@@ -55,7 +55,7 @@ csvs=["memory-bandwidth/data-$data/$ord-$cpu-t$t-s$s.csv"
       for t in tasks[cpu]
       for ord in ["seq" "rnd"]
       ];
-mf = T.multi_fit(csvs, :CPU_0_temp_°C, use_cmpfit=false, order=2)
+mf = T.multi_fit(csvs, :CPU_0_temp, use_cmpfit=false, order=2)
 @gp mf
 
 # Thermocam calibration/correction
@@ -82,49 +82,49 @@ describe(DataFrame(calib), :all)
 df = T.read("memory-bandwidth/data-nofan/rnd-a53-t1-s16k.csv")
 x = T.thermocam_correct!(df)
 cam_cols = [:cam_cpu, :cam_mem, :cam_board, :cam_table]
-d_cpu = df[:, [:time_s, :CPU_0_temp_°C]] |> dropmissing
-d = df[:, [:time_s, cam_cols...]] |> dropmissing
-d_amb = df[:, [:time_s, :ambient_°C]] |> dropmissing
+d_cpu = df[:, [:time, :CPU_0_temp]] |> dropmissing
+d = df[:, [:time, cam_cols...]] |> dropmissing
+d_amb = df[:, [:time, :ambient]] |> dropmissing
 
 @gp("set term qt noraise", "set grid",
-    d_amb.time_s, d_amb.ambient_°C, "w lp title 'ambient'",
-    d_cpu.time_s, d_cpu.CPU_0_temp_°C, "w p title 'CPU0'",
-    d.time_s, d.cam_cpu, "w lp title 'cam'",
-    d.time_s, d.cam_mem, "w lp title 'mem'",
-    d.time_s, d.cam_board, "w lp title 'board'",
-    d.time_s, d.cam_table, "w lp title 'table'"
+    d_amb.time, d_amb.ambient, "w lp title 'ambient'",
+    d_cpu.time, d_cpu.CPU_0_temp, "w p title 'CPU0'",
+    d.time, d.cam_cpu, "w lp title 'cam'",
+    d.time, d.cam_mem, "w lp title 'mem'",
+    d.time, d.cam_board, "w lp title 'board'",
+    d.time, d.cam_table, "w lp title 'table'"
     )
 x
 
-cols = [:CPU_0_temp_°C #, :CPU_1_temp_°C, :GPU_0_temp_°C, :GPU_1_temp_°C, :DRC_temp_°C,
+cols = [:CPU_0_temp #, :CPU_1_temp, :GPU_0_temp, :GPU_1_temp, :DRC_temp,
         ]
-T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0_°C, order=2)
+T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0, order=2)
 
-f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, plotexp=true)
+f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp :CPU_1_temp], order=3, plotexp=true)
 
-@gp T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp_°C :CPU_1_temp_°C], order=3, use_measurements=true)
+@gp T.multi_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp :CPU_1_temp], order=3, use_measurements=true)
 df = T.read("cl-mem/cl-mem-read.csv");
 nrow(df)
 
 csvs = "long-test/" .* vcat([["hot.$i.csv", "cold.$i.csv"] for i in 1:6]...)
 csvs =  [csvs[1:2:end]; csvs[2:2:end]]
-mf1 = T.multi_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+mf1 = T.multi_fit(csvs, :CPU_0_temp, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
 @gp mf1 key="inside bottom" title="Absolute temperatures"
-mf2 = T.multi_fit(csvs, :CPU_0_temp_°C, subtract=:ambient_°C, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+mf2 = T.multi_fit(csvs, :CPU_0_temp, subtract=:ambient, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
 @gp mf2 key="inside bottom" title="Subtraction of ambient temperatures"
 
-T.plot_fit(csvs, :CPU_0_temp_°C, order=3, use_cmpfit=true)
+T.plot_fit(csvs, :CPU_0_temp, order=3, use_cmpfit=true)
 
 csvs = vcat([["long-test-fan/hot.$i.csv", "long-test-fan/cold.$i.csv"] for i in 1:2]...)
 csvs =  [csvs[1:2:end]; csvs[2:2:end]]
-mf = T.multi_fit(csvs, :CPU_0_temp_°C, subtract=:ambient_°C, order=2, use_cmpfit=false, tau_bounds=[(10,120*60)], use_measurements=true)
+mf = T.multi_fit(csvs, :CPU_0_temp, subtract=:ambient, order=2, use_cmpfit=false, tau_bounds=[(10,120*60)], use_measurements=true)
 @gp mf
 
 
 df = T.read("long-test/hot.1.csv")
 Gnuplot.options.term = "qt noraise"
-times = range(10*60, last(df.time_s), length=25)
-f=T.multi_fit(df, :CPU_0_temp_°C, order=3, use_cmpfit=true, tau_bounds=[(30, 60*60)])
+times = range(10*60, last(df.time), length=25)
+f=T.multi_fit(df, :CPU_0_temp, order=3, use_cmpfit=true, tau_bounds=[(30, 60*60)])
 Tinf=f.result.Tinf[1]
 taus = (f.result.tau1[1], f.result.tau2[1], f.result.tau3[1])
 plots = [
@@ -134,12 +134,12 @@ plots = [
 ]
 @gp "set multiplot layout 5,1" :-
 for p in 1:length(plots)
-    mf = T.multi_fit([(filter(r->r.time_s < t, df), """$(@sprintf("%4.0f min", t/60))""") for t in times],
-                     [:CPU_0_temp_°C], use_measurements=true, use_cmpfit=true,
+    mf = T.multi_fit([(filter(r->r.time < t, df), """$(@sprintf("%4.0f min", t/60))""") for t in times],
+                     [:CPU_0_temp], use_measurements=true, use_cmpfit=true,
                      tau_bounds=plots[p].tau_bounds, order=plots[p].order)
     @show mf
 #     @gp :- 1 "set grid" key="bottom" xlab="time [min]" ylab="Temperature [°C]" :-
-#     @gp :-    df.time_s/60 df.CPU_0_temp_°C "ps 1 lc rgb '#cc000000' t 'data'" :-
+#     @gp :-    df.time/60 df.CPU_0_temp "ps 1 lc rgb '#cc000000' t 'data'" :-
 #     for i in 1:length(times)
 #         @gp :- mf.time/60 T.model(mf.time, coef(mf.result.fit[i])) """w l lw 2 title '$(mf.result.name[i])' """ :-
 #     end
@@ -167,7 +167,7 @@ T.plot_fit(["memory-bandwidth/data-fan-nowork/seq-a53-t$t-s$(s).csv" for s in ["
 T.plot_fit(["memory-bandwidth/data-nofan/seq-a53-t$t-s$(s).csv" for s in ["16k" "256k" "4M"] for t in 2:2:4], cols, order=2)
 
 f = T.plot_fit(["memory-bandwidth/data-nofan/seq-a53-t2-s4M.csv"],
-               [:CPU_0_temp_°C :cam_cpu],
+               [:CPU_0_temp :cam_cpu],
                order=2)
 
 tau_bounds = [
@@ -177,7 +177,7 @@ tau_bounds = [
 ]
 
 df = T.read("thermocam/thermocam-gpu.csv")
-T.plot_fit(filter(df) do row; 26 <= row.time_s/60 <= 48 end, :cam_cpu, order=3)
+T.plot_fit(filter(df) do row; 26 <= row.time/60 <= 48 end, :cam_cpu, order=3)
 
 T.plot_fit("./thermocam/thermocam.csv", :cam_cpu)
 
@@ -188,7 +188,7 @@ fs=[
     "random-shared-serial.csv",
 ]
 T.plot_fit("joel/glob-shared/" .* fs,
-           @T.symarray(Cortex_A57_temp_°C),#,Denver2_temp_°C,GPU_temp_°C,PLL_temp_°C,Tboard_temp_°C,Tdiode_temp_°C,Thfan_temp_°C),
+           @T.symarray(Cortex_A57_temp),#,Denver2_temp,GPU_temp,PLL_temp,Tboard_temp,Tdiode_temp,Thfan_temp),
            order=2)
 
 
@@ -196,7 +196,7 @@ T.plot_fit("joel/glob-shared/" .* fs,
                               "do_some_stress_20min.sh.fan.csv"
                               "do_some_light_GPU_30_times.sh.nofan.csv"
                               "do_some_stress_20min.sh.nofan.csv"],
-           :GPU_therm_°C, #@T.symarray CPU-therm GPU-therm AUX-therm AO-therm PMIC-Die Tboard_tegra Tdiode_tegra thermal-fan-est,
+           :GPU_therm, #@T.symarray CPU-therm GPU-therm AUX-therm AO-therm PMIC-Die Tboard_tegra Tdiode_tegra thermal-fan-est,
            order=3, use_cmpfit=true, p0=:random)
 @gp :- key="invert"
 
