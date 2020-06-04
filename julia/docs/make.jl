@@ -7,7 +7,8 @@ DocMeta.setdocmeta!(Thermobench,
 makedocs(
     sitename = "Thermobench",
     format = Documenter.HTML(),
-    modules = [Thermobench]
+    modules = [Thermobench],
+    doctest = false,
 )
 
 # using DocumenterMarkdown
