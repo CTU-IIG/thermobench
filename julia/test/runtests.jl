@@ -6,6 +6,7 @@ end
 using Thermobench
 const T = Thermobench
 using Gnuplot, LsqFit, DataFrames, Printf
+Gnuplot.options.term = "qt noraise"
 if ! isinteractive()
     using Documenter
     DocMeta.setdocmeta!(Thermobench,
@@ -23,8 +24,8 @@ f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp_°C,
                k_bounds=[(-10,+10), (-5,+5)],
                show_trace = true,
                use_cmpfit = true,
-               );
-
+               )
+T.multi_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv")
 
 ## Rest
 csvs=String[]
@@ -35,7 +36,14 @@ for (root, dirs, files) in walkdir("memory-bandwidth/data-fan-nowork")
         end
     end
 end
-T.plot_fit(csvs, :CPU_0_temp_°C, order=2)
+f = T.plot_fit(csvs, :CPU_0_temp_°C, order=2)
+
+mf1 = T.multi_fit(csvs, use_cmpfit=false, use_measurements=true)
+mf2 = T.multi_fit(csvs, use_cmpfit=true)
+
+using Measurements
+using Measurements: value, uncertainty
+@gp value.(mf1.result.Tinf) uncertainty.(mf1.result.Tinf)
 
 tasks = Dict("a53" => 1:1,#4,
              "a72" => 1:1,#2,
@@ -74,11 +82,13 @@ describe(DataFrame(calib), :all)
 df = T.read("memory-bandwidth/data-nofan/rnd-a53-t1-s16k.csv")
 x = T.thermocam_correct!(df)
 cam_cols = [:cam_cpu, :cam_mem, :cam_board, :cam_table]
+d_cpu = df[:, [:time_s, :CPU_0_temp_°C]] |> dropmissing
 d = df[:, [:time_s, cam_cols...]] |> dropmissing
 d_amb = df[:, [:time_s, :ambient_°C]] |> dropmissing
+
 @gp("set term qt noraise", "set grid",
     d_amb.time_s, d_amb.ambient_°C, "w lp title 'ambient'",
-    df.time_s, df.CPU_0_temp_°C, "w p title 'CPU0'",
+    d_cpu.time_s, d_cpu.CPU_0_temp_°C, "w p title 'CPU0'",
     d.time_s, d.cam_cpu, "w lp title 'cam'",
     d.time_s, d.cam_mem, "w lp title 'mem'",
     d.time_s, d.cam_board, "w lp title 'board'",
