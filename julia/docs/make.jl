@@ -2,7 +2,7 @@ using Documenter
 using Thermobench
 
 DocMeta.setdocmeta!(Thermobench,
-                    :DocTestSetup, :(using Thermobench, DataFrames; cd(joinpath(dirname(pathof(Thermobench)), "..", "test")));
+                    :DocTestSetup, :(using Thermobench, DataFrames),
                     recursive=true)
 
 using DataFrames
@@ -11,7 +11,8 @@ makedocs(
     sitename = "Thermobench",
     format = Documenter.HTML(),
     modules = [Thermobench],
-    doctest = true,
+    doctest = false,
+    workdir = @__DIR__,
 )
 
 # using DocumenterMarkdown

@@ -18,12 +18,23 @@ export
     interpolate,
     multi_fit,
     plot_fit,
+    plot_Tinf,
     printfit,
     rename!
 
 Base.endswith(sym::Symbol, str::AbstractString) = endswith(String(sym), str)
 
-"Data read from thermobench .csv file"
+"""
+```
+mutable struct Data
+    df::DataFrame
+    name::String                # label for plotting
+    meta::Dict
+end
+```
+
+Data read from thermobench CSV file.
+"""
 mutable struct Data
     df::DataFrame
     name::String                # label for plotting
@@ -52,7 +63,7 @@ Base.filter(f, d::Data) = Data(d, filter(f, d.df))
 Base.filter!(f, d::Data) = filter(f, d.df)
 
 
-"Normalize units to seconds and °C"
+"Normalizes units to seconds and °C."
 function normalize_units!(d::Data)
     for col in propertynames(d.df)
         if col == :time_ms
@@ -68,7 +79,7 @@ function normalize_units!(d::Data)
     end
 end
 
-"Strip unit names from column names"
+"Strips unit names from column names."
 function strip_units!(d::Data)
     for col in propertynames(d.df)
         for unit in "_" .* [ "ms", "s", "m°C", "°C", "Hz", "%" ]
@@ -80,10 +91,12 @@ end
 """
     read(source; normalizeunits=true, stripunits=true, name=nothing, kwargs...)::Data
 
-Read thermobech CSV file, optionally normalizing units and return it
-as `Thermobench.Data` type. `name` and `kwargs` are stored as
-metadata. If `name` is not specified it is set (if possible) to
-basename of the .csv file.
+Reads thermobech CSV file `source`, which can be a file name or an IO
+stream. Returns `Thermobench.Data` type, which embeds a data frame. By
+default units are normalized with [`normalize_units!`](@ref) and
+stripped from column names. `name` and `kwargs` are stored in result
+as metadata. If `name` is not specified it is set (if possible) to the
+basename of the CSV file.
 """
 function read(source; normalizeunits=true, stripunits=true, name=nothing, kwargs...)::Data
     comment = readline(source)
@@ -280,10 +293,10 @@ function printfit(fit; minutes = false)
     *(@sprintf("%3.1f", T∞), print_exp.(k[i], τ[i])...)
 end
 
-"""
+@doc raw"""
     fit(
         time_s::Vector{Float64},
-        data;
+        data::Vector{Float64};
         order::Int64 = 2,
         p0 = nothing,
         tau_bounds = [(1, 60*60)],
@@ -292,7 +305,12 @@ end
         use_cmpfit::Bool = false,
      )
 
-Fit a thermal model to time series.
+Fit a thermal model to time series given by `time_s` and `data`. The
+thermal model has the form of
+```math
+T(t) = T_∞ + \sum_{i=1}^{order}k_i⋅e^{-\frac{t}{τ_i}},
+```
+where T_∞, kᵢ and τᵢ are the coefficients found by this function.
 
 If `use_cmpfit` is true, use CMPFit.jl package rather than LsqFit.jl.
 LsqFit doesn't work well in constrained fit.
@@ -513,6 +531,7 @@ function plot_bars(df::AbstractDataFrame;
     )
 end
 
+"Plot ``T_∞`` as bargraphs."
 function plot_Tinf(mfs::Vararg{MultiFit, N};
                    kwargs...)::Vector{Gnuplot.PlotElement} where {N}
     @assert length(mfs) > 0
@@ -540,7 +559,7 @@ end
               subtract = nothing,
               kwargs...)::MultiFit
 
-Call `fit()` for all sources and report the results (coefficients
+Call [`fit()`](@ref) for all sources and report the results (coefficients
 etc.) in `DataFrame`. When `use_measurements` is `true`, report
 coefficients with their confidence intervals as `Measurement`
 objects.
@@ -649,7 +668,7 @@ end
              timecol = :time,
              kwargs...)
 
-Call [`fit`](@ref) for all `sources` and `columns` and produce a graph
+Calls [`fit`](@ref) for all `sources` and `columns` and produce a graph
 using gnuplot.
 
 `sources` can be a file name (`String`) or a `DataFrame` or an array
