@@ -219,6 +219,18 @@ mf = T.multi_fit(dfs, :GPU_therm, use_cmpfit=true, use_measurements=true, tau_bo
 @gp mf "set title 'Xavier with different fan speeds'"
 @gp T.plot_Tinf(mf) "set title 'Xavier with different fan speeds'"
 
+dfs = [T.read("joel-xavier-fan-speed2/do_some_stress_40min.sh.fan$i.csv", name="fan$i") for i in 0:32:256];
+foreach(dfs) do d d.df[!, r"therm"] ./= 1e3 end
+filter!(dfs[1].df) do r r.time < 21*60 end
+tau_bounds=[(3,60), (3*60,60*60)]
+mf = T.multi_fit(dfs, :GPU_therm, use_cmpfit=true, use_measurements=true, tau_bounds=tau_bounds)
+@gp T.plot(mf, pt_size=0.5) "set title 'Xavier with different fan speeds'"
+
+@gp T.plot_Tinf(rename!(mf, "T∞ [°C]")) "set title 'Xavier with different fan speeds'"
+@gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) "w lp lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
+#@gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) Measurements.uncertainty.(mf.result.tau2/60) "w errorbars lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
+
+
 dir = "fanda/parallel1-2runs-all/"
 mf = [];
 for it in 1:2
