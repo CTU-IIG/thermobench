@@ -431,9 +431,9 @@ function plot(mf::MultiFit;
         [RGB(1,1,1)], dropseed=true)
     ptcolors = weighted_color_mean.(0.4, colors, colorant"white")
 
-    stderr = sqrt.(mf.result.mse)
-    bad = 2 * quantile(stderr, 0.75)
-    stddev_title(i) = """ {/*0.8 (±$(@sprintf "%.2g" stderr[i])$(stderr[i] > bad ? "{/:Bold*1.25 !!!}" : ""))}"""
+    rmse = mf.result.rmse
+    bad = 2 * quantile(rmse, 0.75)
+    stddev_title(i) = """ {/*0.8 (±$(@sprintf "%.2g" rmse[i])$(rmse[i] > bad ? "{/:Bold*1.25 !!!}" : ""))}"""
 
     mf.result.name == mf.result.name[1]
     same_names = all(map(mf.result.name) do name name == mf.result.name[1] end)
@@ -553,11 +553,11 @@ intended for subtraction of ambient temperature.
 julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Thermobench.MultiFit: test.csv
     2×8 DataFrame
-│ Row │ name     │ column     │ mse       │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
-│     │ String   │ Symbol     │ Float64   │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
-├─────┼──────────┼────────────┼───────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
-│ 1   │ test.csv │ CPU_0_temp │ 0.023865  │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
-│ 2   │ test.csv │ CPU_1_temp │ 0.0208397 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
+│ Row │ name     │ column     │ rmse     │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
+│     │ String   │ Symbol     │ Float64  │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
+├─────┼──────────┼────────────┼──────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
+│ 1   │ test.csv │ CPU_0_temp │ 0.154483 │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
+│ 2   │ test.csv │ CPU_1_temp │ 0.14436  │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
 ```
 """
 function multi_fit(sources, columns = :CPU_0_temp;
@@ -578,7 +578,7 @@ function multi_fit(sources, columns = :CPU_0_temp;
 
     result = hcat(DataFrame(name = String[],
                             column = Symbol[],
-                            mse = Float64[]),
+                            rmse = Float64[]), # root-mean-square error
                   coef2df(fill(type[], 2order+1)),
                   DataFrame(fit = Any[],
                             data = Data[],
@@ -618,7 +618,7 @@ function multi_fit(sources, columns = :CPU_0_temp;
             append!(result,
                     hcat(DataFrame(name = d.name,
                                    column = col,
-                                   mse = mse(f),
+                                   rmse = sqrt(mse(f)),
                                    fit = f,
                                    data = d,
                                    series = series),
