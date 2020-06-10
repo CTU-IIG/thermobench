@@ -15,11 +15,11 @@ saveas(file; width=800, height=350) = save(term="pngcairo size $width,$height fo
 ```
 
 
-Julia module for working with `thermobench`-produced CSV files.
+Julia module for working with
+[thermobench](https://github.com/CTU-IIG/thermobench)-produced CSV
+files.
 
 ## Installation
-
-Run `julia` and type:
 
 Thermobench.jl can be installed using the Julia package manager. From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
@@ -37,7 +37,8 @@ author of the package, run:
 
 ## Usage
 
-Thermobench package supports plotting with Gnuplot.jl package so you
+Thermobench package supports plotting with
+[Gnuplot.jl](https://github.com/gcalderone/Gnuplot.jl) package so you
 will most likely need both packages:
 
 ```@example abc
