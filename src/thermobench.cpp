@@ -109,6 +109,7 @@ char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
 double cooldown_temp = NAN;
 char *fan_cmd = NULL;
+bool fan_on = false;
 char *bench_name = NULL;
 const char *output_path = ".";
 char *out_file = NULL;
@@ -348,7 +349,7 @@ void wait_cooldown(char *fan_cmd)
         sleep(2);
     }
 
-    if (fan_cmd)
+    if (fan_cmd && !fan_on)
         set_fan(fan_cmd, 0);
 }
 
@@ -705,6 +706,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 'f':
         fan_cmd = arg;
         break;
+    case 'F':
+        fan_on = true;
+        break;
     case 'n':
         bench_name = arg;
         break;
@@ -773,6 +777,7 @@ static struct argp_option options[] = {
       "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP "
       "before running the COMMAND." },
     { "fan-cmd",        'f', "CMD",         0, "Command to turn the fan on (CMD 1) or off (CMD 0)" },
+    { "fan-on",         'F', 0,             0, "Switch the fan on while running COMMAND" },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
@@ -926,6 +931,9 @@ int main(int argc, char **argv)
 
     if (!isnan(cooldown_temp))
         wait_cooldown(fan_cmd);
+
+    if (fan_on && fan_cmd)
+        set_fan(fan_cmd, 1);
 
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);

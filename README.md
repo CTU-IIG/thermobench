@@ -86,6 +86,7 @@ sensors in a .csv file.
   -E, --exec-wait            Wait for --exec processes to finish. Do not kill
                              them (useful for testing).
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
+  -F, --fan-on               Switch the fan on while running COMMAND
   -l, --stdout               Log COMMAND stdout to CSV
   -n, --name=NAME            Basename of the .csv file
   -o, --output_dir=DIR       Where to create output .csv file
