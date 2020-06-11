@@ -5,7 +5,7 @@ if isinteractive()
 end
 using Thermobench
 const T = Thermobench
-using Gnuplot, LsqFit, DataFrames, Printf, Measurements, Statistics
+using Gnuplot, LsqFit, DataFrames, Printf, Measurements, Statistics, Test
 Gnuplot.options.term = "qt noraise"
 if ! isinteractive()
     using Documenter
@@ -15,6 +15,17 @@ if ! isinteractive()
     doctest(Thermobench, manual=false, fix=true)
 end
 cd("/home/wsh/thermac/devel/experiments")
+
+@testset "plot_bars" begin
+    df = DataFrame(names=["a", "b", "c"], temp=10:12, speed=4:-1:2)
+    @test (@gp T.plot_bars(df); true)
+    @test (@gp T.plot_bars(df, fill_style="pattern 1"); true)
+    @test (@gp T.plot_bars(df, cluster_width=0.5); true)
+    @test (@gp T.plot_bars(df, label_rot=0); true)
+    @test (@gp T.plot_bars(df, y2cols=[:speed]); true)
+    @test (@gp T.plot_bars(df, y2cols=[:speed, :temp]); true)
+    @test_throws AssertionError @gp T.plot_bars(df, y2cols=[:bad])
+end
 
 ## test bad fit
 f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp,

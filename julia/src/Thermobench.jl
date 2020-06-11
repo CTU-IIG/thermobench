@@ -502,29 +502,41 @@ function plot_bars(df::AbstractDataFrame;
                    label_rot = -30,
                    label_enhanced = false,
                    key_enhanced = false,
+                   y2cols = [],
                    )::Vector{Gnuplot.PlotElement}
     n = nrow(df)
     bw = cluster_width/(ncol(df) - 1)
+
+    foreach(y2cols) do col
+        @assert col in propertynames(df)
+    end
+
+    axes(i) = (propertynames(df)[i] in y2cols) ? "axes x1y2 " : ""
 
     # Take labels from 1st column
     labels = ["'$(l[1])' $(l[2])" for l in zip(df[!, 1], 0.5:n-0.5)]
     vcat(
         Gnuplot.PlotElement(
             xr=[0,n],
-            cmds=["set grid ytics mxtics", # minor x-tics separates clusters
-                  "set boxwidth $bw",
-                  "set style fill $fill_style",
-                  # cluster labels
-                  """set xtics ($(join(labels, ", "))) rotate by $label_rot $(label_enhanced ? "" : "no")enhanced""",
-                  # minor x-tics for grid
-                  """set xtics add ($(join(["$i 1" for i in (1:n-1)], ",")))""",
-                  ]
+            cmds=vcat(["set grid ytics mxtics", # minor x-tics separates clusters
+                       "set boxwidth $bw",
+                       "set style fill $fill_style",
+                       # cluster labels
+                       """set xtics ($(join(labels, ", "))) rotate by $label_rot $(label_enhanced ? "" : "no")enhanced""",
+                       # minor x-tics for grid
+                       """set xtics add ($(join(["$i 1" for i in (1:n-1)], ",")))""",
+                       ],
+                      length(y2cols) > 0 ? ["set y2tics"] : String[],
+                      )
+
         ),
         [
             Gnuplot.PlotElement(
                 data=Gnuplot.DatasetText(Measurements.value.(df[!, i]),
                                          Measurements.uncertainty.(df[!, i])),
-                plot="""u (\$0+$((i-1.5)*bw+(1-cluster_width)/2)):1:2 w boxerrorbars title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced""",
+                plot="using (\$0+$((i-1.5)*bw+(1-cluster_width)/2)):1:2" *
+                "with boxerrorbars $(axes(i))" *
+                """title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced""",
             )
             for i in 2:ncol(df)
         ]...
