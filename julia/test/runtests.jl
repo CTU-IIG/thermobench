@@ -5,7 +5,8 @@ if isinteractive()
 end
 using Thermobench
 const T = Thermobench
-using Gnuplot, LsqFit, DataFrames, Printf, Measurements, Statistics, Test
+using Gnuplot, LsqFit, DataFrames, Printf, Measurements
+using Statistics, Test, DataFramesMeta, Dates
 Gnuplot.options.term = "qt noraise"
 if ! isinteractive()
     using Documenter
@@ -25,6 +26,14 @@ cd("/home/wsh/thermac/devel/experiments")
     @test (@gp T.plot_bars(df, y2cols=[:speed]); true)
     @test (@gp T.plot_bars(df, y2cols=[:speed, :temp]); true)
     @test_throws AssertionError @gp T.plot_bars(df, y2cols=[:bad])
+end
+
+@testset "ops_per_sec" begin
+    ops = ops_per_sec(T.read("test.csv"), :CPU0_work_done)
+    @test mean(ops) ≈ 5.5e7 rtol=0.01
+    @test std(ops) ≈ 6.1e4 rtol=0.01
+    @test T.sample_mean_est(ops).val ≈ 5.5e7 rtol=0.01
+    @test T.sample_mean_est(ops).err ≈ 1.24e5 rtol=0.01
 end
 
 ## test bad fit
@@ -71,6 +80,17 @@ mf = T.multi_fit(csvs, use_cmpfit=true, use_measurements=true, subtract=:ambient
 
 @gp palette(:Dark2_7) T.plot_Tinf(rename!(filter(r->occursin("seq", r.name), mf), "seq"),
                                   rename!(filter(r->occursin("rnd", r.name), mf), "rnd")) linetypes(:Set1_8)
+
+csvs=["memory-bandwidth/data-$data/$ord-$cpu-t$t-s$s.csv"
+      for data in ["fan"] #["fan-nowork" "fan" "nofan"]
+      for cpu in ["a53" "a72" "all"]
+      for s in ["16k" "256k" "4M"]
+      for t in Dict("a53" => 1:4, "a72" => 1:2, "all" => 6)[cpu]
+      for ord in ["seq" "rnd"]
+      ];
+mf = T.multi_fit(csvs, use_cmpfit=true, use_measurements=true, subtract=:ambient, order=2)
+sort!(mf.result, :ops);
+@gp T.plot_Tinf_and_ops(mf, label_rot=-90) linetypes(:Set1_8)
 
 mf = T.multi_fit("memory-bandwidth/data-nofan/rnd-a53-t1-s16k.csv",
                  @symarray CPU_0_temp CPU_1_temp GPU_0_temp GPU_1_temp)
@@ -237,7 +257,7 @@ tau_bounds=[(3,60), (3*60,60*60)]
 mf = T.multi_fit(dfs, :GPU_therm, use_cmpfit=true, use_measurements=true, tau_bounds=tau_bounds)
 @gp T.plot(mf, pt_size=0.5) "set title 'Xavier with different fan speeds'"
 
-@gp T.plot_Tinf(rename!(mf, "T∞ [°C]")) "set title 'Xavier with different fan speeds'"
+@gp T.plot_Tinf(rename!(mf, "T∞ [°C]")) title="Xavier with different fan speeds" yr=[25,NaN]
 @gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) "w lp lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
 #@gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) Measurements.uncertainty.(mf.result.tau2/60) "w errorbars lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
 
@@ -257,3 +277,68 @@ end
 
 @gp T.plot(filter(r->occursin("512", r.name), mf[1]), pt_size=0.2)
 @gp T.plot_Tinf(mf...) linetypes(:Set1_8)
+
+@gp xlab="speed [op./sec]" ylab="Tinf" "set grid"
+map(mf) do mf
+    perf = mean.(ops_per_sec.(mf.result.data))
+    @show perf
+    @gp :- perf mf.result.Tinf "lw 3 ps 3 title '$(mf.name)'"
+end
+
+perf = mean.(ops_per_sec.(mf[1].result.data))
+
+m = mf[2]
+@gp T.plot_bars(DataFrame(name=m.result.name,
+                          Tinf=name=m.result.Tinf,
+                          speed = sample_mean_est.(ops_per_sec.(m.result.data))
+                          ),
+                y2cols=[:speed])
+@gp :- "set y2lab 'Speed [ops/s]'" #"set y2r [0:2]"
+@gp :- linetypes(:Set1_8) ylab="Tinf [°C]" #yr=[0,NaN]
+
+
+csvs = ["hot-repeat/hot.$i.csv" for i in 1:8]
+myfit(; kwargs...) = T.multi_fit(csvs, :CPU_0_temp, order=2, use_cmpfit=true, tau_bounds=[(10,10*60)], use_measurements=true; kwargs...)
+mf1 = myfit()
+mf2 = myfit(subtract=:ambient)
+describe(DataFrame(mf1=mf1.result.rmse, mf2=mf2.result.rmse))
+std.([mf1.result.Tinf, mf2.result.Tinf])
+
+@gp plot_Tinf(mf2) yr=[0,NaN] linetypes(:Set1_8)
+@gp mf1 key="inside bottom" title="Absolute temperatures"
+
+
+csvs = [T.read("fan-repeat/repeat.$i.csv") for i in 1:28];
+myfit(; kwargs...) = T.multi_fit(csvs, :CPU_0_temp, order=2, use_cmpfit=true, tau_bounds=[(10,10*60)], use_measurements=true; kwargs...)
+mfabs = myfit()
+mfrel = myfit(subtract=:ambient)
+describe(DataFrame(abs=mfabs.result.rmse, rel=mfrel.result.rmse))
+std.([mf1.result.Tinf, mf2.result.Tinf])
+
+@gp T.plot(mf2)
+
+@gp plot_Tinf(mf2) yr=[NaN,NaN] linetypes(:Set1_8)
+@gp mf1 key="inside bottom" title="Absolute temperatures"
+
+start = csvs[1].meta["datetime"]
+@gp "set grid"
+foreach(csvs) do csv
+    s = Second(csv.meta["datetime"]-start)
+    df = @select(csv.df, :time, :ambient) |> dropmissing
+    @gp :- (df.time .+ s.value) df.ambient "w l title '$(csv.name)'"
+end
+
+cols = [:CPU_0_temp, :ambient]
+@gp yr=[24,34] "set multiplot layout 1,2" "set grid"
+@gp :- 1 T.plot(csvs[2], cols)
+@gp :- 2 T.plot(csvs[3], cols)
+
+
+@select(csvs[1].df, :time, :CPU0_work_done) |> dropmissing
+
+names(csvs[1].df)
+mean.(ops_per_sec.(csvs[1], [:CPU0_work_done, :CPU1_work_done]))
+
+d = T.read("fanda/parallel1-2runs-all/cl-bench-1024-2-1.csv")
+speed = ops_per_sec(d)
+@gp hist(speed, nbins=30)

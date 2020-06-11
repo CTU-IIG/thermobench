@@ -7,9 +7,10 @@ import LsqFit: margin_error, mse
 import LsqFit
 import CMPFit
 import StatsBase: coef, dof, nobs, rss, stderror, weights, residuals
-import Statistics: quantile
+import Statistics: quantile, mean, std
 using Measurements
 using Debugger
+import Distributions: TDist
 
 export
     @symarray,
@@ -17,10 +18,12 @@ export
     interpolate!,
     interpolate,
     multi_fit,
-    plot_fit,
+    ops_per_sec,
     plot_Tinf,
+    plot_fit,
     printfit,
-    rename!
+    rename!,
+    sample_mean_est
 
 Base.endswith(sym::Symbol, str::AbstractString) = endswith(String(sym), str)
 
@@ -40,6 +43,11 @@ mutable struct Data
     name::String                # label for plotting
     meta::Dict
 end
+
+# Allow broadcasting Data parameters
+Base.length(d::Data) = 1
+Base.iterate(d::Data) = (d,1)
+Base.iterate(d::Data, state) = nothing
 
 "Copies existing Data `d`, but uses different DataFrame `df`."
 Data(d::Data, df::AbstractDataFrame) = Data(df, d.name, deepcopy(d.meta))
@@ -62,6 +70,56 @@ end
 Base.filter(f, d::Data) = Data(d, filter(f, d.df))
 Base.filter!(f, d::Data) = filter(f, d.df)
 
+function plot(d::Data, columns = :CPU_0_temp)::Vector{Gnuplot.PlotElement}
+    time_div = 1
+    map(ensurearray(columns)) do column
+        df = select(d.df, [:time, column]) |> dropmissing
+        Gnuplot.PlotElement(
+            data=Gnuplot.DatasetText(df[!, 1]/time_div, df[!, 2]),
+            plot="w p title '$(string(column))' noenhanced"
+        )
+    end
+end
+
+"""
+Returns a vector of operations per second calculated from
+`work_done`-type column. Column name can be selected with the
+second argument, which defaults to `:work_done`.
+
+```jldoctest
+julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:3]
+3-element Array{Float64,1}:
+ 5.499226671249357e7
+ 5.498016096730722e7
+ 5.4862923057965025e7
+```
+"""
+function ops_per_sec(d::Data, column = :work_done)::Vector{Float64}
+    wd = select(d.df, :time, column => :work_done) |> dropmissing
+    speed = diff(wd.work_done) ./ diff(wd.time)
+end
+
+"""
+Calculates sample mean estimation and its confidence interval at
+`alpha` significance level, e.g. alpha=0.05 for 95% confidence.
+Returns `Measurement` value.
+"""
+function sample_mean_est(sample; alpha = 0.05)::Measurement
+    length(sample) == 1 && return sample[1] ± Inf
+    critical_value = quantile(TDist(length(sample)-1), 1 - alpha/2)
+    mean(sample) ± (std(sample) * critical_value)
+end
+
+"""
+Returns sum of operations per second estimations calculated from
+multiple work_done columns. This is most often used for calculating
+"performance" to all CPUs together.
+"""
+function ops_est(d::Data, col_idx = r"work_done")::Measurement
+    wdcols = propertynames(d.df[!, col_idx])
+    sum([sample_mean_est(ops)
+         for ops in ops_per_sec.(d, wdcols) if length(ops) > 0])
+end
 
 "Normalizes units to seconds and °C."
 function normalize_units!(d::Data)
@@ -543,7 +601,8 @@ function plot_bars(df::AbstractDataFrame;
     )
 end
 
-"Plot ``T_∞`` as bargraphs."
+"Plot ``T_∞`` as bargraphs. Multiple data sets can be passed as
+arguments to compare them."
 function plot_Tinf(mfs::Vararg{MultiFit, N};
                    kwargs...)::Vector{Gnuplot.PlotElement} where {N}
     @assert length(mfs) > 0
@@ -558,6 +617,19 @@ function plot_Tinf(mfs::Vararg{MultiFit, N};
     vcat(
         plot_bars(df; kwargs...)...,
         Gnuplot.PlotElement(ylabel=(mfs[1].subtract ? "Relative " : "") * " T_∞ [°C]",)
+    )
+end
+
+"Plot ``T_∞`` and performance (ops per second) as bargraphs."
+function plot_Tinf_and_ops(mf::MultiFit;
+                   kwargs...)::Vector{Gnuplot.PlotElement} where {N}
+    df = DataFrame(name=mf.result.name,
+                        Tinf=mf.result.Tinf,
+                        ops=mf.result.ops)
+    vcat(
+        plot_bars(df; y2cols=[:ops], kwargs...)...,
+        Gnuplot.PlotElement(ylabel=(mf.subtract ? "Relative " : "") * " T_∞ [°C]",
+                            cmds=["set y2label 'Performance [op/s]'"])
     )
 end
 
@@ -583,12 +655,12 @@ intended for subtraction of ambient temperature.
 ```jldoctest
 julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Thermobench.MultiFit: test.csv
-    2×8 DataFrame
-│ Row │ name     │ column     │ rmse     │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
-│     │ String   │ Symbol     │ Float64  │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
-├─────┼──────────┼────────────┼──────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
-│ 1   │ test.csv │ CPU_0_temp │ 0.154483 │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
-│ 2   │ test.csv │ CPU_1_temp │ 0.14436  │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
+    2×9 DataFrame
+│ Row │ name     │ column     │ rmse     │ ops               │ Tinf    │ k1       │ tau1    │ k2       │ tau2    │
+│     │ String   │ Symbol     │ Float64  │ Measurement       │ Float64 │ Float64  │ Float64 │ Float64  │ Float64 │
+├─────┼──────────┼────────────┼──────────┼───────────────────┼─────────┼──────────┼─────────┼──────────┼─────────┤
+│ 1   │ test.csv │ CPU_0_temp │ 0.154483 │ 3.9364e8±280000.0 │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │ 317.63  │
+│ 2   │ test.csv │ CPU_1_temp │ 0.14436  │ 3.9364e8±280000.0 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │ 277.687 │
 ```
 """
 function multi_fit(sources, columns = :CPU_0_temp;
@@ -609,7 +681,9 @@ function multi_fit(sources, columns = :CPU_0_temp;
 
     result = hcat(DataFrame(name = String[],
                             column = Symbol[],
-                            rmse = Float64[]), # root-mean-square error
+                            rmse = Float64[], # root-mean-square error
+                            ops = Measurement[], # work_done ⇒ oper. per second
+                            ),
                   coef2df(fill(type[], 2order+1)),
                   DataFrame(fit = Any[],
                             data = Data[],
@@ -650,6 +724,7 @@ function multi_fit(sources, columns = :CPU_0_temp;
                     hcat(DataFrame(name = d.name,
                                    column = col,
                                    rmse = sqrt(mse(f)),
+                                   ops = ops_est(d),
                                    fit = f,
                                    data = d,
                                    series = series),
