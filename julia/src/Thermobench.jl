@@ -350,7 +350,7 @@ function printfit(fit; minutes = false)
     i = sortperm(τ)
     τ = τ[i]
     k = p[2:2:end][i]
-    *(@sprintf("%3.1f", T∞), print_exp.(k[i], τ[i])...)
+    *(@sprintf("%3.1f", T∞), print_exp.(k, τ)...)
 end
 
 @doc raw"""
