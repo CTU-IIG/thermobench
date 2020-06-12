@@ -108,7 +108,7 @@ saveas("tinf-ops") # hide
 ### Raw thermobench data
 
 To access raw data from thermobench CSV files, use the [`Thermobench.read`](@ref)
-function.
+function:
 
 ```@repl abc
 using DataFrames
@@ -117,8 +117,8 @@ dump(d, maxdepth=1)
 first(d.df, 6)
 ```
 
-You can plot the data by directly using the values from DataFrame
-`df`, but the [`plot(::Thermobench.Data)`](@ref) method
+You can plot the data by using directly the values from DataFrame
+`d.df`, but the [`plot(::Thermobench.Data)`](@ref) method
 makes it easier:
 
 ```@example abc
