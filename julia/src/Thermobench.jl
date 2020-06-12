@@ -70,13 +70,15 @@ end
 Base.filter(f, d::Data) = Data(d, filter(f, d.df))
 Base.filter!(f, d::Data) = filter(f, d.df)
 
-function plot(d::Data, columns = :CPU_0_temp)::Vector{Gnuplot.PlotElement}
+function plot(d::Data, columns = :CPU_0_temp;
+              with="points",
+              )::Vector{Gnuplot.PlotElement}
     time_div = 1
     map(ensurearray(columns)) do column
         df = select(d.df, [:time, column]) |> dropmissing
         Gnuplot.PlotElement(
             data=Gnuplot.DatasetText(df[!, 1]/time_div, df[!, 2]),
-            plot="w p title '$(string(column))' noenhanced"
+            plot="w $with title '$(string(column))' noenhanced"
         )
     end
 end
@@ -555,15 +557,17 @@ Gnuplot.recipe(mf::MultiFit) = plot(mf)
 
 # Generic bar graph recipe
 function plot_bars(df::AbstractDataFrame;
-                   cluster_width = 0.8,
+                   box_width = 0.8,
+                   gap::Union{Int64,Nothing} = nothing,
+                   hist_style = nothing,
                    fill_style = "solid 1 border -1",
+                   errorbars = "",
                    label_rot = -30,
                    label_enhanced = false,
                    key_enhanced = false,
                    y2cols = [],
                    )::Vector{Gnuplot.PlotElement}
     n = nrow(df)
-    bw = cluster_width/(ncol(df) - 1)
 
     foreach(y2cols) do col
         @assert col in propertynames(df)
@@ -571,29 +575,49 @@ function plot_bars(df::AbstractDataFrame;
 
     axes(i) = (propertynames(df)[i] in y2cols) ? "axes x1y2 " : ""
 
-    # Take labels from 1st column
-    labels = ["'$(l[1])' $(l[2])" for l in zip(df[!, 1], 0.5:n-0.5)]
+    if hist_style === nothing
+        hist_style = (any(map(eltype.(eachcol(df))) do type type <: Measurement end)
+                      ? "errorbars" : "clustered")
+    end
+    eb = hist_style == "errorbars"
+
+    if gap === nothing
+        gap = ncol(df) == 2 ? 0 : 1
+    end
+    gap_str = (hist_style ∈ ["clustered", "errorbars"]) ? "gap $gap" : ""
+    hist_style == "columnstacked" && @warn "columnstacked not well supported"
+
+    gpusing(i) = begin
+        cols = [i, "xticlabels(1)"]
+        eb && insert!(cols, 2, i+ncol(df)-1)
+        join(cols, ":")
+    end
+
     vcat(
         Gnuplot.PlotElement(
-            xr=[0,n],
-            cmds=vcat(["set grid ytics mxtics", # minor x-tics separates clusters
-                       "set boxwidth $bw",
+            xr=[-0.5,n-0.5],
+            cmds=vcat(["set grid ytics y2tics",
+                       "set style data histogram",
+                       "set style histogram $hist_style $gap_str",
+                       "set errorbars $errorbars",
+                       "set boxwidth $box_width",
                        "set style fill $fill_style",
-                       # cluster labels
-                       """set xtics ($(join(labels, ", "))) rotate by $label_rot $(label_enhanced ? "" : "no")enhanced""",
-                       # minor x-tics for grid
-                       """set xtics add ($(join(["$i 1" for i in (1:n-1)], ",")))""",
+                       """set xtics rotate by $label_rot $(label_rot > 0 ? "right" : "") $(label_enhanced ? "" : "no")enhanced""",
                        ],
                       length(y2cols) > 0 ? ["set y2tics"] : String[],
-                      )
-
+                      ),
+            data=Gnuplot.DatasetText(
+                String.(df[!, 1]), # labels
+                [Measurements.value.(df[!, i]) for i in 2:ncol(df)]...,
+                [eltype(df[!, i]) <: Measurement ?
+                     Measurements.uncertainty.(df[!, i]) :
+                     fill(NaN, size(df[!, i]))
+                 for i in 2:ncol(df) if eb]...,
+            ),
         ),
         [
             Gnuplot.PlotElement(
-                data=Gnuplot.DatasetText(Measurements.value.(df[!, i]),
-                                         Measurements.uncertainty.(df[!, i])),
-                plot="using (\$0+$((i-1.5)*bw+(1-cluster_width)/2)):1:2" *
-                "with boxerrorbars $(axes(i))" *
+                plot="\$data1 using $(gpusing(i)) $(axes(i))" *
                 """title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced""",
             )
             for i in 2:ncol(df)

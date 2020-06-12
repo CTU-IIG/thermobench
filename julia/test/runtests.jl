@@ -15,17 +15,29 @@ if ! isinteractive()
                         recursive=true)
     doctest(Thermobench, manual=false, fix=true)
 end
+macro gpok(args...) :( (@gp $(esc.(args)...); true) ) end
 cd("/home/wsh/thermac/devel/experiments")
 
 @testset "plot_bars" begin
+    # Plain numbers
     df = DataFrame(names=["a", "b", "c"], temp=10:12, speed=4:-1:2)
-    @test (@gp T.plot_bars(df); true)
-    @test (@gp T.plot_bars(df, fill_style="pattern 1"); true)
-    @test (@gp T.plot_bars(df, cluster_width=0.5); true)
-    @test (@gp T.plot_bars(df, label_rot=0); true)
-    @test (@gp T.plot_bars(df, y2cols=[:speed]); true)
-    @test (@gp T.plot_bars(df, y2cols=[:speed, :temp]); true)
+    @test @gpok T.plot_bars(df)
+    # Measurement values
+    df = DataFrame(names=["very long label", "b", "c"], temp=10:12, speed=collect(4:-1:2) .± 1)
+    @test @gpok T.plot_bars(df)
+    @test @gpok T.plot_bars(df, errorbars="lw 5 lc rgb '#ff0000'")
+    @test @gpok T.plot_bars(df, fill_style="pattern 1")
+    @test @gpok T.plot_bars(df, gap=2)
+    @test @gpok T.plot_bars(df, box_width=1)
+    @test @gpok T.plot_bars(df, label_rot=0)
+    @test @gpok T.plot_bars(df, label_rot=90) # visually check that labels are top-aligned
+    @test @gpok T.plot_bars(df, y2cols=[:speed])
+    @test @gpok T.plot_bars(df, y2cols=[:speed, :temp])
+    @test @gpok T.plot_bars(df, hist_style = "rowstacked")
+    @test_logs (:warn, r"columnstacked") @gp T.plot_bars(df, hist_style = "columnstacked")
     @test_throws AssertionError @gp T.plot_bars(df, y2cols=[:bad])
+    # Symbols as lables
+    @test @gpok T.plot_bars(DataFrame(l=[:a, :b], v=[1, 2]))
 end
 
 @testset "ops_per_sec" begin
@@ -90,7 +102,8 @@ csvs=["memory-bandwidth/data-$data/$ord-$cpu-t$t-s$s.csv"
       ];
 mf = T.multi_fit(csvs, use_cmpfit=true, use_measurements=true, subtract=:ambient, order=2)
 sort!(mf.result, :ops);
-@gp T.plot_Tinf_and_ops(mf, label_rot=-90) linetypes(:Set1_8)
+@gp T.plot_Tinf_and_ops(mf, label_rot=90) linetypes(:Set1_8)
+@gp T.plot_bars(@with(mf.result, DataFrame(name=:name, perf=:ops ./ :Tinf)), label_rot=90) ylab="[op/s/°C]"
 
 mf = T.multi_fit("memory-bandwidth/data-nofan/rnd-a53-t1-s16k.csv",
                  @symarray CPU_0_temp CPU_1_temp GPU_0_temp GPU_1_temp)
@@ -139,8 +152,6 @@ d_amb = d.df[:, [:time, :ambient]] |> dropmissing
     )
 x
 
-cols = [:CPU_0_temp #, :CPU_1_temp, :GPU_0_temp, :GPU_1_temp, :DRC_temp,
-        ]
 T.plot_fit("freq-read/data/imx8/core1234freq1104.csv", :cpu_thermal0, order=2)
 
 f=T.plot_fit("cl-mem/cl-mem-read.csv", [:CPU_0_temp :CPU_1_temp], order=3, plotexp=true)
@@ -257,9 +268,9 @@ tau_bounds=[(3,60), (3*60,60*60)]
 mf = T.multi_fit(dfs, :GPU_therm, use_cmpfit=true, use_measurements=true, tau_bounds=tau_bounds)
 @gp T.plot(mf, pt_size=0.5) "set title 'Xavier with different fan speeds'"
 
-@gp T.plot_Tinf(rename!(mf, "T∞ [°C]")) title="Xavier with different fan speeds" yr=[25,NaN]
-@gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) "w lp lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
-#@gp :- 0.5:1:length(mf.result.tau2) Measurements.value.(mf.result.tau2/60) Measurements.uncertainty.(mf.result.tau2/60) "w errorbars lw 3 axes x1y2 title 'τ₂ [min]'" "set y2tics" "set y2label 'Time constant [min]'"
+@gp "set y2tics" "set y2label 'Time constant [min]'" linetypes(:Paired_11)
+@gp :- T.plot_Tinf(rename!(mf, "T∞ [°C]")) title="Xavier with different fan speeds" yr=[25,NaN]
+@gp :- Measurements.value.(mf.result.tau2/60) Measurements.uncertainty.(mf.result.tau2/60) "u 0:1:2 w errorlines lw 2 axes x1y2 title 'τ₂ [min]'"
 
 
 dir = "fanda/parallel1-2runs-all/"
@@ -276,7 +287,7 @@ end
 @gp T.plot(mf[1], pt_size=0.2)
 
 @gp T.plot(filter(r->occursin("512", r.name), mf[1]), pt_size=0.2)
-@gp T.plot_Tinf(mf...) linetypes(:Set1_8)
+@gp T.plot_Tinf(mf...) linetypes(:Paired_11)
 
 @gp xlab="speed [op./sec]" ylab="Tinf" "set grid"
 map(mf) do mf
@@ -296,6 +307,8 @@ m = mf[2]
 @gp :- "set y2lab 'Speed [ops/s]'" #"set y2r [0:2]"
 @gp :- linetypes(:Set1_8) ylab="Tinf [°C]" #yr=[0,NaN]
 
+@gp T.plot_Tinf_and_ops(m) linetypes(:Set1_8)
+
 
 csvs = ["hot-repeat/hot.$i.csv" for i in 1:8]
 myfit(; kwargs...) = T.multi_fit(csvs, :CPU_0_temp, order=2, use_cmpfit=true, tau_bounds=[(10,10*60)], use_measurements=true; kwargs...)
@@ -305,7 +318,7 @@ describe(DataFrame(mf1=mf1.result.rmse, mf2=mf2.result.rmse))
 std.([mf1.result.Tinf, mf2.result.Tinf])
 
 @gp plot_Tinf(mf2) yr=[0,NaN] linetypes(:Set1_8)
-@gp mf1 key="inside bottom" title="Absolute temperatures"
+@gp mf2 key="inside bottom" title="Absolute temperatures"
 
 
 csvs = [T.read("fan-repeat/repeat.$i.csv") for i in 1:28];
@@ -315,24 +328,25 @@ mfrel = myfit(subtract=:ambient)
 describe(DataFrame(abs=mfabs.result.rmse, rel=mfrel.result.rmse))
 std.([mf1.result.Tinf, mf2.result.Tinf])
 
-@gp T.plot(mf2)
+@gp T.plot(mfrel)
+@gp plot_Tinf(mfrel, label_rot=90)
 
 @gp plot_Tinf(mf2) yr=[NaN,NaN] linetypes(:Set1_8)
 @gp mf1 key="inside bottom" title="Absolute temperatures"
 
 start = csvs[1].meta["datetime"]
-@gp "set grid"
+@gp "set grid" key="bottom"
 foreach(csvs) do csv
     s = Second(csv.meta["datetime"]-start)
     df = @select(csv.df, :time, :ambient) |> dropmissing
     @gp :- (df.time .+ s.value) df.ambient "w l title '$(csv.name)'"
 end
 
-cols = [:CPU_0_temp, :ambient]
-@gp yr=[24,34] "set multiplot layout 1,2" "set grid"
-@gp :- 1 T.plot(csvs[2], cols)
-@gp :- 2 T.plot(csvs[3], cols)
-
+@gp yr=[24,34] "set multiplot layout 1,4" "set grid"
+for i in 1:4
+    @gp :- i T.plot(csvs[i], :CPU_0_temp)
+    @gp :- i T.plot(csvs[i], :ambient, with="lines")
+end
 
 @select(csvs[1].df, :time, :CPU0_work_done) |> dropmissing
 
@@ -341,4 +355,10 @@ mean.(ops_per_sec.(csvs[1], [:CPU0_work_done, :CPU1_work_done]))
 
 d = T.read("fanda/parallel1-2runs-all/cl-bench-1024-2-1.csv")
 speed = ops_per_sec(d)
+describe(speed)
 @gp hist(speed, nbins=30)
+
+
+d = [T.read("long-test/hot.$i.csv") for i in 1:5];
+ops = vcat(ops_per_sec.(d, :CPU0_work_done)...)
+@gp hist(ops, nbins=10)
