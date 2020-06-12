@@ -10,14 +10,21 @@ Gnuplot.quitall()
 mkpath("build/assets")
 Gnuplot.options.term = "unknown"
 empty!(Gnuplot.options.init)
-push!( Gnuplot.options.init, linetypes(:Set1_5, lw=1.5, ps=1.5))
+push!(Gnuplot.options.init, linetypes(:Set1_5, lw=1.5, ps=1.5))
+push!(Gnuplot.options.init, "set errorbars lw 2")
 saveas(file; width=800, height=350) = save(term="pngcairo size $width,$height fontscale 0.8", output="build/assets/$(file).png")
 ```
-
 
 Julia module for working with
 [thermobench](https://github.com/CTU-IIG/thermobench)-produced CSV
 files.
+
+## Contents
+
+```@contents
+Depth = 3
+```
+
 
 ## Installation
 
@@ -53,6 +60,8 @@ const T = Thermobench
 nothing # hide
 ```
 
+### High-level data processing and graphing
+
 The simplest way to using the package is the [`multi_fit`](@ref)
 function. In the example below, it reads the data from a CSV file and
 fits a thermal model to it. The result can be directly plotted by Gnuplot.jl:
@@ -87,6 +96,15 @@ saveas("tinf") # hide
 ```
 ![](assets/tinf.png)
 
+Both ``T_∞`` and benchmark performance can be plotted with [`plot_Tinf_and_ops`](@ref):
+
+```@repl abc
+@gp T.plot_Tinf_and_ops(mf2) key="left"
+saveas("tinf-ops") # hide
+```
+![](assets/tinf-ops.png)
+
+
 ### Raw thermobench data
 
 To access raw data from thermobench CSV files, use the [`Thermobench.read`](@ref)
@@ -95,16 +113,30 @@ function.
 ```@repl abc
 using DataFrames
 d = T.read("test.csv");
-propertynames(d)
+dump(d, maxdepth=1)
 first(d.df, 6)
 ```
 
+You can plot the data by directly using the values from DataFrame
+`df`, but the [`plot(::Thermobench.Data)`](@ref) method
+makes it easier:
+
+```@example abc
+@gp    plot(d, :CPU_0_temp) key="left"
+@gp :- plot(d, :ambient, with="lines")
+saveas("raw-cpu") # hide
+```
+![](assets/raw-cpu.png)
+
 ## Reference
+
+```@index
+```
 
 ```@autodocs
 Modules = [Thermobench]
 ```
 
 ```@meta
-DocTestSetup = nothing
+#DocTestSetup = nothing
 ```
