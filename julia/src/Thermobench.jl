@@ -22,6 +22,7 @@ export
     ops_per_sec,
     plot,
     plot_Tinf,
+    plot_Tinf_and_ops,
     plot_fit,
     printfit,
     rename!,

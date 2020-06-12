@@ -91,16 +91,16 @@ be plot (and compared between multiple data sets) with [`plot_Tinf`](@ref).
 
 ```@repl abc
 mf2 = multi_fit(["test.csv", "test2.csv"], :CPU_1_temp, name="CPU1", subtract=:ambient, use_cmpfit=true, use_measurements=true)
-@gp T.plot_Tinf(rename!(mf, "CPU0"), mf2) key="left"
-saveas("tinf") # hide
+@gp plot_Tinf(rename!(mf, "CPU0"), mf2) key="left"
+saveas("tinf", width=400) # hide
 ```
 ![](assets/tinf.png)
 
 Both ``T_∞`` and benchmark performance can be plotted with [`plot_Tinf_and_ops`](@ref):
 
 ```@repl abc
-@gp T.plot_Tinf_and_ops(mf2) key="left"
-saveas("tinf-ops") # hide
+@gp plot_Tinf_and_ops(mf2) key="left"
+saveas("tinf-ops", width=480) # hide
 ```
 ![](assets/tinf-ops.png)
 
