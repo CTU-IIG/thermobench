@@ -117,6 +117,7 @@ bool write_stdout = false;
 int terminate_time = 0;
 bool calc_cpu_usage = false;
 bool exec_wait = false;
+bool verbose = false;
 
 struct StdoutKeyColumn {
     const CsvColumn &column;
@@ -587,10 +588,15 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     CsvRow row(columns);
-    row.set(time_column, get_current_time());
+    auto time = get_current_time();
+    double temp = NAN;
+    row.set(time_column, time);
 
     for (unsigned i = 0; i < state.sensors.size(); ++i){
-        row.set(state.sensors[i].column, read_sensor(state.sensors[i].path.c_str()));
+        double t = read_sensor(state.sensors[i].path.c_str());
+        if (isnan(temp))
+            temp = t;
+        row.set(state.sensors[i].column, t);
     }
 
     if (calc_cpu_usage) {
@@ -601,6 +607,9 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     }
 
     row.write(state.out_fp);
+
+    if (verbose)
+        fprintf(stderr, "\r%.1fs  %.1f°C   ", time/1000.0, temp/1000.0);
 }
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -632,6 +641,13 @@ void measure(int measure_period_ms)
 {
     int p[2];
     CHECK(pipe(p));
+
+    if (verbose) {
+        int argc = 0;
+        while (benchmark_argv[argc] != NULL)
+            argc++;
+        fprintf(stderr, "Running: %s\n", shell_quote(argc, benchmark_argv).c_str());
+    }
 
     pid_t pid = fork();
     if (pid == -1)
@@ -684,6 +700,9 @@ void measure(int measure_period_ms)
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 
     ev_run(loop, 0);
+
+    if (verbose)
+        fprintf(stderr, "\n");
 }
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
@@ -736,6 +755,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         break;
     case 'u':
         calc_cpu_usage = true;
+        break;
+    case 'v':
+        verbose = true;
         break;
     case 'e':
         state.execs.emplace_back(new Exec(arg));
@@ -791,7 +813,7 @@ static struct argp_option options[] = {
     { "output",         'O', "FILE",        0,
       "The name of output CSV file (overrides -o and -n). Hyphen (-) means standard output" },
     { "column",         'c', "STR",         0, "Add column to CSV populated by STR=val lines from COMMAND stdout" },
-    { "stdout",         'l', 0,             0, "Log COMMAND stdout to CSV" },
+    { "stdout",         'l', 0,             0, "Log COMMAND's stdout to CSV" },
     { "time",           't', "SECONDS",     0, "Terminate the COMMAND after this time" },
     { "cpu-usage",      'u', 0,             0, "Calculate and log CPU usage." },
     { "exec",           'e', "[(COL[,...])]CMD",  0,
@@ -807,6 +829,7 @@ static struct argp_option options[] = {
     },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
+    { "verbose",        'v', 0,             0, "Print progress information to stderr." },
     { 0 }
 };
 

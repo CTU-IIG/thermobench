@@ -87,7 +87,7 @@ sensors in a .csv file.
                              them (useful for testing).
   -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
   -F, --fan-on               Switch the fan on while running COMMAND
-  -l, --stdout               Log COMMAND stdout to CSV
+  -l, --stdout               Log COMMAND's stdout to CSV
   -n, --name=NAME            Basename of the .csv file
   -o, --output_dir=DIR       Where to create output .csv file
   -O, --output=FILE          The name of output CSV file (overrides -o and -n).
@@ -105,6 +105,7 @@ sensors in a .csv file.
                              /sys/devices/virtual/thermal/thermal_zone0/temp 
   -t, --time=SECONDS         Terminate the COMMAND after this time
   -u, --cpu-usage            Calculate and log CPU usage.
+  -v, --verbose              Print progress information to stderr.
   -w, --wait=TEMP [°C]      Wait for the temperature reported by the first
                              configured sensor to be less or equal to TEMP
                              before running the COMMAND. Waiting times out
