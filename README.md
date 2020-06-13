@@ -107,7 +107,8 @@ sensors in a .csv file.
   -u, --cpu-usage            Calculate and log CPU usage.
   -w, --wait=TEMP [°C]      Wait for the temperature reported by the first
                              configured sensor to be less or equal to TEMP
-                             before running the COMMAND.
+                             before running the COMMAND. Waiting times out
+                             after 10 minutes.
   -?, --help                 Give this help list
       --usage                Give a short usage message
   -V, --version              Print program version

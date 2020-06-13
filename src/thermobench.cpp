@@ -338,14 +338,21 @@ void wait_cooldown(char *fan_cmd)
     if (fan_cmd)
         set_fan(fan_cmd, 1);
 
+    int time = 0;
+
     while (1) {
         double temp = read_sensor(state.sensors[0].path.c_str()) / 1000.0;
-        fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg...",
-                cooldown_temp, state.sensors[0].name.c_str(), temp);
+        fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg, time: %ds...",
+                cooldown_temp, state.sensors[0].name.c_str(), temp, time);
         if (temp <= cooldown_temp) {
             fprintf(stderr, "\nDone\n");
             break;
         }
+        if (time >= 600) {
+            fprintf(stderr, "\nTimed out\n");
+            break;
+        }
+        time += 2;
         sleep(2);
     }
 
@@ -775,7 +782,7 @@ static struct argp_option options[] = {
       "/sys/devices/virtual/thermal/thermal_zone0/temp " },
     { "wait",           'w', "TEMP [°C]",   0,
       "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP "
-      "before running the COMMAND." },
+      "before running the COMMAND. Waiting times out after 10 minutes." },
     { "fan-cmd",        'f', "CMD",         0, "Command to turn the fan on (CMD 1) or off (CMD 0)" },
     { "fan-on",         'F', 0,             0, "Switch the fan on while running COMMAND" },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
