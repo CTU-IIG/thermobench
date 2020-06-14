@@ -79,7 +79,7 @@ void timespec_add_ms(struct timespec *ts, int ms)
 
 int main(int argc, char *argv[])
 {
-    const int num_proc = sysconf(_SC_NPROCESSORS_ONLN);
+    const int num_proc = sysconf(_SC_NPROCESSORS_CONF);
     unsigned cpu_mask = 0xffffffff;
     int opt;
 
@@ -130,7 +130,9 @@ int main(int argc, char *argv[])
         CPU_SET(i, &cpuset);
         pthread_attr_init(&attr);
         pthread_attr_setaffinity_np(&attr, sizeof(cpuset), &cpuset);
-        pthread_create(&tid, &attr, benchmark_loop, (void *)(intptr_t)i);
+        int ret = pthread_create(&tid, &attr, benchmark_loop, (void *)(intptr_t)i);
+        if (ret != 0)
+            fprintf(stderr, "Warning: Thread %d creation error %d\n", i, ret);
     }
 
     if (period_ms > 0){
