@@ -353,7 +353,7 @@ void wait_cooldown(char *fan_cmd)
 
     while (1) {
         double temp = read_sensor(state.sensors[0].path.c_str()) / 1000.0;
-        fprintf(stderr, "\rCooling down to %lg, current %s temperature: %lg, time: %ds...",
+        fprintf(stderr, "\rCooling down to %lg°C, current %s temperature: %lg°C, time: %ds...",
                 cooldown_temp, state.sensors[0].name.c_str(), temp, time);
         if (temp <= cooldown_temp) {
             fprintf(stderr, "\nDone\n");
