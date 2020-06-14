@@ -108,6 +108,7 @@ int measure_period_ms = 1000;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
 double cooldown_temp = NAN;
+int cooldown_timeout = 600;
 char *fan_cmd = NULL;
 bool fan_on = false;
 char *bench_name = NULL;
@@ -736,6 +737,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 'w':
         cooldown_temp = atof(arg);
         break;
+    case 'W':
+        cooldown_timeout = atof(arg);
+        break;
     case 'f':
         fan_cmd = arg;
         break;
@@ -811,7 +815,9 @@ static struct argp_option options[] = {
       "/sys/devices/virtual/thermal/thermal_zone0/temp " },
     { "wait",           'w', "TEMP [°C]",   0,
       "Wait for the temperature reported by the first configured sensor to be less or equal to TEMP "
-      "before running the COMMAND. Waiting times out after 10 minutes." },
+      "before running the COMMAND. Wait timeout is given by --wait-timeout." },
+    { "wait-timeout",   'W', "SECS",        0,
+      "Timeout in seconds for cool-down waiting (default: 600)." },
     { "fan-cmd",        'f', "CMD",         0, "Command to turn the fan on (CMD 1) or off (CMD 0)" },
     { "fan-on",         'F', 0,             0, "Switch the fan on while running COMMAND" },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },

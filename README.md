@@ -108,8 +108,10 @@ sensors in a .csv file.
   -v, --verbose              Print progress information to stderr.
   -w, --wait=TEMP [°C]      Wait for the temperature reported by the first
                              configured sensor to be less or equal to TEMP
-                             before running the COMMAND. Waiting times out
-                             after 10 minutes.
+                             before running the COMMAND. Wait timeout is given
+                             by --wait-timeout.
+  -W, --wait-timeout=SECS    Timeout in seconds for cool-down waiting (default:
+                             600).
   -?, --help                 Give this help list
       --usage                Give a short usage message
   -V, --version              Print program version
