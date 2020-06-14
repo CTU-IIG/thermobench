@@ -998,10 +998,13 @@ int main(int argc, char **argv)
         read_procstat(); // first read to initialize cpu_usage vars
     }
 
-    if (strcmp(out_file, "-") != 0)
+    if (strcmp(out_file, "-") != 0) {
+        if (verbose)
+            fprintf(stderr, "Opening %s\n", out_file);
         state.out_fp = fopen(out_file, "w+");
-    else
+    } else {
         state.out_fp = fdopen(STDOUT_FILENO, "w");
+    }
     if (state.out_fp == NULL)
         err(1, "open(%s)", out_file);
 
