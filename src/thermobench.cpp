@@ -119,6 +119,7 @@ int terminate_time = 0;
 bool calc_cpu_usage = false;
 bool exec_wait = false;
 bool verbose = false;
+bool verbose_needs_eol = false;
 
 struct StdoutKeyColumn {
     const CsvColumn &column;
@@ -229,6 +230,14 @@ struct measure_state {
 
 ev_timer measure_timer;
 ev_signal sigint_watcher, sigterm_watcher;
+
+void verbose_ensure_eol()
+{
+    if (verbose && verbose_needs_eol) {
+        fprintf(stderr, "\n");
+        verbose_needs_eol = false;
+    }
+}
 
 static string shell_quote(int argc, char **argv)
 {
@@ -609,13 +618,16 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 
     row.write(state.out_fp);
 
-    if (verbose)
+    if (verbose) {
         fprintf(stderr, "\r%.1fs  %.1f°C   ", time/1000.0, temp/1000.0);
+        verbose_needs_eol = true;
+    }
 }
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
 {
     if (state.child != 0) {
+        verbose_ensure_eol();
         fprintf(stderr, "Waiting for child to terminate...\n");
         kill(state.child, SIGTERM);
         state.child = 0;
@@ -625,6 +637,7 @@ static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
 // Called as a response to SIGINT and SIGTERM
 static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
+    verbose_ensure_eol();
     fprintf(stderr, "Waiting for child to terminate...\n");
 
     if (state.child != 0) {
@@ -709,8 +722,7 @@ void measure(int measure_period_ms)
 
     ev_run(loop, 0);
 
-    if (verbose)
-        fprintf(stderr, "\n");
+    verbose_ensure_eol();
 }
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
