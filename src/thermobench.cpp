@@ -668,6 +668,13 @@ void measure(int measure_period_ms)
 
     struct ev_loop *loop = EV_DEFAULT;
 
+    // Run the loop once to update time information. This ensures that
+    // all timers are relative to now and not to the start of the
+    // program, where the default loop was initialized. Due to
+    // cooldown waiting, the program start time can differ from now
+    // significantly. There are no watchers so no callback is invoked.
+    ev_run(loop, EVRUN_NOWAIT);
+
     ev_child_init(&child_exit, child_exit_cb, pid, 0);
     ev_child_start(loop, &child_exit);
     state.child = pid;
