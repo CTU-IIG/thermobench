@@ -7,6 +7,7 @@ foreach t: '''
 0030-column.t
 0040-exec.t
 0040-time.t
+0041-time-kill-all.t
 0050-sensors.t
 '''.split()
 	test(t, find_program(t), protocol : 'tap', workdir : meson.current_build_dir())

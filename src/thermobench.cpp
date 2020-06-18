@@ -229,6 +229,7 @@ struct measure_state {
 } state;
 
 ev_timer measure_timer;
+ev_timer terminate_timer;
 ev_signal sigint_watcher, sigterm_watcher;
 
 void verbose_ensure_eol()
@@ -583,7 +584,10 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
     // Stop all child-related watchers. If no watches remain started,
     // the event loop exits.
     ev_child_stop(EV_A_ w);
+
+    // Stop other watchers that my block event loop from exiting.
     ev_timer_stop(EV_A_ &measure_timer);
+    ev_timer_stop(EV_A_ &terminate_timer);
     ev_signal_stop(EV_A_ &sigint_watcher);
     ev_signal_stop(EV_A_ &sigterm_watcher);
 
@@ -630,7 +634,7 @@ static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
     if (state.child != 0) {
         verbose_ensure_eol();
         fprintf(stderr, "Waiting for child to terminate...\n");
-        kill(state.child, SIGTERM);
+        kill(-state.child, SIGTERM);
         state.child = 0;
     }
 }
@@ -642,10 +646,7 @@ static void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
     fprintf(stderr, "Waiting for child to terminate...\n");
 
     if (state.child != 0) {
-        // Ignore SIGINT, because tty sends it to all processes it
-        // controls - our child too.
-        if (w != &sigint_watcher)
-            kill(state.child, SIGTERM);
+        kill(-state.child, SIGTERM);
         state.child = 0;
     }
 
@@ -672,13 +673,24 @@ void measure(int measure_period_ms)
         close(p[0]);
         dup2(p[1], STDOUT_FILENO);
         close(p[1]);
+
+        // Run the benchmark in background process group so that we
+        // can kill it with its all potential children.
+        setpgid(0, 0);
+        // Background processes are stopped when they happen to read
+        // from a controlling terminal. We don't want the benchmark to
+        // be stopped, so we do not run in on terminal. If stdin is
+        // not a terminal, we keep it connected to the child, because
+        // it can be a pipe with input data for the benchmark.
+        if (isatty(STDIN_FILENO))
+            CHECK(dup2(CHECK(open("/dev/null", O_RDONLY)), STDIN_FILENO));
+
         execvp(benchmark_argv[0], benchmark_argv);
         err(1, "exec(%s)", benchmark_argv[0]);
     }
 
     // Parent process - measurement
     ev_io child_stdout;
-    ev_timer terminate_timer;
     ev_child child_exit;
 
     struct ev_loop *loop = EV_DEFAULT;
