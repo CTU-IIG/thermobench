@@ -87,7 +87,7 @@ csvs=["memory-bandwidth/data-$data/$ord-$cpu-t$t-s$s.csv"
       for t in tasks[cpu]
       for ord in ["seq" "rnd"]
       ];
-mf = T.multi_fit(csvs, use_cmpfit=true, use_measurements=true, subtract=:ambient, order=2)
+mf = T.multi_fit(csvs, use_cmpfit=true, use_measurements=true, subtract=:ambient, order=2, tau_bounds=[(10,60),(60,30*60)])
 @gp T.plot(mf, pt_size=0.2)
 
 @gp palette(:Dark2_7) T.plot_Tinf(rename!(filter(r->occursin("seq", r.name), mf), "seq"),
@@ -162,9 +162,9 @@ nrow(d.df)
 
 csvs = "long-test/" .* vcat([["hot.$i.csv", "cold.$i.csv"] for i in 1:6]...)
 csvs =  [csvs[1:2:end]; csvs[2:2:end]]
-mf1 = T.multi_fit(csvs, :CPU_0_temp, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+mf1 = T.multi_fit(csvs, :CPU_0_temp, order=3, use_cmpfit=true, tau_bounds=[(10,60*60)], use_measurements=true)
 @gp mf1 key="inside bottom" title="Absolute temperatures"
-mf2 = T.multi_fit(csvs, :CPU_0_temp, subtract=:ambient, order=3, use_cmpfit=false, tau_bounds=[(10,60*60)], use_measurements=true)
+mf2 = T.multi_fit(csvs, :CPU_0_temp, subtract=:ambient, order=3, use_cmpfit=true, tau_bounds=[(10,60*60)], use_measurements=true)
 @gp mf2 key="inside bottom" title="Subtraction of ambient temperatures"
 
 T.plot_fit(csvs, :CPU_0_temp, order=3, use_cmpfit=true)
@@ -311,7 +311,7 @@ m = mf[2]
 
 
 csvs = ["hot-repeat/hot.$i.csv" for i in 1:8]
-myfit(; kwargs...) = T.multi_fit(csvs, :CPU_0_temp, order=2, use_cmpfit=true, tau_bounds=[(10,10*60)], use_measurements=true; kwargs...)
+myfit(; kwargs...) = T.multi_fit(csvs, :CPU_0_temp, order=2, use_cmpfit=true, tau_bounds=[(10,60),(60,10*60)], use_measurements=true; kwargs...)
 mf1 = myfit()
 mf2 = myfit(subtract=:ambient)
 describe(DataFrame(mf1=mf1.result.rmse, mf2=mf2.result.rmse))
