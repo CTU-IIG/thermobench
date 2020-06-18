@@ -85,8 +85,12 @@ sensors in a .csv file.
                              ambient@turbot read_temp'
   -E, --exec-wait            Wait for --exec processes to finish. Do not kill
                              them (useful for testing).
-  -f, --fan-cmd=CMD          Command to turn the fan on (CMD 1) or off (CMD 0)
-  -F, --fan-on               Switch the fan on while running COMMAND
+  -f, --fan-cmd=CMD          Command to control the fan. The command is invoked
+                             as 'CMD <speed>', where <speed> is a number
+                             between 0 and 1. Zero means the fan is off, one
+                             means full speed.
+  -F, --fan-on[=SPEED]       Set the fan speed while running COMMAND. If SPEED
+                             is not given, it defaults to '1'.
   -l, --stdout               Log COMMAND's stdout to CSV
   -n, --name=NAME            Basename of the .csv file
   -o, --output_dir=DIR       Where to create output .csv file

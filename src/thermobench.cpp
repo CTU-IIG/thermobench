@@ -110,7 +110,7 @@ char **benchmark_argv = NULL;
 double cooldown_temp = NAN;
 int cooldown_timeout = 600;
 char *fan_cmd = NULL;
-bool fan_on = false;
+float fan_on = NAN;
 char *bench_name = NULL;
 const char *output_path = ".";
 char *out_file = NULL;
@@ -336,12 +336,13 @@ static double read_sensor(const char *path)
     return result;
 }
 
-void set_fan(char *fan_cmd, int set)
+void set_fan(char *fan_cmd, float speed)
 {
-    string cmd(fan_cmd);
-    cmd = cmd + " " + to_string(set);
-    if (system(cmd.c_str()) == -1)
-        err(1, "Error while executing shell command: %s\n", cmd.c_str());
+    char *cmd;
+    asprintf(&cmd, "%s %g", fan_cmd, speed);
+    if (system(cmd) == -1)
+        err(1, "Error while executing shell command: %s\n", cmd);
+    free(cmd);
 }
 
 void wait_cooldown(char *fan_cmd)
@@ -367,7 +368,7 @@ void wait_cooldown(char *fan_cmd)
         sleep(2);
     }
 
-    if (fan_cmd && !fan_on)
+    if (fan_cmd && isnan(fan_on))
         set_fan(fan_cmd, 0);
 }
 
@@ -756,7 +757,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         fan_cmd = arg;
         break;
     case 'F':
-        fan_on = true;
+        fan_on = (arg == 0) ? 1 : atof(arg);
         break;
     case 'n':
         bench_name = arg;
@@ -830,8 +831,11 @@ static struct argp_option options[] = {
       "before running the COMMAND. Wait timeout is given by --wait-timeout." },
     { "wait-timeout",   'W', "SECS",        0,
       "Timeout in seconds for cool-down waiting (default: 600)." },
-    { "fan-cmd",        'f', "CMD",         0, "Command to turn the fan on (CMD 1) or off (CMD 0)" },
-    { "fan-on",         'F', 0,             0, "Switch the fan on while running COMMAND" },
+    { "fan-cmd",        'f', "CMD",         0,
+      "Command to control the fan. The command is invoked as 'CMD <speed>', "
+      "where <speed> is a number between 0 and 1. Zero means the fan is off, one means full speed." },
+    { "fan-on",         'F', "SPEED",       OPTION_ARG_OPTIONAL,
+      "Set the fan speed while running COMMAND. If SPEED is not given, it defaults to '1'." },
     { "name",           'n', "NAME",        0, "Basename of the .csv file" },
     { "bench_name",     'n', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "output_dir",     'o', "DIR",         0, "Where to create output .csv file" },
@@ -987,8 +991,8 @@ int main(int argc, char **argv)
     if (!isnan(cooldown_temp))
         wait_cooldown(fan_cmd);
 
-    if (fan_on && fan_cmd)
-        set_fan(fan_cmd, 1);
+    if (!isnan(fan_on) && fan_cmd)
+        set_fan(fan_cmd, fan_on);
 
     if (!out_file)
         asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
