@@ -360,7 +360,7 @@ void wait_cooldown(char *fan_cmd)
             fprintf(stderr, "\nDone\n");
             break;
         }
-        if (time >= 600) {
+        if (time >= cooldown_timeout) {
             fprintf(stderr, "\nTimed out\n");
             break;
         }
@@ -751,7 +751,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         cooldown_temp = atof(arg);
         break;
     case 'W':
-        cooldown_timeout = atof(arg);
+        cooldown_timeout = atoi(arg);
         break;
     case 'f':
         fan_cmd = arg;
