@@ -750,6 +750,14 @@ function plot_bars(df::AbstractDataFrame;
         join(cols, ":")
     end
 
+    data=Gnuplot.DatasetText(
+        String.(df[!, 1]), # labels
+        [Measurements.value.(df[!, i]) for i in 2:ncol(df)]...,
+        [eltype(df[!, i]) <: Measurement ?
+         Measurements.uncertainty.(df[!, i]) :
+         fill(NaN, size(df[!, i]))
+         for i in 2:ncol(df) if eb]...,
+    )
     vcat(
         Gnuplot.PlotElement(
             xr=[-0.5,n-0.5],
@@ -761,20 +769,13 @@ function plot_bars(df::AbstractDataFrame;
                        """set xtics rotate by $label_rot $(label_rot > 0 ? "right" : "") $(label_enhanced ? "" : "no")enhanced""",
                        ],
                       !isempty(errorbars) ? ["set errorbars $errorbars"] : String[],
-                      !isempty(y2cols) ? ["set y2tics"] : String[],
+                      !isempty(y2cols) ? ["set ytics nomirror", "set y2tics"] : String[],
                       ),
-            data=Gnuplot.DatasetText(
-                String.(df[!, 1]), # labels
-                [Measurements.value.(df[!, i]) for i in 2:ncol(df)]...,
-                [eltype(df[!, i]) <: Measurement ?
-                     Measurements.uncertainty.(df[!, i]) :
-                     fill(NaN, size(df[!, i]))
-                 for i in 2:ncol(df) if eb]...,
-            ),
         ),
         [
             Gnuplot.PlotElement(
-                plot="\$data1 using $(gpusing(i)) $(axes(i))" *
+                data=data,
+                plot="using $(gpusing(i)) $(axes(i))" *
                 """title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced""",
             )
             for i in 2:ncol(df)
