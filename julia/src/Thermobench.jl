@@ -565,6 +565,23 @@ end
 
 lcp(v::Vector{String}) = lcp(v...)
 
+# Longest common suffix
+function lcs(str::AbstractString...)
+    r = ""
+    str = [str...]
+    if !isempty(str)
+        i = 0
+        while all(i < length(s) for s in str) &&
+              all(s[end-i] == str[1][end-i] for s in str)
+            r = str[1][end-i:end]
+            i += 1
+        end
+    end
+    return r
+end
+
+lcs(v::Vector{String}) = lcs(v...)
+
 "Stores results of processing of one or more thermobench CSV files.
 
 The main data is stored in the `result` field."
