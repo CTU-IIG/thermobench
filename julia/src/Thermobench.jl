@@ -812,16 +812,22 @@ end
 
 Plot ``T_∞`` and performance (ops per second from [`ops_est`](@ref))
 as a bargraph.
+
+# Arguments
+
+- `perf_str`: Title to show for the performance legend and y-axis. Default is "Performance".
 """
 function plot_Tinf_and_ops(mf::MultiFit;
-                   kwargs...)::Vector{Gnuplot.PlotElement} where {N}
+                           perf_str="Performance",
+                           kwargs...)::Vector{Gnuplot.PlotElement} where {N}
     df = DataFrame(name=mf.result.name,
-                        Tinf=mf.result.Tinf,
-                        ops=mf.result.ops)
+                        T_∞=mf.result.Tinf,
+                   Performace=mf.result.ops)
+    rename!(df, :Performace => Symbol(perf_str))
     vcat(
-        plot_bars(df; y2cols=[:ops], kwargs...)...,
+        plot_bars(df; y2cols=[Symbol(perf_str)], key_enhanced=true, kwargs...)...,
         Gnuplot.PlotElement(ylabel=(mf.subtract ? "Relative " : "") * " T_∞ [°C]",
-                            cmds=["set y2label 'Performance [op/s]'"])
+                            cmds=["set y2label '$perf_str [op/s]'"])
     )
 end
 
