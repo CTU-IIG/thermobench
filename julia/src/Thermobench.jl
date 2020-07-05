@@ -403,18 +403,22 @@ julia> printfit(f)
 "7.1 – 4.0⋅e^{−t/1.0} – 3.1⋅e^{−t/11.8}"
 ```
 """
-function printfit(fit; minutes = false)
-    function print_exp(k, tau)
+function printfit(fit; minutes = false, mime = MIME"text/x-gnuplot")
+    function print_exp(k, tau, mime)
         sign = " + "
         if k < 0
-            sign = " – "
+            sign = (mime == MIME"text/x-gnuplot") ? " – " : "-"
             k = -k
         end
         tau_str = @sprintf "%3.1f" tau
         if match(r"^[0.]*$", tau_str) != nothing
             tau_str = @sprintf "%3.2f" tau
         end
-        sign * @sprintf("%3.1f⋅e^{−t/%s}", k, tau_str)
+        if mime == MIME"text/x-gnuplot"
+            sign * @sprintf("%3.1f⋅e^{−t/%s}", k, tau_str)
+        elseif mime == MIME"text/latex"
+            sign * @sprintf("%3.1f e^{\\frac{-t}{%s}}", k, tau_str)
+        end
     end
     p = coef(fit)
     T∞ = p[1]
@@ -422,7 +426,7 @@ function printfit(fit; minutes = false)
     i = sortperm(τ)
     τ = τ[i]
     k = p[2:2:end][i]
-    *(@sprintf("%3.1f", T∞), print_exp.(k, τ)...)
+    *(@sprintf("%3.1f", T∞), print_exp.(k, τ, mime)...)
 end
 
 @doc raw"""
