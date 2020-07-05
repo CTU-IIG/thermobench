@@ -629,10 +629,12 @@ Plot MultiFit data.
 - `pt_size::Real=1` size of measured data points.
 - `stddev::Bool=true` whether to include root-mean-square error of the
   fit in the legend (as (±xxx)).
+- `models::Bool=true` whether show thermal model expressions in the key.
 """
 function plot(mf::MultiFit;
               minutes::Bool = true,
               pt_titles::Bool = true,
+              models::Bool = true,
               pt_decim::Int = 1,
               pt_size::Real = 1,
               stddev::Bool = true,
@@ -657,7 +659,7 @@ function plot(mf::MultiFit;
         (!(same_names || same_cols) ? "$i" : "")
     pt_title(i) = pt_titles ? row_title(i) : ""
     fit_title(i) = (pt_titles ? "" : row_title(i) * ": ") *
-        printfit(mf.result.fit[i], minutes=minutes) *
+        (models ? printfit(mf.result.fit[i], minutes=minutes) : "") *
         (stddev ? stddev_title(i) : "")
 
 
