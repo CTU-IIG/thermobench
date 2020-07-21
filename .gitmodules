@@ -6,3 +6,7 @@
 	path = benchmarks/tacle-bench
 #	url = https://github.com/tacle/tacle-bench
 	url = .
+[submodule "benchmarks/coremark"]
+	path = benchmarks/coremark
+#	url = https://github.com/eembc/coremark.git
+	url = .
