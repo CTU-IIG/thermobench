@@ -245,6 +245,12 @@ portable_init(core_portable *p, int *argc, char *argv[])
             argv[i] = argv[i + 1];
         *argc = nargs;
     }
+    else
+    {
+        ee_printf(
+            "Use 'MX' command line parameter to run with X (less than default %d) threads, e.g. '%s M%d'.\n",
+            default_num_contexts, argv[0], default_num_contexts - 1);
+    }
 #endif /* sample of potential platform specific init via command line, reset \
           the number of contexts being used if first argument is M<n>*/
     p->portable_id = 1;
