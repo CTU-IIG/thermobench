@@ -10,3 +10,7 @@
 	path = benchmarks/coremark
 #	url = https://github.com/eembc/coremark.git
 	url = .
+[submodule "benchmarks/coremark-pro"]
+	path = benchmarks/coremark-pro
+#	url = https://github.com/eembc/coremark-pro.git
+	url = .
