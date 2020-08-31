@@ -627,6 +627,7 @@ Plot MultiFit data.
 - `pt_decim::Int=1` draw only every `pt_decim`-th measured data point.
   This can be used to reduce the size of vector image formats.
 - `pt_size::Real=1` size of measured data points.
+- `pt_saturation::Real=0.4` intensity of points (0 is white, 1 is saturate)
 - `stddev::Bool=true` whether to include root-mean-square error of the
   fit in the legend (as (±xxx)).
 - `models::Bool=true` whether show thermal model expressions in the key.
@@ -637,12 +638,13 @@ function plot(mf::MultiFit;
               models::Bool = true,
               pt_decim::Int = 1,
               pt_size::Real = 1,
+              pt_saturation::Real = 0.4,
               stddev::Bool = true,
               )::Vector{Gnuplot.PlotElement}
     colors = distinguishable_colors(
         nrow(mf.result),
         [RGB(1,1,1)], dropseed=true)
-    ptcolors = weighted_color_mean.(0.4, colors, colorant"white")
+    ptcolors = weighted_color_mean.(pt_saturation, colors, colorant"white")
 
     rmse = mf.result.rmse
     bad = 2 * quantile(rmse, 0.75)
