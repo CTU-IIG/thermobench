@@ -130,3 +130,7 @@ explicitly enabled by -c or -l options.
 Report bugs to https://github.com/CTU-IIG/thermobench/issues.
 ```
 <!-- help end -->
+
+## See also
+
+- [Thermobench.jl](https://ctu-iig.github.io/thermobench/dev/)
