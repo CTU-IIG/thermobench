@@ -28,4 +28,6 @@ executable('thermobench', [
 		  version_h,
 	   ],
 	   cpp_args : '-Weffc++',
-	   dependencies : deps)
+	   dependencies : deps,
+	   install : true,
+	  )

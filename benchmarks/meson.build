@@ -1,7 +1,12 @@
 subdir('CPU')
 subdir('mem')
 subdir('sched')
-subdir('tinyrenderer')
+
+fs = import('fs')
+
+if fs.exists('tinyrenderer/meson.build')
+	subdir('tinyrenderer')
+endif
 
 # CoreMark
 
