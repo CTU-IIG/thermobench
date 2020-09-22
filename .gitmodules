@@ -16,4 +16,5 @@
 	url = .
 [submodule "benchmarks/tinyrenderer"]
 	path = benchmarks/tinyrenderer
-	url = https://github.com/ssloy/tinyrenderer
+#	url = https://github.com/ssloy/tinyrenderer
+	url = .
