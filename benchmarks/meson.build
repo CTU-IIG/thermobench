@@ -1,6 +1,7 @@
 subdir('CPU')
 subdir('mem')
 subdir('sched')
+subdir('tinyrenderer')
 
 # CoreMark
 
