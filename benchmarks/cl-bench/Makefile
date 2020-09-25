@@ -27,10 +27,10 @@ target:
 	mkdir -p target
 
 target/cl-mem: target/memory.o target/common.o
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 target/cl-mandelbrot: target/mandelbrot.o target/common.o
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 target/memory.o: src/memory.c target/kernel_memory.h
 ifndef MEMSIZE
