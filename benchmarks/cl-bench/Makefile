@@ -33,39 +33,9 @@ target/cl-mandelbrot: target/mandelbrot.o target/common.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 target/memory.o: src/memory.c target/kernel_memory.h
-ifndef MEMSIZE
-	$(error MEMSIZE is undefined)
-endif
-ifndef BLOCKSIZE
-	$(error BLOCKSIZE is undefined)
-endif
-ifndef KERNEL
-	$(error KERNEL is undefined)
-endif
-ifndef REPS
-	$(error REPS is undefined)
-endif
-ifndef GLOBAL_WS
-	$(error GLOBAL_WS is undefined)
-endif
-ifndef LOCAL_WS
-	$(error LOCAL_WS is undefined)
-endif
 	$(CC) $(CFLAGS) $(MEMORY_VARS) -I./target -o $@ -c $<
 
 target/mandelbrot.o: src/mandelbrot.c target/kernel_mandelbrot.h
-ifndef WIDTH
-	$(error WIDTH is undefined)
-endif
-ifndef HEIGHT
-	$(error HEIGHT is undefined)
-endif
-ifndef GLOBAL_WS
-	$(error GLOBAL_WS is undefined)
-endif
-ifndef LOCAL_WS
-	$(error LOCAL_WS is undefined)
-endif
 	$(CC) $(CFLAGS) $(MANDELBROT_VARS) -I./target -o $@ -c $<
 
 target/common.o: src/common.c src/common.h target
