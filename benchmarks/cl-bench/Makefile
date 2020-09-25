@@ -42,9 +42,7 @@ target/common.o: src/common.c src/common.h target
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 target/kernel_%.h: src/%.cl target
-	echo 'const char* ocl_code = R"_mrb_(' >$@
-	cpp $(MEMORY_VARS) $(MANDELBROT_VARS) $< >>$@
-	echo ')_mrb_";' >>$@
+	printf 'const char* ocl_code = R"_delim_(%s)_delim_";' "$$(cat $<)" >$@
 
 clean:
 	rm -rvf target
