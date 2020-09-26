@@ -1,5 +1,5 @@
-CC      ?= gcc
-CFLAGS   = -O2 -flto -std=gnu99 -Wall -Wextra -Wpedantic -ggdb
+CXX      ?= g++
+CXXFLAGS   = -O2 -flto -std=c++11 -Wall -Wextra -Wpedantic -ggdb
 LDFLAGS  = -lOpenCL
 
 LOCAL_WS = 32 # 64 128 256 512 1024
@@ -27,21 +27,21 @@ target:
 	mkdir -p target
 
 target/cl-mem: target/memory.o target/common.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 target/cl-mandelbrot: target/mandelbrot.o target/common.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-target/memory.o: src/memory.c target/kernel_memory.h
-	$(CC) $(CFLAGS) $(MEMORY_VARS) -I./target -o $@ -c $<
+target/memory.o: src/memory.cc target/kernel_memory.h
+	$(CXX) $(CXXFLAGS) $(MEMORY_VARS) -I./target -o $@ -c $<
 
-target/mandelbrot.o: src/mandelbrot.c target/kernel_mandelbrot.h
-	$(CC) $(CFLAGS) $(MANDELBROT_VARS) -I./target -o $@ -c $<
+target/mandelbrot.o: src/mandelbrot.cc target/kernel_mandelbrot.h
+	$(CXX) $(CXXFLAGS) $(MANDELBROT_VARS) -I./target -o $@ -c $<
 
-target/common.o: src/common.c src/common.h target
-	$(CC) $(CFLAGS) -o $@ -c $<
+target/common.o: src/common.cc src/common.h | target
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-target/kernel_%.h: src/%.cl target
+target/kernel_%.h: src/%.cl | target
 	printf 'const char* ocl_code = R"_delim_(%s)_delim_";' "$$(cat $<)" >$@
 
 clean:
