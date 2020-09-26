@@ -1,5 +1,4 @@
 #include "common.h"
-#include "mandelbrot.h"
 #include "kernel_memory.h"
 
 int main() {
