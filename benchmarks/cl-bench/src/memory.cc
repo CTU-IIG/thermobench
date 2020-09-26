@@ -1,15 +1,46 @@
 #include "common.h"
 #include "kernel_memory.h"
+#include <string>
+#include <boost/program_options.hpp>
+#include <iostream>
 
-int main() {
+using namespace std;
+namespace po = boost::program_options;
+
+int main(int argc, char **argv) {
     cl_platform_id platform_id = 0;
     cl_device_id device_id = 0;
     cl_kernel kernel;
     cl_int status;
     int work_done = 0;
     cl_mem buffer;
-    size_t global_ws = GLOBAL_WS;
-    size_t local_ws = LOCAL_WS;
+    size_t global_ws;
+    size_t local_ws;
+    size_t memsize;
+    size_t blocksize;
+    unsigned reps;
+    string kernel_name;
+
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("kernel",    po::value(&kernel_name)->default_value("read"))
+        ("global-ws", po::value(&global_ws)->default_value(32))
+        ("local-ws",  po::value(&local_ws)->default_value(32))
+        ("reps",      po::value(&reps)->default_value(1024))
+        ("memsize",   po::value(&memsize)->default_value(8*1024*1024))
+        ("blocksize", po::value(&blocksize)->default_value(64))
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        return 1;
+    }
 
     get_ocl_device(&platform_id, &device_id);
 
@@ -38,11 +69,14 @@ int main() {
     }
 
     // create program object
+    string src =
+        "#define BLOCKSIZE " + to_string(blocksize) + "\n"
+        "#define MEMSIZE " + to_string(memsize) + "\n"
+        "#define REPS " + to_string(reps) + "\n"
+        + ocl_code;
     cl_program program;
-    const char *source;
-    size_t source_len;
-    source = ocl_code;
-    source_len = strlen(ocl_code);
+    const char *source = src.c_str();
+    size_t source_len = src.size();;
     program = clCreateProgramWithSource(
         context,
         1,
@@ -69,7 +103,7 @@ int main() {
         exit(1);
     }
 
-    kernel = clCreateKernel(program, KERNEL, &status);
+    kernel = clCreateKernel(program, kernel_name.c_str(), &status);
     if (status != CL_SUCCESS || !kernel) {
         error("clCreateKernel (%d)\n", status);
     }
@@ -77,7 +111,7 @@ int main() {
     buffer = check_clCreateBuffer(
         context,
         CL_MEM_READ_WRITE,
-        MEMSIZE,
+        memsize,
         NULL
     );
 

@@ -1,25 +1,6 @@
 CXX      ?= g++
 CXXFLAGS   = -O2 -flto -std=c++11 -Wall -Wextra -Wpedantic -ggdb
-LDFLAGS  = -lOpenCL
-
-LOCAL_WS = 32 # 64 128 256 512 1024
-GLOBAL_WS = 32 # 64 128 256 512 1024 2048 4096 8192 16384
-
-MEMSIZE = $(shell expr 8 '*' 1048576)
-BLOCKSIZE = 64
-KERNEL = read
-REPS = 1024
-
-HEIGHT = 256
-WIDTH = 256
-
-MEMORY_VARS = -DGLOBAL_WS=$(GLOBAL_WS) -DLOCAL_WS=$(LOCAL_WS) \
-			  -DKERNEL='"$(KERNEL)"' -DREPS=$(REPS) \
-			  -DMEMSIZE=$(MEMSIZE) -DBLOCKSIZE=$(BLOCKSIZE)
-
-MANDELBROT_VARS = -DGLOBAL_WS=$(GLOBAL_WS) -DLOCAL_WS=$(LOCAL_WS) \
-                  -DWIDTH=$(WIDTH) -DHEIGHT=$(HEIGHT)
-
+LDFLAGS  = -lOpenCL -lboost_program_options
 
 all: target/cl-mem target/cl-mandelbrot
 
@@ -33,10 +14,10 @@ target/cl-mandelbrot: target/mandelbrot.o target/common.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 target/memory.o: src/memory.cc target/kernel_memory.h
-	$(CXX) $(CXXFLAGS) $(MEMORY_VARS) -I./target -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -I./target -o $@ -c $<
 
 target/mandelbrot.o: src/mandelbrot.cc target/kernel_mandelbrot.h
-	$(CXX) $(CXXFLAGS) $(MANDELBROT_VARS) -I./target -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -I./target -o $@ -c $<
 
 target/common.o: src/common.cc src/common.h | target
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
