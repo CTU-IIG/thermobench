@@ -1,0 +1,31 @@
+name: "Test"
+on:
+  pull_request:
+  push:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+        fetch-depth: 0
+    - uses: cachix/install-nix-action@v11
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - uses: cachix/cachix-action@v6
+      with:
+        name: thermac
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+#     - name: Configure
+#       run: nix-shell --run "make build/build.ninja"
+#     - name: Build subprojects
+#       run: nix-shell --run "ninja -C build subprojects/libev/libev.a"
+    - name: Register gcc problem matcher # After subprojects to not see their warings
+      run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+    - name: Build demos-sched
+      run: nix-shell --run "make"
+    - name: Tests
+      run: nix-shell --run "cd build && meson test"
+#     - name: Aarch64
+#       run: nix-build --argstr crossSystem aarch64-linux
