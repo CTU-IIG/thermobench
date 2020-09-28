@@ -6,6 +6,9 @@ cl_wrap = generator(find_program('bash'),
 
 dep_boost_program_options = dependency('boost', modules : [ 'program_options' ], required : false, disabler : true)
 dep_opencl = dependency('OpenCL', required : false, disabler : true)
+if not dep_opencl.found()
+	dep_opencl = cxx.find_library('OpenCL', required : false, disabler : true)
+endif
 
 executable('cl-mem',
 	   [ 'memory.cc', 'common.cc', cl_wrap.process('memory.cl') ],
