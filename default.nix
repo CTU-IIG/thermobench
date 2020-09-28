@@ -15,6 +15,6 @@ stdenv.mkDerivation {
     ## until next release, we live without the benchmarks.
     # submodules = true;
   };
-  nativeBuildInputs = [ meson ninja ];
-  buildInputs = [ libev ];
+  nativeBuildInputs = [ meson ninja pkg-config ];
+  buildInputs = [ libev opencl-headers ocl-icd ];
 }

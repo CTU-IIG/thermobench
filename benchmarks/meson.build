@@ -1,3 +1,4 @@
+subdir('cl-bench/src')
 subdir('CPU')
 subdir('mem')
 subdir('sched')
