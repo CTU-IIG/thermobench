@@ -1,5 +1,6 @@
 #include <limits>
 #include <iostream>
+#include <unistd.h>
 #include "model.h"
 #include "our_gl.h"
 
@@ -58,9 +59,27 @@ struct Shader : IShader {
     }
 };
 
+void print_usage(char *cmd) {
+    std::cerr << "Usage: " << cmd << " [-f] obj/model.obj..." << std::endl;
+}
+
 int main(int argc, char** argv) {
-    if (2>argc) {
-        std::cerr << "Usage: " << argv[0] << " obj/model.obj" << std::endl;
+    int opt;
+    bool forever = false;
+
+    while ((opt = getopt(argc, argv, "f")) != -1) {
+        switch (opt) {
+        case 'f':
+            forever = true;
+            break;
+        default: /* '?' */
+            print_usage(argv[0]);
+            return 1;
+        }
+    }
+
+    if (optind >= argc) {
+        print_usage(argv[0]);
         return 1;
     }
 
@@ -70,16 +89,21 @@ int main(int argc, char** argv) {
     viewport(width/8, height/8, width*3/4, height*3/4); // build the Viewport matrix
     projection(-1.f/(eye-center).norm());               // build the Projection matrix
 
-    for (int m=1; m<argc; m++) { // iterate through all input objects
-        Model model(argv[m]);
-        Shader shader(model);
-        for (int i=0; i<model.nfaces(); i++) { // for every triangle
-            vec4 clip_vert[3]; // triangle coordinates (clip coordinates), written by VS, read by FS
-            for (int j=0; j<3; j++)
-                clip_vert[j] = shader.vertex(i, j); // call the vertex shader for each triangle vertex
-            triangle(clip_vert, shader, framebuffer, zbuffer); // actual rasterization routine call
+    std::vector<Model> models;
+    for (int m=optind; m<argc; m++) // iterate through all input objects
+        models.emplace_back(argv[m]);
+
+    do {
+        for (auto &model : models) { // iterate through all input objects
+            Shader shader(model);
+            for (int i=0; i<model.nfaces(); i++) { // for every triangle
+                vec4 clip_vert[3]; // triangle coordinates (clip coordinates), written by VS, read by FS
+                for (int j=0; j<3; j++)
+                    clip_vert[j] = shader.vertex(i, j); // call the vertex shader for each triangle vertex
+                triangle(clip_vert, shader, framebuffer, zbuffer); // actual rasterization routine call
+            }
         }
-    }
+    } while (forever);
     framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
     return 0;
 }
