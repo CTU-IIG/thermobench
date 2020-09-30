@@ -252,19 +252,21 @@ static void run_benchmark(struct cfg *cfg)
 	unsigned i;
 	cpu_set_t set = cfg->cpu_set;
 
+	if (CPU_COUNT(&set) == 0) {
+		/* If CPU affinity is not specified on the command
+		 * line, use the default affinity, we inherited from
+		 * our parent. */
+		sched_getaffinity(0, sizeof(set), &set);
+	}
+
 	pthread_barrier_init(&barrier, NULL, cfg->num_threads);
 	for (i = 0; i < cfg->num_threads; i++) {
 		thread[i].cfg = cfg;
-		if (CPU_COUNT(&set) == 0) {
-			thread[i].cpu = i;
-		} else {
-			int j;
-			for (j = 0; j < MAX_CPUS; j++) {
-				if (CPU_ISSET(j, &set)) {
-					thread[i].cpu = j;
-					CPU_CLR(j, &set);
-					break;
-				}
+		for (int j = 0; j < MAX_CPUS; j++) {
+			if (CPU_ISSET(j, &set)) {
+				thread[i].cpu = j;
+				CPU_CLR(j, &set);
+				break;
 			}
 		}
 		if (print)
