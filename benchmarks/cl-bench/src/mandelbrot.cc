@@ -17,15 +17,17 @@ int main(int argc, char **argv) {
     size_t global_ws;
     size_t local_ws;
     unsigned width, height;
+    string work_done_msg;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("global-ws", po::value(&global_ws)->default_value(1024))
-        ("local-ws",  po::value(&local_ws)->default_value(32))
-        ("width",     po::value(&width)->default_value(256))
-        ("height",    po::value(&height)->default_value(256))
+        ("global-ws",     po::value(&global_ws)->default_value(1024))
+        ("local-ws",      po::value(&local_ws)->default_value(32))
+        ("width",         po::value(&width)->default_value(256))
+        ("height",        po::value(&height)->default_value(256))
+        ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ;
 
     po::variables_map vm;
@@ -133,8 +135,10 @@ int main(int argc, char **argv) {
             error("clFinish (%d)\n", status);
         }
 
-        printf("work_done=%d\n", work_done++);
-        fflush(NULL);
+        if (!work_done_msg.empty()) {
+            printf("%s=%d\n", work_done_msg.c_str(), work_done++);
+            fflush(NULL);
+        }
     } while (true);
 
     status = clReleaseKernel(kernel);

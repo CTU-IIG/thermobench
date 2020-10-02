@@ -20,17 +20,19 @@ int main(int argc, char **argv) {
     size_t blocksize;
     unsigned reps;
     string kernel_name;
+    string work_done_msg;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("kernel",    po::value(&kernel_name)->default_value("read"))
-        ("global-ws", po::value(&global_ws)->default_value(1024))
-        ("local-ws",  po::value(&local_ws)->default_value(32))
-        ("reps",      po::value(&reps)->default_value(1024))
-        ("memsize",   po::value(&memsize)->default_value(8*1024*1024))
-        ("blocksize", po::value(&blocksize)->default_value(64))
+        ("kernel",        po::value(&kernel_name)->default_value("read"))
+        ("global-ws",     po::value(&global_ws)->default_value(1024))
+        ("local-ws",      po::value(&local_ws)->default_value(32))
+        ("reps",          po::value(&reps)->default_value(1024))
+        ("memsize",       po::value(&memsize)->default_value(8*1024*1024))
+        ("blocksize",     po::value(&blocksize)->default_value(64))
+        ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ;
 
     po::variables_map vm;
@@ -136,8 +138,10 @@ int main(int argc, char **argv) {
             error("clFinish (%d)\n", status);
         }
 
-        printf("work_done=%d\n", work_done++);
-        fflush(NULL);
+        if (!work_done_msg.empty()) {
+            printf("%s=%d\n", work_done_msg.c_str(), work_done++);
+            fflush(NULL);
+        }
     } while (true);
 
     status = clReleaseKernel(kernel);
