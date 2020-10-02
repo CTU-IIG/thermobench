@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("global-ws", po::value(&global_ws)->default_value(32))
+        ("global-ws", po::value(&global_ws)->default_value(1024))
         ("local-ws",  po::value(&local_ws)->default_value(32))
         ("width",     po::value(&width)->default_value(256))
         ("height",    po::value(&height)->default_value(256))

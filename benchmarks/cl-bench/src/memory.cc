@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     desc.add_options()
         ("help", "produce help message")
         ("kernel",    po::value(&kernel_name)->default_value("read"))
-        ("global-ws", po::value(&global_ws)->default_value(32))
+        ("global-ws", po::value(&global_ws)->default_value(1024))
         ("local-ws",  po::value(&local_ws)->default_value(32))
         ("reps",      po::value(&reps)->default_value(1024))
         ("memsize",   po::value(&memsize)->default_value(8*1024*1024))
