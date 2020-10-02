@@ -64,6 +64,15 @@ To pass some switches to the benchmark program, use `--`:
 
 In this example, the benchmark will execute only on CPU0.
 
+The full command line that we typically use on the i.MX8-based testbed
+is:
+
+    thermobench --verbose --fan-cmd='ssh imx8fan@turbot' --fan-on=0.5 --time=900 \
+                --wait=30 --wait-timeout=240 --sensors_file=sensors.imx8 \
+                --cpu-usage --column=CPU{0..5}_work_done \
+                --output=data.csv -- ./benchmark ...
+
+
 ## Command line reference
 
 <!-- help start -->
