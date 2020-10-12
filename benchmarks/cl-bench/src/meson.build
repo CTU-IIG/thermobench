@@ -10,6 +10,8 @@ if not dep_opencl.found()
 	dep_opencl = cxx.find_library('OpenCL', required : false, disabler : true)
 endif
 
+cxx.has_header('CL/cl.h')
+
 executable('cl-mem',
 	   [ 'memory.cc', 'common.cc', cl_wrap.process('memory.cl') ],
 	   dependencies : [ dep_boost_program_options, dep_opencl ],
