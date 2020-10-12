@@ -19,6 +19,13 @@ git submodule foreach --recursive 'if [ $(git config remote.origin.url) = . ]; t
 make  # this invokes Meson
 ```
 
+If you want to enable all optional features (e.g. benchmarks), run:
+
+``` sh
+meson --reconfigure -Dauto_features=enabled build
+make
+```
+
 ### Cross compilation
 
 To cross-compile the tool and benchmarks for the ARM64 architecture,
