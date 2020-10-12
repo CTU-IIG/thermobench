@@ -14,8 +14,8 @@ Alternatively, newest `meson` version can be installed by:
 ## Compilation
 
 ``` sh
+git update-ref refs/heads/master.trac origin/master.trac
 git submodule update --init
-git submodule foreach --recursive 'if [ $(git config remote.origin.url) = . ]; then git config remote.origin.url "$toplevel"; fi'
 make  # this invokes Meson
 ```
 
