@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+
 #include BENCH_H
 
 #define MS_TO_NANO 1000000
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
         pthread_attr_setaffinity_np(&attr, sizeof(cpuset), &cpuset);
         int ret = pthread_create(&tid, &attr, benchmark_loop, (void *)(intptr_t)i);
         if (ret != 0)
-            fprintf(stderr, "Warning: Thread %d creation error %d\n", i, ret);
+            warnx("Warning: CPU %d thread creation error: %s", i, strerror(ret));
     }
 
     if (period_ms > 0){
