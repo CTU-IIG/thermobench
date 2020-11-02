@@ -17,7 +17,6 @@ int main(int argc, char **argv) {
     size_t global_ws;
     size_t local_ws;
     size_t memsize;
-    size_t blocksize;
     unsigned reps;
     string kernel_name;
     string work_done_msg;
@@ -31,7 +30,6 @@ int main(int argc, char **argv) {
         ("local-ws",      po::value(&local_ws)->default_value(32))
         ("reps",          po::value(&reps)->default_value(1024))
         ("memsize",       po::value(&memsize)->default_value(8*1024*1024))
-        ("blocksize",     po::value(&blocksize)->default_value(64))
         ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ;
 
@@ -72,13 +70,14 @@ int main(int argc, char **argv) {
 
     // create program object
     string src =
-        "#define BLOCKSIZE " + to_string(blocksize) + "\n"
         "#define MEMSIZE " + to_string(memsize) + "\n"
         "#define REPS " + to_string(reps) + "\n"
+        "#define GLOBAL_SIZE " + to_string(global_ws) + "\n"
+        "#define LOCAL_SIZE " + to_string(local_ws) + "\n"
         + ocl_code;
     cl_program program;
     const char *source = src.c_str();
-    size_t source_len = src.size();;
+    size_t source_len = src.size();
     program = clCreateProgramWithSource(
         context,
         1,
