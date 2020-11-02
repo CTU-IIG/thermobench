@@ -23,7 +23,7 @@ jobs:
 #       run: nix-shell --run "ninja -C build subprojects/libev/libev.a"
     - name: Register gcc problem matcher # After subprojects to not see their warings
       run: echo "::add-matcher::.github/problem-matchers/gcc.json"
-    - name: Build demos-sched
+    - name: Build thermobench
       run: nix-shell --run "make"
     - name: Tests
       run: nix-shell --run "cd build && meson test"
