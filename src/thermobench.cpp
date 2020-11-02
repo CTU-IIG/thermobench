@@ -340,7 +340,7 @@ static double read_sensor(const char *path)
 void set_fan(char *fan_cmd, float speed)
 {
     char *cmd;
-    asprintf(&cmd, "%s %g", fan_cmd, speed);
+    CHECK(asprintf(&cmd, "%s %g", fan_cmd, speed));
     if (system(cmd) == -1)
         err(1, "Error while executing shell command: %s\n", cmd);
     free(cmd);
@@ -969,7 +969,7 @@ string sensor::extractName(const string spec)
         char *base = basename(p);
         char *dir = dirname(p);
         char *type;
-        asprintf(&type, "%s/type", dir);
+        CHECK(asprintf(&type, "%s/type", dir));
         if (strcmp(base, "temp") == 0 &&
             access(type, R_OK) == 0)
             name = areadfileline(type);
@@ -1007,7 +1007,7 @@ int main(int argc, char **argv)
         set_fan(fan_cmd, fan_on);
 
     if (!out_file)
-        asprintf(&out_file, "%s/%s.csv", output_path, bench_name);
+        CHECK(asprintf(&out_file, "%s/%s.csv", output_path, bench_name));
 
     if (calc_cpu_usage) {
         n_cpus = sysconf(_SC_NPROCESSORS_ONLN);
