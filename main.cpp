@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "model.h"
 #include "our_gl.h"
+#include <err.h>
 
 constexpr int width  = 800; // output image size
 constexpr int height = 800;
@@ -60,17 +61,28 @@ struct Shader : IShader {
 };
 
 void print_usage(char *cmd) {
-    std::cerr << "Usage: " << cmd << " [-f] obj/model.obj..." << std::endl;
+    std::cerr << "Usage: " << cmd << " [-f] [-w work_done_string [-e num]]  obj/model.obj..." << std::endl;
 }
 
 int main(int argc, char** argv) {
     int opt;
     bool forever = false;
+    char *work_done_string = NULL;
+    unsigned work_done = 0;
+    int work_done_every = 1;
 
-    while ((opt = getopt(argc, argv, "f")) != -1) {
+    while ((opt = getopt(argc, argv, "e:fw:")) != -1) {
         switch (opt) {
+        case 'e':
+            work_done_every = atoi(optarg);
+            if (work_done_every <= 0)
+                errx(1, "Usage: -e 'number > 0'");
+            break;
         case 'f':
             forever = true;
+            break;
+        case 'w':
+            work_done_string = optarg;
             break;
         default: /* '?' */
             print_usage(argv[0]);
@@ -82,6 +94,9 @@ int main(int argc, char** argv) {
         print_usage(argv[0]);
         return 1;
     }
+
+    if (work_done_string == NULL && work_done_every != 1)
+        errx(1, "-e only makes sense with -w");
 
     std::vector<double> zbuffer(width*height, -std::numeric_limits<double>::max()); // note that the z-buffer is initialized with minimal possible values
     TGAImage framebuffer(width, height, TGAImage::RGB); // the output image
@@ -103,8 +118,11 @@ int main(int argc, char** argv) {
                 triangle(clip_vert, shader, framebuffer, zbuffer); // actual rasterization routine call
             }
         }
+        if (work_done_string && (work_done++ % work_done_every == 0)) {
+            printf("%s=%d\n", work_done_string, work_done - 1);
+            fflush(stdout);
+        }
     } while (forever);
     framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
     return 0;
 }
-
