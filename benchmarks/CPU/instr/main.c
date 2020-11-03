@@ -14,6 +14,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef WITH_DEMOS
+	#include <demos-sch.h>
+#endif
+
 #include BENCH_H
 
 #define MS_TO_NANO 1000000
@@ -22,6 +26,8 @@
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static int idle_thread = -1;
+// ID of first spawned benchmark thread
+static int first_thread_id = -1;
 
 int loops_per_print = 1000000;
 
@@ -44,7 +50,13 @@ void *benchmark_loop(void *ptr)
         }
         printf("CPU%d_work_done=%lu\n", thread_id, cpu_work_done);
         fflush(stdout);
-    }
+		// seems most sensible after printf, so that we see the progress before suspending
+        #ifdef WITH_DEMOS
+            if (thread_id == first_thread_id) {
+			demos_completed();
+            }
+		#endif
+	}
     return NULL;
 }
 
@@ -118,6 +130,15 @@ int main(int argc, char *argv[])
     else
         idle_thread = 0;
 
+    #ifdef WITH_DEMOS
+		printf("Running benchmark with DEmOS support enabled.\n");
+		if (demos_init() != 0) {
+			errx(1, "%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
+		}
+	#else
+		printf("Running benchmark without DEmOS support.\n");
+	#endif
+
     for (int i = 0; i < num_proc; i++) {
         pthread_attr_t attr;
         cpu_set_t cpuset;
@@ -131,8 +152,13 @@ int main(int argc, char *argv[])
         pthread_attr_init(&attr);
         pthread_attr_setaffinity_np(&attr, sizeof(cpuset), &cpuset);
         int ret = pthread_create(&tid, &attr, benchmark_loop, (void *)(intptr_t)i);
-        if (ret != 0)
+        if (ret != 0) {
             warnx("Warning: CPU %d thread creation error: %s", i, strerror(ret));
+        }
+        if (first_thread_id < 0) {
+            // this is the first successfully spawned thread
+            first_thread_id = i;
+        }
     }
 
     if (period_ms > 0) {
