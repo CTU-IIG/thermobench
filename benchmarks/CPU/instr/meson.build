@@ -56,8 +56,23 @@ endif
 rt_dep = declare_dependency(link_args : '-lrt')
 threads_dep = dependency('threads')
 
+# find demos userspace library
+demos_dep = meson.get_compiler('c').find_library(
+		'demos-sch',
+		required: false,
+		static: true,
+		has_headers: ['demos-sch.h'])
+
+if demos_dep.found()
+	# copy DEmOS config file to build directory when DEmOS support is enabled
+	configure_file(
+			copy: true,
+			input: 'read_demos_config.yaml',
+			output: 'read_demos_config.yaml')
+endif
+
 foreach b : benchmarks
 	executable(b, ['main.c'],
-		   c_args : '-DBENCH_H="@0@.h"'.format(b),
-		   dependencies : [ threads_dep, rt_dep ])
+		   c_args : ['-DBENCH_H="@0@.h"'.format(b)] + (demos_dep.found() ? ['-DWITH_DEMOS'] : []),
+		   dependencies : [threads_dep, rt_dep, demos_dep])
 endforeach

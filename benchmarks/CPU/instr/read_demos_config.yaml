@@ -1,0 +1,12 @@
+partitions:
+  - name: read_bench
+    processes:
+#      - cmd: ./build/src/thermobench ./build/benchmarks/CPU/instr/read
+      - cmd: ./build/benchmarks/CPU/instr/read
+        budget: 2000
+
+windows:
+  - length: 2000
+    slices:
+      - cpu: 0-3
+        sc_partition: read_bench
