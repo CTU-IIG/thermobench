@@ -9,10 +9,7 @@ int bench_func()
     register bench_t b asm("v2") = { 8, 9 };
     register bench_t c asm("v3");
 
-    asm volatile(REPEAT1024("fmul %[c].2d, %[a].2d, %[b].2d \n")
-                 : [ c ] "=w"(c)
-                 : [ a ] "w"(a), [ b ] "w"(b)
-                 :);
+    asm volatile(REPEAT1024("fmul %[c].2d, %[a].2d, %[b].2d \n") : [ c ] "=w"(c) : [ a ] "w"(a), [ b ] "w"(b) :);
 
     return 2 * 1024;
 }

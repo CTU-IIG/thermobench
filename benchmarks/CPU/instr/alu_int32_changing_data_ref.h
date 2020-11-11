@@ -13,9 +13,8 @@ int bench_func()
     d = 0;
     // 1024 instructions
     asm volatile(REPEAT256("add %w[c], %w[a], %w[b]\n\t"
-                           "add %w[a], %w[c], %w[d]\n\t")
-                 REPEAT256("add %w[c], %w[a], %w[b]\n\t"
-                           "add %w[a], %w[c], %w[d]\n\t")
+                           "add %w[a], %w[c], %w[d]\n\t") REPEAT256("add %w[c], %w[a], %w[b]\n\t"
+                                                                    "add %w[a], %w[c], %w[d]\n\t")
                  : [ c ] "=r"(c), [ a ] "+r"(a)
                  : [ b ] "r"(b), [ d ] "r"(d)
                  :);

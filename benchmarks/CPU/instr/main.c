@@ -6,13 +6,13 @@
 #include <math.h>
 #include <pthread.h>
 #include <sched.h>
-#include <semaphore.h> 
+#include <semaphore.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #include BENCH_H
 
@@ -33,8 +33,8 @@ void *benchmark_loop(void *ptr)
     while (1) {
         for (int j = 0; j < loops_per_print || loops_per_print < 1; ++j) {
 
-            if(idle_thread != -1) { /* if period was defined */
-                /* Do I need a lock here? Or can I handle one more iteration with idle_thread = 0 after the signal? */ 
+            if (idle_thread != -1) { /* if period was defined */
+                /* Do I need a lock here? Or can I handle one more iteration with idle_thread = 0 after the signal? */
                 pthread_mutex_lock(&mutex);
                 while (idle_thread == 1)
                     pthread_cond_wait(&cond, &mutex);
@@ -58,8 +58,7 @@ long int xstrtol(const char *str, char *err_msg)
 
     /* Check for various possible errors */
 
-    if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
-        || (errno != 0 && val == 0))
+    if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0))
         err(1, "%s", err_msg);
 
     if (endptr == str)
@@ -85,7 +84,7 @@ int main(int argc, char *argv[])
     unsigned cpu_mask = 0xffffffff;
     int opt;
 
-    /* timer stuff*/ 
+    /* timer stuff*/
     long period_ms = 0;
     long utilization_ratio = 100;
 
@@ -104,13 +103,12 @@ int main(int argc, char *argv[])
             utilization_ratio = xstrtol(optarg, "-u");
             break;
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-l loops ] [-m cpu_mask]\n",
-                    argv[0]);
+            fprintf(stderr, "Usage: %s [-l loops ] [-m cpu_mask]\n", argv[0]);
             exit(1);
         }
     }
 
-    if(utilization_ratio < 0 || utilization_ratio > 100)
+    if (utilization_ratio < 0 || utilization_ratio > 100)
         errx(1, "%s", "utilization ratio is not in the interval [0,100]!");
 
     if (utilization_ratio == 0)
@@ -137,8 +135,8 @@ int main(int argc, char *argv[])
             warnx("Warning: CPU %d thread creation error: %s", i, strerror(ret));
     }
 
-    if (period_ms > 0){
-        if(utilization_ratio > 0  && utilization_ratio < 100) {
+    if (period_ms > 0) {
+        if (utilization_ratio > 0 && utilization_ratio < 100) {
             struct timespec next;
 
             clock_gettime(CLOCK_MONOTONIC, &next);

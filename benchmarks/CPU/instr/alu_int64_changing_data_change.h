@@ -18,9 +18,8 @@ int bench_func()
         // ~0 =  0 + ~0
         //  0 = ~0 +  1
         REPEAT256("add %[c], %[a], %[b]\n\t"
-                  "add %[a], %[c], %[d]\n\t")
-        REPEAT256("add %[c], %[a], %[b]\n\t"
-                  "add %[a], %[c], %[d]\n\t")
+                  "add %[a], %[c], %[d]\n\t") REPEAT256("add %[c], %[a], %[b]\n\t"
+                                                        "add %[a], %[c], %[d]\n\t")
 
         : [ c ] "=r"(c), [ a ] "+r"(a)
         : [ b ] "r"(b), [ d ] "r"(d)

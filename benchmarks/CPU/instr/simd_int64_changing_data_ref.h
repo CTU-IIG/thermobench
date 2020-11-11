@@ -11,9 +11,8 @@ int bench_func()
     register bench_t d asm("v4") = { 0, 0 };
 
     asm volatile(REPEAT256("add %[c].2d, %[a].2d, %[b].2d \n"
-                           "add %[a].2d, %[c].2d, %[d].2d \n")
-                 REPEAT256("add %[c].2d, %[a].2d, %[b].2d \n"
-                           "add %[a].2d, %[c].2d, %[d].2d \n")
+                           "add %[a].2d, %[c].2d, %[d].2d \n") REPEAT256("add %[c].2d, %[a].2d, %[b].2d \n"
+                                                                         "add %[a].2d, %[c].2d, %[d].2d \n")
                  : [ c ] "=w"(c), [ a ] "+w"(a)
                  : [ d ] "w"(d), [ b ] "w"(b)
                  :);

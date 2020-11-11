@@ -7,30 +7,29 @@
 //          Michal Sojka <michal.sojka@cvut.cz>
 //
 #define _POSIX_C_SOURCE 200809L
+#include "csvRow.h"
+#include <algorithm>
 #include <argp.h>
 #include <err.h>
 #include <errno.h>
+#include <ext/stdio_filebuf.h>
 #include <fcntl.h>
+#include <iostream>
 #include <libgen.h>
 #include <math.h>
+#include <memory>
 #include <sched.h>
+#include <signal.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-#include <string>
-#include <iostream>
-#include <unistd.h>
-#include <memory>
-#include <ext/stdio_filebuf.h>
-#include <algorithm>
-#include <signal.h>
-#include <sstream>
-#include "csvRow.h"
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -49,11 +48,52 @@ using namespace std;
 #define TOSTRING(val) STRINGIFY(val)
 #define LOC __FILE__ ":" TOSTRING(__LINE__) ": "
 
-#define CHECK(cmd) ({ int ret = (cmd); if (ret == -1) { perror(LOC #cmd); exit(1); }; ret; })
-#define CHECKPTR(cmd) ({ void *ptr = (cmd); if (ptr == (void*)-1) { perror(LOC #cmd); exit(1); }; ptr; })
-#define CHECKNULL(cmd) ({ typeof(cmd) ptr = (cmd); if (ptr == NULL) { perror(LOC #cmd); exit(1); }; ptr; })
-#define CHECKFGETS(s, size, stream) ({ void *ptr = fgets(s, size, stream); if (ptr == NULL) { if (feof(stream)) fprintf(stderr, LOC "fgets(" #s "): Unexpected end of stream\n"); else perror(LOC "fgets(" #s ")"); exit(1); }; ptr; })
-#define CHECKTRUE(bool, msg) ({ if (!(bool)) { fprintf(stderr, "Error: " msg "\n"); exit(1); }; })
+#define CHECK(cmd)                                                                                                     \
+    ({                                                                                                                 \
+        int ret = (cmd);                                                                                               \
+        if (ret == -1) {                                                                                               \
+            perror(LOC #cmd);                                                                                          \
+            exit(1);                                                                                                   \
+        };                                                                                                             \
+        ret;                                                                                                           \
+    })
+#define CHECKPTR(cmd)                                                                                                  \
+    ({                                                                                                                 \
+        void *ptr = (cmd);                                                                                             \
+        if (ptr == (void *)-1) {                                                                                       \
+            perror(LOC #cmd);                                                                                          \
+            exit(1);                                                                                                   \
+        };                                                                                                             \
+        ptr;                                                                                                           \
+    })
+#define CHECKNULL(cmd)                                                                                                 \
+    ({                                                                                                                 \
+        typeof(cmd) ptr = (cmd);                                                                                       \
+        if (ptr == NULL) {                                                                                             \
+            perror(LOC #cmd);                                                                                          \
+            exit(1);                                                                                                   \
+        };                                                                                                             \
+        ptr;                                                                                                           \
+    })
+#define CHECKFGETS(s, size, stream)                                                                                    \
+    ({                                                                                                                 \
+        void *ptr = fgets(s, size, stream);                                                                            \
+        if (ptr == NULL) {                                                                                             \
+            if (feof(stream))                                                                                          \
+                fprintf(stderr, LOC "fgets(" #s "): Unexpected end of stream\n");                                      \
+            else                                                                                                       \
+                perror(LOC "fgets(" #s ")");                                                                           \
+            exit(1);                                                                                                   \
+        };                                                                                                             \
+        ptr;                                                                                                           \
+    })
+#define CHECKTRUE(bool, msg)                                                                                           \
+    ({                                                                                                                 \
+        if (!(bool)) {                                                                                                 \
+            fprintf(stderr, "Error: " msg "\n");                                                                       \
+            exit(1);                                                                                                   \
+        };                                                                                                             \
+    })
 
 #define MAX_RESULTS 100
 #define MAX_KEYS 20
@@ -79,9 +119,7 @@ private:
 };
 
 struct proc_stat_cpu {
-    unsigned user, nice, system, idle,
-             iowait, irq, softirq, steal,
-             guest, guest_nice;
+    unsigned user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
 };
 
 struct cpu {
@@ -89,9 +127,12 @@ struct cpu {
     proc_stat_cpu last;
     proc_stat_cpu current;
     const CsvColumn &column;
-    cpu(unsigned idx, const struct proc_stat_cpu current) : idx(idx),
-        last(current), current(current),
-        column(columns.add(getHeader(idx))){};
+    cpu(unsigned idx, const struct proc_stat_cpu current)
+        : idx(idx)
+        , last(current)
+        , current(current)
+        , column(columns.add(getHeader(idx))) {};
+
 private:
     static string getHeader(unsigned idx);
 };
@@ -124,7 +165,9 @@ bool verbose_needs_eol = false;
 struct StdoutKeyColumn {
     const CsvColumn &column;
     const string key;
-    StdoutKeyColumn(const string header, const string key) : column(columns.add(header)), key(key) {};
+    StdoutKeyColumn(const string header, const string key)
+        : column(columns.add(header))
+        , key(key) {};
 };
 
 vector<string> split(const string str, const char *delimiters);
@@ -132,7 +175,7 @@ vector<string> split(const string str, const char *delimiters);
 struct Exec {
     const string cmd;
     vector<StdoutKeyColumn> columns;
-    const CsvColumn *stdout_col ;
+    const CsvColumn *stdout_col;
 
     Exec(const string &arg)
         : cmd(parse_cmd(arg))
@@ -141,8 +184,8 @@ struct Exec {
     {
     }
 
-    Exec(const Exec&) = delete;
-    void operator=(const Exec&) = delete;
+    Exec(const Exec &) = delete;
+    void operator=(const Exec &) = delete;
 
     void start(ev::loop_ref loop);
     void kill();
@@ -151,7 +194,7 @@ private:
     static vector<string> get_specs(const string &arg);
     static const string parse_cmd(const string &arg);
     static vector<StdoutKeyColumn> parse_columns(const string &arg);
-    static const CsvColumn * find_stdout_col(const vector<StdoutKeyColumn> &keys);
+    static const CsvColumn *find_stdout_col(const vector<StdoutKeyColumn> &keys);
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
     ev::child child = {};
@@ -211,7 +254,7 @@ vector<StdoutKeyColumn> Exec::parse_columns(const string &arg)
     return keys;
 }
 
-const CsvColumn * Exec::find_stdout_col(const vector<StdoutKeyColumn> &columns)
+const CsvColumn *Exec::find_stdout_col(const vector<StdoutKeyColumn> &columns)
 {
     for (auto &col : columns)
         if (col.key.empty())
@@ -220,7 +263,7 @@ const CsvColumn * Exec::find_stdout_col(const vector<StdoutKeyColumn> &columns)
 }
 
 struct measure_state {
-    struct timespec start_time = {0};
+    struct timespec start_time = { 0 };
     vector<sensor> sensors = {};
     FILE *out_fp = nullptr;
     vector<StdoutKeyColumn> stdoutColumns = {};
@@ -247,14 +290,7 @@ static string shell_quote(int argc, char **argv)
     for (int i = 0; i < argc; i++) {
         bool quote = false;
         for (char *p = argv[i]; *p; p++) {
-            if (isalnum(*p)
-                || *p == '/'
-                || *p == '.'
-                || *p == ','
-                || *p == '_'
-                || *p == '-'
-                || *p == '@'
-                ) {
+            if (isalnum(*p) || *p == '/' || *p == '.' || *p == ',' || *p == '_' || *p == '-' || *p == '@') {
                 continue;
             } else if (*p == '=' && i > 0) {
                 continue;
@@ -262,7 +298,6 @@ static string shell_quote(int argc, char **argv)
                 quote = true;
                 break;
             }
-
         }
 
         if (!result.empty())
@@ -315,7 +350,7 @@ static void read_sensor_paths(char *sensors_file)
 
 static void add_all_thermal_zones()
 {
-    for (int i=0;; i++) {
+    for (int i = 0;; i++) {
         string sensor_path = "/sys/devices/virtual/thermal/thermal_zone" + to_string(i) + "/temp";
         if (access(sensor_path.c_str(), R_OK) != 0)
             break;
@@ -355,8 +390,8 @@ void wait_cooldown(char *fan_cmd)
 
     while (1) {
         double temp = read_sensor(state.sensors[0].path.c_str()) / 1000.0;
-        fprintf(stderr, "\rCooling down to %lg°C, current %s temperature: %lg°C, time: %ds...",
-                cooldown_temp, state.sensors[0].name.c_str(), temp, time);
+        fprintf(stderr, "\rCooling down to %lg°C, current %s temperature: %lg°C, time: %ds...", cooldown_temp,
+                state.sensors[0].name.c_str(), temp, time);
         if (temp <= cooldown_temp) {
             fprintf(stderr, "\nDone\n");
             break;
@@ -378,23 +413,22 @@ void read_procstat()
     FILE *fp = fopen("/proc/stat", "r");
 
     // Skipping first line, as it contains the aggregate cpu data
-    if(fscanf(fp, "%*[^\n]\n") == EOF)
-        err(1,"fscanf /proc/stat");
+    if (fscanf(fp, "%*[^\n]\n") == EOF)
+        err(1, "fscanf /proc/stat");
 
     struct proc_stat_cpu cur;
     unsigned idx;
     bool defined = cpus.size() == n_cpus;
     for (unsigned i = 0; i < n_cpus; i++) {
-        if(defined)
+        if (defined)
             cpus[i].last = cpus[i].current;
         struct proc_stat_cpu &c = (defined) ? cpus[i].current : cur;
-        int scanret = fscanf(fp, "cpu%u %u %u %u %u %u %u %u %u %u %u\n",
-                 (defined) ? &(cpus[i].idx) : &idx,
-                 &c.user, &c.nice, &c.system, &c.idle, &c.iowait,
-                 &c.irq, &c.softirq, &c.steal, &c.guest, &c.guest_nice);
+        int scanret
+            = fscanf(fp, "cpu%u %u %u %u %u %u %u %u %u %u %u\n", (defined) ? &(cpus[i].idx) : &idx, &c.user, &c.nice,
+                     &c.system, &c.idle, &c.iowait, &c.irq, &c.softirq, &c.steal, &c.guest, &c.guest_nice);
         if (scanret != 11)
-            err(1,"fscanf /proc/stat");
-        if(!defined)
+            err(1, "fscanf /proc/stat");
+        if (!defined)
             cpus.push_back(cpu(idx, c));
     }
     fclose(fp);
@@ -409,12 +443,10 @@ double get_cpu_usage(struct cpu &cpu)
 
     // Change in idle/active cycles since last measurement
     double idle = c.idle + c.iowait - (l.idle + l.iowait);
-    double active = (c.user + c.nice + c.system + c.irq +
-                     c.softirq + c.steal + c.guest + c.guest_nice) -
-                    (l.user + l.nice + l.system + l.irq +
-                     l.softirq + l.steal + l.guest + l.guest_nice);
+    double active = (c.user + c.nice + c.system + c.irq + c.softirq + c.steal + c.guest + c.guest_nice)
+        - (l.user + l.nice + l.system + l.irq + l.softirq + l.steal + l.guest + l.guest_nice);
 
-    return (idle+active) ? active / (active+idle) * 100 : 0;
+    return (idle + active) ? active / (active + idle) * 100 : 0;
 }
 
 void set_process_affinity(int pid, int cpu_id)
@@ -427,7 +459,7 @@ void set_process_affinity(int pid, int cpu_id)
 
 const CsvColumn *get_stdout_column(const char *key, const vector<StdoutKeyColumn> &stdoutColumns)
 {
-    for (unsigned i = 0; i < stdoutColumns.size(); ++i){
+    for (unsigned i = 0; i < stdoutColumns.size(); ++i) {
         if (stdoutColumns[i].key == key)
             return &(stdoutColumns[i].column);
     }
@@ -461,7 +493,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             const CsvColumn *col = get_stdout_column(key, state.stdoutColumns);
 
             if (col) {
-                if(row.empty())
+                if (row.empty())
                     row.set(time_column, curr_time);
                 if (!row.getValue(*col).empty()) {
                     row.write(state.out_fp);
@@ -473,7 +505,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
             }
             *eq = '=';
         }
-        if (write_stdout){
+        if (write_stdout) {
             row.set(time_column, curr_time);
             row.set(*stdout_column, line);
             row.write(state.out_fp);
@@ -482,7 +514,7 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
     }
     free(line);
 
-    if(!row.empty())
+    if (!row.empty())
         row.write(state.out_fp);
 
     // Stop the watcher if the pipe is closed. If this was the last
@@ -491,7 +523,8 @@ static void child_stdout_cb(EV_P_ ev_io *w, int revents)
         ev_io_stop(EV_A_ w);
 }
 
-void Exec::start(ev::loop_ref loop) {
+void Exec::start(ev::loop_ref loop)
+{
     int pipefds[2];
 
     CHECK(pipe2(pipefds, O_NONBLOCK));
@@ -572,11 +605,9 @@ void Exec::child_exit_cb(ev::child &w, int revents)
 {
     int s = w.rstatus;
     if (WIFEXITED(s) && WEXITSTATUS(s) != 0)
-        fprintf(stderr, "Command '%s' exited with status %d\n",
-                cmd.c_str(), WEXITSTATUS(s));
+        fprintf(stderr, "Command '%s' exited with status %d\n", cmd.c_str(), WEXITSTATUS(s));
     w.stop();
     pid = 0;
-
 }
 
 static void child_exit_cb(EV_P_ ev_child *w, int revents)
@@ -586,10 +617,10 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
     ev_child_stop(EV_A_ w);
 
     // Stop other watchers that my block event loop from exiting.
-    ev_timer_stop(EV_A_ &measure_timer);
-    ev_timer_stop(EV_A_ &terminate_timer);
-    ev_signal_stop(EV_A_ &sigint_watcher);
-    ev_signal_stop(EV_A_ &sigterm_watcher);
+    ev_timer_stop(EV_A_ & measure_timer);
+    ev_timer_stop(EV_A_ & terminate_timer);
+    ev_signal_stop(EV_A_ & sigint_watcher);
+    ev_signal_stop(EV_A_ & sigterm_watcher);
 
     // Also kill other processes - if there are any, event loop exits
     // after all terminate.
@@ -607,7 +638,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     double temp = NAN;
     row.set(time_column, time);
 
-    for (unsigned i = 0; i < state.sensors.size(); ++i){
+    for (unsigned i = 0; i < state.sensors.size(); ++i) {
         double t = read_sensor(state.sensors[i].path.c_str());
         if (isnan(temp))
             temp = t;
@@ -616,7 +647,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
 
     if (calc_cpu_usage) {
         read_procstat();
-        for (unsigned i = 0; i < n_cpus; ++i){
+        for (unsigned i = 0; i < n_cpus; ++i) {
             row.set(cpus[i].column, get_cpu_usage(cpus[i]));
         }
     }
@@ -624,7 +655,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     row.write(state.out_fp);
 
     if (verbose) {
-        fprintf(stderr, "\r%.1fs  %.1f°C   ", time/1000.0, temp/1000.0);
+        fprintf(stderr, "\r%.1fs  %.1f°C   ", time / 1000.0, temp / 1000.0);
         verbose_needs_eol = true;
     }
 }
@@ -720,10 +751,10 @@ void measure(int measure_period_ms)
         ev_timer_start(loop, &terminate_timer);
     }
 
-    ev_signal_init (&sigint_watcher, sigint_cb, SIGINT);
-    ev_signal_start (loop, &sigint_watcher);
-    ev_signal_init (&sigterm_watcher, sigint_cb, SIGTERM);
-    ev_signal_start (loop, &sigterm_watcher);
+    ev_signal_init(&sigint_watcher, sigint_cb, SIGINT);
+    ev_signal_start(loop, &sigint_watcher);
+    ev_signal_init(&sigterm_watcher, sigint_cb, SIGTERM);
+    ev_signal_start(loop, &sigterm_watcher);
 
     for (const auto &exec : state.execs)
         exec->start(loop);
@@ -801,8 +832,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     case 'E':
         exec_wait = true;
         break;
-/*     case ARGP_KEY_ARG: */
-/*         break; */
+        /*     case ARGP_KEY_ARG: */
+        /*         break; */
     case ARGP_KEY_ARGS:
         if (!benchmark_argv)
             benchmark_argv = &argp_state->argv[argp_state->next];
@@ -915,7 +946,7 @@ string current_time()
     return string(outstr);
 }
 
-static void clear_sig_mask (void)
+static void clear_sig_mask(void)
 {
     sigset_t mask;
     sigemptyset(&mask);
@@ -951,7 +982,6 @@ vector<string> split(const string str, const char *delimiters)
     return words;
 }
 
-
 string sensor::extractPath(const string spec)
 {
     auto words = split_words(spec);
@@ -974,8 +1004,7 @@ string sensor::extractName(const string spec)
         char *dir = dirname(p);
         char *type;
         CHECK(asprintf(&type, "%s/type", dir));
-        if (strcmp(base, "temp") == 0 &&
-            access(type, R_OK) == 0)
+        if (strcmp(base, "temp") == 0 && access(type, R_OK) == 0)
             name = areadfileline(type);
         else
             name = basename(dir);
@@ -1028,12 +1057,10 @@ int main(int argc, char **argv)
     if (state.out_fp == NULL)
         err(1, "open(%s)", out_file);
 
-
-    fprintf(state.out_fp, "# Started at: %s, Version: %s, Generated by: %s\n",
-            current_time().c_str(), GIT_VERSION,
+    fprintf(state.out_fp, "# Started at: %s, Version: %s, Generated by: %s\n", current_time().c_str(), GIT_VERSION,
             shell_quote(argc, argv).c_str());
 
-    if(write_stdout)
+    if (write_stdout)
         stdout_column = &(columns.add("stdout"));
     CsvRow row(columns);
     columns.setHeader(row);
@@ -1041,7 +1068,7 @@ int main(int argc, char **argv)
 
     // Clear signal mask in children - don't let them inherit our
     // mask, which libev "randomly" modifies
-    pthread_atfork (0, 0, clear_sig_mask);
+    pthread_atfork(0, 0, clear_sig_mask);
 
     measure(measure_period_ms);
 

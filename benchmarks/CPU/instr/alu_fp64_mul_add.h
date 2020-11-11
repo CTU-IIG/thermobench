@@ -12,9 +12,8 @@ int bench_func()
     c = 4;
     // 1024 instructions
     asm volatile(REPEAT256("fmul d4, %d[a], %d[b]\n\t"
-                           "fadd %d[c], %d[c], d4\n\t")
-                 REPEAT256("fmul d4, %d[a], %d[b]\n\t"
-                           "fadd %d[c], %d[c], d4\n\t")
+                           "fadd %d[c], %d[c], d4\n\t") REPEAT256("fmul d4, %d[a], %d[b]\n\t"
+                                                                  "fadd %d[c], %d[c], d4\n\t")
                  : [ c ] "+w"(c)
                  : [ a ] "w"(a), [ b ] "w"(b)
                  :);

@@ -43,7 +43,11 @@ private:
     bool m_empty = true;
 
 public:
-    CsvRow(const CsvColumns &cols) : num_columns(cols.count()) { clear(); }
+    CsvRow(const CsvColumns &cols)
+        : num_columns(cols.count())
+    {
+        clear();
+    }
 
     void set(const CsvColumn &column, double data);
     void set(const CsvColumn &column, string data);

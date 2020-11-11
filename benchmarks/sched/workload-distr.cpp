@@ -1,21 +1,21 @@
+#include "bsort.c"
+#include "cpu_set.hpp"
+#include <chrono>
+#include <condition_variable>
+#include <cstring>
 #include <err.h>
 #include <errno.h>
+#include <exception>
+#include <iostream>
 #include <limits.h>
+#include <mutex>
 #include <pthread.h>
 #include <sched.h>
+#include <semaphore.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "bsort.c"
-#include <semaphore.h>
-#include <mutex>
-#include <condition_variable>
-#include <iostream>
-#include <exception>
-#include <cstring>
-#include <chrono>
-#include "cpu_set.hpp"
 
 using namespace std;
 
@@ -33,15 +33,17 @@ struct synchronizer {
     mutex m;
     condition_variable cv;
 
-    void wait(int cpu) {
+    void wait(int cpu)
+    {
         unique_lock<mutex> lock(m);
         while (!run.is_set(cpu))
             cv.wait(lock);
-//            printf("running at CPU%u\n", cpu);
-//            fflush(stdout);
+        //            printf("running at CPU%u\n", cpu);
+        //            fflush(stdout);
     }
 
-    void completed(int cpu, unsigned wd, unsigned duration) {
+    void completed(int cpu, unsigned wd, unsigned duration)
+    {
         unique_lock<mutex> lock(m);
         run.clr(cpu);
         done.set(cpu);
@@ -54,9 +56,7 @@ struct synchronizer {
             usleep(delay_ms * 1000);
             cpu_set next, last = done;
             cout << "-- Next CPUs:";
-            for (unsigned i = 0, cpu_it = first_cpu;
-                 i < num_cpus;
-                 i++, cpu_it = last.next_set(cpu_it)) {
+            for (unsigned i = 0, cpu_it = first_cpu; i < num_cpus; i++, cpu_it = last.next_set(cpu_it)) {
                 done.clr(cpu_it);
                 unsigned next_cpu = cpu_it;
                 do {
@@ -78,14 +78,12 @@ struct synchronizer {
 
 struct synchronizer s;
 
-
 int bench_func()
 {
     bsort_init();
     bsort_main();
     return 1;
 }
-
 
 void *benchmark_loop(void *ptr)
 {
@@ -116,8 +114,7 @@ long int xstrtol(const char *str, const char *err_msg)
 
     /* Check for various possible errors */
 
-    if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
-        || (errno != 0 && val == 0))
+    if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0))
         err(1, "%s", err_msg);
 
     if (endptr == str)
@@ -162,8 +159,7 @@ int main(int argc, char *argv[])
             break;
         }
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-l loops ] [-m cpu_mask]\n",
-                    argv[0]);
+            fprintf(stderr, "Usage: %s [-l loops ] [-m cpu_mask]\n", argv[0]);
             exit(1);
         }
     }

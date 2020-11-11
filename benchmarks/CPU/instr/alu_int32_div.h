@@ -10,10 +10,7 @@ int bench_func()
     a = 3;
     b = 5;
     // 1024 instructions
-    asm volatile(REPEAT1024("sdiv %w[c], %w[a], %w[b]\n\t")
-                 : [ c ] "=r"(c)
-                 : [ a ] "r"(a), [ b ] "r"(b)
-                 :);
+    asm volatile(REPEAT1024("sdiv %w[c], %w[a], %w[b]\n\t") : [ c ] "=r"(c) : [ a ] "r"(a), [ b ] "r"(b) :);
 
     return 1024; // return the number of instructions executed
 }
