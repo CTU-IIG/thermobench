@@ -150,3 +150,9 @@ Report bugs to https://github.com/CTU-IIG/thermobench/issues.
 ## See also
 
 - [Thermobench.jl](https://ctu-iig.github.io/thermobench/dev/)
+
+## Citing
+
+If you find the Thermobench tool useful for your research, please consider citing our original paper in your publication list as follows:
+
+- M. Sojka, O. Benedikt, Z. Hanzálek and P. Zaykov, "Testbed for thermal and performance analysis in MPSoC systems," 2020 15th Conference on Computer Science and Information Systems (FedCSIS), Sofia, Bulgaria, 2020, pp. 683-692, doi: 10.15439/2020F174.
