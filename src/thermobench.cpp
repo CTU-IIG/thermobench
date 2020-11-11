@@ -823,6 +823,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     return 0;
 }
 
+// clang-format off
+
 /* The options we understand. */
 static struct argp_option options[] = {
     { "period",         'p', "TIME [ms]",   0, "Period of reading the sensors" },
@@ -890,6 +892,8 @@ static struct argp argp = {
     "benchmark COMMAND via its stdout can be stored in the .csv file too. "
     "This must be explicitly enabled by -c or -l options. "
 };
+
+// clang-format on
 
 string current_time()
 {
