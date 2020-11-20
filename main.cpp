@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     int opt;
     bool forever = false;
     char *work_done_string = NULL;
-    unsigned work_done = 0;
+    unsigned long long work_done = 0;
     int work_done_every = 1;
 
     while ((opt = getopt(argc, argv, "e:fw:")) != -1) {
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
             }
         }
         if (work_done_string && (work_done++ % work_done_every == 0)) {
-            printf("%s=%d\n", work_done_string, work_done - 1);
+            printf("%s=%lld\n", work_done_string, work_done - 1);
             fflush(stdout);
         }
     } while (forever);
