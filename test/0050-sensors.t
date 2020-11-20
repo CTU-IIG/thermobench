@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 . testlib
 plan_tests 8
 
