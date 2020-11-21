@@ -16,3 +16,11 @@ jobs:
         exclude: './benchmarks/cl-bench ./benchmarks/coremark ./benchmarks/coremark-pro ./benchmarks/mem ./benchmarks/tacle-bench ./benchmarks/tinyrenderer ./build ./subproject'
         clangFormatVersion: 10
         style: file
+        inplace: True
+    - uses: EndBug/add-and-commit@v4
+      with:
+        author_name: Clang Robot
+        author_email: robot@github-workflow.com
+        message: 'Committing clang-format changes'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
