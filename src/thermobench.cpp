@@ -248,7 +248,7 @@ vector<StdoutKeyColumn> Exec::parse_columns(const string &arg)
                 keys.push_back(StdoutKeyColumn(spec, spec));
             } else {
                 if (catch_all != nullptr)
-                    errx(1, "--exec: At most one COL wit '=' allowed");
+                    errx(1, "--exec: At most one COL without '=' allowed");
                 keys.push_back(StdoutKeyColumn(spec, ""));
                 catch_all = &keys.back();
             }
