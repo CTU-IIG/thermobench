@@ -50,7 +50,7 @@ public:
     }
 
     void set(const CsvColumn &column, double data);
-    void set(const CsvColumn &column, string data);
+    void set(const CsvColumn &column, const string &data);
 
     string getValue(const CsvColumn &column) const;
 

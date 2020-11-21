@@ -41,18 +41,18 @@ void CsvRow::set(const CsvColumn &column, double data)
     set(column, buf);
 };
 
-void CsvRow::set(const CsvColumn &column, string data)
+void CsvRow::set(const CsvColumn &column, const string &data)
 {
     const unsigned int order = column.getOrder();
-    data = csvEscape(data);
+    string esc_data = csvEscape(data);
     m_empty = false;
     if (order < row.size()) {
-        row[order] = data;
+        row[order] = esc_data;
     } else {
         while (row.size() < order) {
             row.push_back("");
         }
-        row.push_back(data);
+        row.push_back(esc_data);
     }
 };
 
