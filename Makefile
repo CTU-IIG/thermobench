@@ -2,7 +2,7 @@ all debug: build/build.ninja
 	ninja -C $(<D) 1>&2	# Redirect everything to stderr so that QtCreator sees the error messages
 
 .PHONY: clean test all debug
-clean test: build/build.ninja
+clean test src/thermobench: build/build.ninja
 	ninja -C $(<D) $@
 
 %/build.ninja:
