@@ -8,6 +8,7 @@
 //
 #define _POSIX_C_SOURCE 200809L
 #include "csvRow.h"
+#include "util.hpp"
 #include <algorithm>
 #include <argp.h>
 #include <err.h>
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <libgen.h>
 #include <math.h>
+#include <mcheck.h>
 #include <memory>
 #include <sched.h>
 #include <signal.h>
@@ -25,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -98,6 +101,8 @@ using namespace std;
 #define MAX_RESULTS 100
 #define MAX_KEYS 20
 #define MAX_KEY_LENGTH 50
+
+using buffer_t = vector<char, default_init_allocator<char>>;
 
 CsvColumns columns;
 
@@ -457,7 +462,7 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(const char *key, const vector<StdoutKeyColumn> &stdoutColumns)
+const CsvColumn *get_stdout_column(const string_view key, const vector<StdoutKeyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i) {
         if (stdoutColumns[i].key == key)
@@ -474,53 +479,55 @@ static double get_current_time()
     return 1000 * (curr_t.tv_sec - state.start_time.tv_sec + (curr_t.tv_nsec - state.start_time.tv_nsec) * 1e-9);
 }
 
-static void child_stdout_cb(EV_P_ ev_io *w, int revents)
+buffer_t child_stdout_buf;
+
+static void child_stdout_cb(ev::io &w, int revents)
 {
-    FILE *workfp = fdopen(w->fd, "r");
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t nread;
+    buffer_t &buf = child_stdout_buf;
+
+    int ret = ::read(w.fd, buf.data() + buf.size(), buf.capacity() - buf.size());
+    if (ret == -1)
+        err(1, "child read error");
+    else if (ret == 0) {
+        // Stop the watcher if the pipe is closed. If this was the last
+        // watcher, the event loop terminates.
+        w.stop();
+        return;
+    }
+    buf.resize(buf.size() + ret);
+
     CsvRow row(columns);
     double curr_time = get_current_time();
-    while ((nread = getline(&line, &len, workfp)) != -1) {
-        if (nread > 0 && line[nread - 1] == '\n')
-            line[nread - 1] = '\0';
-        char *eq = strchr(line, '=');
-        if (eq) {
-            *eq = 0;
-            char *key = line;
-            char *value = eq + 1;
-            const CsvColumn *col = get_stdout_column(key, state.stdoutColumns);
-
-            if (col) {
-                if (row.empty())
-                    row.set(time_column, curr_time);
-                if (!row.getValue(*col).empty()) {
-                    row.write(state.out_fp);
-                    row.clear();
-                    row.set(time_column, curr_time);
-                }
-                row.set(*col, value);
-                continue;
-            }
-            *eq = '=';
+    buffer_t::iterator eol;
+    while ((eol = find(buf.begin(), buf.end(), '\n')) != buf.end()) {
+        buffer_t::iterator eq = find(buf.begin(), eol, '=');
+        const CsvColumn *col = nullptr;
+        if (eq != eol) {
+            const string_view key(&(*buf.begin()), distance(buf.begin(), eq));
+            col = get_stdout_column(key, state.stdoutColumns);
         }
-        if (write_stdout) {
+        if (col) {
+            if (row.empty())
+                row.set(time_column, curr_time);
+            if (!row.getValue(*col).empty()) {
+                row.write(state.out_fp);
+                row.clear();
+                row.set(time_column, curr_time);
+            }
+            const string_view value(&(*(eq + 1)), distance(eq + 1, eol));
+            row.set(*col, string(value));
+        } else if (write_stdout) {
+            string line(&(*buf.begin()), distance(buf.begin(), eol));
             row.set(time_column, curr_time);
             row.set(*stdout_column, line);
             row.write(state.out_fp);
             row.clear();
         }
+        buf.erase(buf.begin(), eol + 1);
     }
-    free(line);
 
     if (!row.empty())
         row.write(state.out_fp);
-
-    // Stop the watcher if the pipe is closed. If this was the last
-    // watcher, the event loop terminates.
-    if (feof(workfp))
-        ev_io_stop(EV_A_ w);
 }
 
 void Exec::start(ev::loop_ref loop)
@@ -721,8 +728,8 @@ void measure(int measure_period_ms)
     }
 
     // Parent process - measurement
-    ev_io child_stdout;
-    ev_child child_exit;
+    ev::io child_stdout;
+    ev::child child_exit;
 
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -737,10 +744,11 @@ void measure(int measure_period_ms)
     ev_child_start(loop, &child_exit);
     state.child = pid;
 
+    child_stdout_buf.reserve(0x10000);
     CHECK(fcntl(p[0], F_SETFL, CHECK(fcntl(p[0], F_GETFL)) | O_NONBLOCK));
     close(p[1]);
-    ev_io_init(&child_stdout, child_stdout_cb, p[0], EV_READ);
-    ev_io_start(loop, &child_stdout);
+    child_stdout.set<child_stdout_cb>();
+    child_stdout.start(p[0], ev::READ);
 
     ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
     if (state.sensors.size())

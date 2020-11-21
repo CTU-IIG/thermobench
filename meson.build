@@ -1,7 +1,7 @@
 project('thermobench', 'c', 'cpp',
 	default_options: [
 		'buildtype=debugoptimized',
-		'cpp_std=c++11'
+		'cpp_std=c++17'
 	])
 
 subdir('src')
