@@ -27,7 +27,7 @@ executable('thermobench', [
 		  'csvRow.cpp',
 		  version_h,
 	   ],
-	   cpp_args : '-Weffc++',
+	   cpp_args : ['-Weffc++', '-std=c++17'],
 	   dependencies : deps,
 	   install : true,
 	  )
