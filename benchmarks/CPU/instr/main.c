@@ -123,12 +123,7 @@ int main(int argc, char *argv[])
     if (utilization_ratio < 0 || utilization_ratio > 100)
         errx(1, "%s", "utilization ratio is not in the interval [0,100]!");
 
-    if (utilization_ratio == 0)
-        idle_thread = 1;
-    if (utilization_ratio == 100)
-        idle_thread = 0;
-    else
-        idle_thread = 0;
+    idle_thread = utilization_ratio == 0 ? 1 : 0;
 
 #ifdef WITH_DEMOS
     printf("Running benchmark with DEmOS support enabled.\n");
