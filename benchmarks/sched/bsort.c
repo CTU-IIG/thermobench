@@ -37,7 +37,7 @@ int bsort_BubbleSort(int Array[]);
 */
 
 #ifndef bsort_SIZE
-#define bsort_SIZE 20000
+    #define bsort_SIZE 20000
 #endif
 
 // bsort_Array is in thread-local storage, i.e., each thread has its own copy

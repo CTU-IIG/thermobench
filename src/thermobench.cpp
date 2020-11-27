@@ -35,14 +35,14 @@
 #include <vector>
 
 #ifdef WITH_LOCAL_LIBEV
-#define EV_STANDALONE 1
-#include "libev/ev++.h"
+    #define EV_STANDALONE 1
+    #include "libev/ev++.h"
 #else
-#include <ev++.h>
+    #include <ev++.h>
 #endif
 
 #ifndef GIT_VERSION
-#include "version.h"
+    #include "version.h"
 #endif
 
 using namespace std;
