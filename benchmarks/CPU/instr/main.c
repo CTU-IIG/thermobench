@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #ifdef WITH_DEMOS
-	#include <demos-sch.h>
+    #include <demos-sch.h>
 #endif
 
 #include BENCH_H
@@ -38,9 +38,8 @@ void *benchmark_loop(void *ptr)
 
     while (1) {
         for (int j = 0; j < loops_per_print || loops_per_print < 1; ++j) {
-
-            if (idle_thread != -1) { /* if period was defined */
-                /* Do I need a lock here? Or can I handle one more iteration with idle_thread = 0 after the signal? */
+            if (idle_thread != -1) { // if period was defined
+                // Do I need a lock here? Or can I handle one more iteration with idle_thread = 0 after the signal?
                 pthread_mutex_lock(&mutex);
                 while (idle_thread == 1)
                     pthread_cond_wait(&cond, &mutex);
@@ -50,13 +49,15 @@ void *benchmark_loop(void *ptr)
         }
         printf("CPU%d_work_done=%lu\n", thread_id, cpu_work_done);
         fflush(stdout);
-		// seems most sensible after printf, so that we see the progress before suspending
+        // seems most sensible after printf, so that we see the progress before suspending
+        // clang-format off
         #ifdef WITH_DEMOS
             if (thread_id == first_thread_id) {
-			demos_completed();
+                demos_completed();
             }
-		#endif
-	}
+        #endif
+        // clang-format on
+    }
     return NULL;
 }
 
@@ -65,10 +66,10 @@ long int xstrtol(const char *str, char *err_msg)
     long int val;
     char *endptr;
 
-    errno = 0; /* To distinguish success/failure after call */
+    errno = 0; // To distinguish success/failure after call
     val = strtol(str, &endptr, 0);
 
-    /* Check for various possible errors */
+    // Check for various possible errors
 
     if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0))
         err(1, "%s", err_msg);
@@ -76,7 +77,7 @@ long int xstrtol(const char *str, char *err_msg)
     if (endptr == str)
         errx(1, "%s: No digits were found", err_msg);
 
-    /* If we got here, strtol() successfully parsed a number */
+    // If we got here, strtol() successfully parsed a number
 
     if (*endptr != '\0')
         errx(1, "%s: Further characters after number: %s", err_msg, endptr);
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
     unsigned cpu_mask = 0xffffffff;
     int opt;
 
-    /* timer stuff*/
+    // timer stuff
     long period_ms = 0;
     long utilization_ratio = 100;
 
@@ -114,7 +115,7 @@ int main(int argc, char *argv[])
         case 'u':
             utilization_ratio = xstrtol(optarg, "-u");
             break;
-        default: /* '?' */
+        default: // '?'
             fprintf(stderr, "Usage: %s [-l loops ] [-m cpu_mask]\n", argv[0]);
             exit(1);
         }
@@ -123,21 +124,18 @@ int main(int argc, char *argv[])
     if (utilization_ratio < 0 || utilization_ratio > 100)
         errx(1, "%s", "utilization ratio is not in the interval [0,100]!");
 
-    if (utilization_ratio == 0)
-        idle_thread = 1;
-    if (utilization_ratio == 100)
-        idle_thread = 0;
-    else
-        idle_thread = 0;
+    idle_thread = utilization_ratio == 0 ? 1 : 0;
 
+    // clang-format off
     #ifdef WITH_DEMOS
-		printf("Running benchmark with DEmOS support enabled.\n");
-		if (demos_init() != 0) {
-			errx(1, "%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
-		}
-	#else
-		printf("Running benchmark without DEmOS support.\n");
-	#endif
+        printf("Running benchmark with DEmOS support enabled.\n");
+        if (demos_init() != 0) {
+            errx(1, "%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
+        }
+    #else
+        printf("Running benchmark without DEmOS support.\n");
+    #endif
+    // clang-format on
 
     for (int i = 0; i < num_proc; i++) {
         pthread_attr_t attr;
@@ -171,15 +169,15 @@ int main(int argc, char *argv[])
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
 
                 pthread_mutex_lock(&mutex);
-                idle_thread = 0; /* start thread */
-                pthread_cond_broadcast(&cond); /* Wake-up all waiting threads */
+                idle_thread = 0; // start thread
+                pthread_cond_broadcast(&cond); // Wake-up all waiting threads
                 pthread_mutex_unlock(&mutex);
 
                 timespec_add_ms(&next, period_ms * utilization_ratio / 100);
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
 
                 pthread_mutex_lock(&mutex);
-                idle_thread = 1; /* stop thread */
+                idle_thread = 1; // stop thread
                 pthread_mutex_unlock(&mutex);
 
                 timespec_add_ms(&next, period_ms * (100 - utilization_ratio) / 100);
