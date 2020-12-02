@@ -26,6 +26,24 @@ meson --reconfigure -Dauto_features=enabled build
 make
 ```
 
+### Compilation with DEmOS scheduler support
+
+Some Thermobench benchmarks can interact with
+[DEmOS](https://github.com/CTU-IIG/demos-sched). There are two ways to enable this
+interaction:
+- Install the `demo-sch` library to a system-wide location (run `ninja
+  install` in demo-sched build directory) and the thermobench build
+  system will find it. Meson output should contain:
+  
+      Run-time dependency demos-sch found: YES
+- With newer meson versions (≥ 0.54) you can enable DEmOS support
+  without system-wide installation:
+
+  ``` sh
+  export PKG_CONFIG_PATH=/path/to/demos-sched/build/meson-uninstalled
+  meson --reconfigure -Ddemos-sch=enabled build
+  make
+  ```
 ### Cross compilation
 
 To cross-compile the tool and benchmarks for the ARM64 architecture,
