@@ -1,2 +1,4 @@
 option('cl-bench', type : 'feature',
        description: 'Compile OpenCL benchmarks')
+option('demos-sch', type : 'feature',
+       description : 'libdemos-sch support')

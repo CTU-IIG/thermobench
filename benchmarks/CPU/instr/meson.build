@@ -59,7 +59,7 @@ threads_dep = dependency('threads')
 # find demos userspace library
 demos_dep = meson.get_compiler('c').find_library(
 		'demos-sch',
-		required: false,
+		required: get_option('demos-sch'),
 		static: true,
 		has_headers: ['demos-sch.h'])
 
