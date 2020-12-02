@@ -1,1 +1,2 @@
-option('cl-bench', type : 'feature')
+option('cl-bench', type : 'feature',
+       description: 'Compile OpenCL benchmarks')
