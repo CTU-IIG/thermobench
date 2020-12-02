@@ -8,6 +8,7 @@
 #include <sched.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,8 @@
 
 #ifdef WITH_DEMOS
 #include <demos-sch.h>
+#else
+#define demos_completed()
 #endif
 
 #include BENCH_H
@@ -28,6 +31,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static int idle_thread = -1;
 // ID of first spawned benchmark thread
 static int first_thread_id = -1;
+static bool demos_enabled = false;
 
 int loops_per_print = 1000000;
 
@@ -51,11 +55,9 @@ void *benchmark_loop(void *ptr)
         printf("CPU%d_work_done=%lu\n", thread_id, cpu_work_done);
         fflush(stdout);
         // seems most sensible after printf, so that we see the progress before suspending
-#ifdef WITH_DEMOS
-        if (thread_id == first_thread_id) {
+        if (demos_enabled && thread_id == first_thread_id) {
             demos_completed();
         }
-#endif
     }
     return NULL;
 }
@@ -126,12 +128,12 @@ int main(int argc, char *argv[])
     idle_thread = utilization_ratio == 0 ? 1 : 0;
 
 #ifdef WITH_DEMOS
-    fprintf(stderr, "Running benchmark with DEmOS support enabled.\n");
-    if (demos_init() != 0) {
-        errx(1, "%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
+    if (demos_init() == 0) {
+        fprintf(stderr, "Running benchmark with DEmOS support enabled.\n");
+        demos_enabled = true;
+    } else {
+        warnx("%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
     }
-#else
-    fprintf(stderr, "Running benchmark without DEmOS support.\n");
 #endif
 
     for (int i = 0; i < num_proc; i++) {
