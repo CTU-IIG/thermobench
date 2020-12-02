@@ -15,6 +15,7 @@ tinyrenderer = executable(
 			'-std=c++14',
 			'-Wall',
 			'-Wextra',
+			'-Wno-non-virtual-dtor',
 			'-pedantic',
 			'-std=c++14',
 			'-O3',
