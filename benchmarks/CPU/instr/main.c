@@ -126,12 +126,12 @@ int main(int argc, char *argv[])
     idle_thread = utilization_ratio == 0 ? 1 : 0;
 
 #ifdef WITH_DEMOS
-    printf("Running benchmark with DEmOS support enabled.\n");
+    fprintf(stderr, "Running benchmark with DEmOS support enabled.\n");
     if (demos_init() != 0) {
         errx(1, "%s", "Could not initialize DEmOS scheduler - are you running the program within DEmOS?");
     }
 #else
-    printf("Running benchmark without DEmOS support.\n");
+    fprintf(stderr, "Running benchmark without DEmOS support.\n");
 #endif
 
     for (int i = 0; i < num_proc; i++) {
