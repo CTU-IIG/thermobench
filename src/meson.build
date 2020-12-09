@@ -5,7 +5,7 @@ version_h = vcs_tag(
 )
 
 cxx = meson.get_compiler('cpp')
-ev_dep = cxx.find_library('ev', required : false)
+ev_dep = cxx.find_library('ev', required : get_option('system-libev'))
 if not ev_dep.found()
 	libev_proj = subproject('libev')
 	ev_dep = libev_proj.get_variable('libev_dep')
