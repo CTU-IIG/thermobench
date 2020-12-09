@@ -15,7 +15,7 @@ stdenv.mkDerivation {
     ## until next release, we live without the benchmarks.
     # submodules = true;
   };
-  mesonFlags = "-Dauto_features=enabled";
+  mesonFlags = "-Ddemos-sch=disabled -Dtacle-bench=disabled";
 
   # Meson is no longer able to pick up Boost automatically.
   # https://github.com/NixOS/nixpkgs/issues/86131
