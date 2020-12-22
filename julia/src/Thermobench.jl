@@ -234,10 +234,10 @@ specified it is set (if possible) to the basename of the CSV file.
 """
 function read(source; normalizeunits=true, stripunits=true, name=nothing, kwargs...)::Data
     comment = readline(source)
-    df = CSV.read(source; comment="#", normalizenames=true,
-                  silencewarnings=true, copycols=true,
-                  typemap=Dict(Int64 => Float64), # Needed for interpolation
-                  )
+    df = DataFrame(CSV.File(source; comment="#", normalizenames=true,
+                            silencewarnings=true,
+                            typemap=Dict(Int64 => Float64), # Needed for interpolation
+                            ))
 
     function match_or_nothing(r::Regex, s::AbstractString)
         m = match(r, s)
