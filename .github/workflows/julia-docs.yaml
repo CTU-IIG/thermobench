@@ -21,7 +21,9 @@ jobs:
         working-directory: julia
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
       - name: Install gnuplot
-        run: sudo apt install gnuplot
+        run: |
+          sudo apt update &&
+          sudo apt install gnuplot
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
