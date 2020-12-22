@@ -5,7 +5,7 @@ DocTestSetup = :(using Thermobench, DataFrames)
 ```
 
 ```@setup abc
-using Gnuplot
+using Gnuplot, Pipe, DataFramesMeta
 Gnuplot.quitall()
 mkpath("build/assets")
 Gnuplot.options.term = "unknown"
@@ -119,7 +119,10 @@ first(d.df, 6)
 
 In the example above, the data is available in `d.df` DataFrame, where
 you can manipulate them as you want. You can find a lot of examples in
-[DataFrames.jl documentation](https://dataframes.juliadata.org/stable/).
+[DataFrames.jl
+documentation](https://dataframes.juliadata.org/stable/).
+
+#### Plotting
 
 You can plot the data by using directly the values from DataFrame
 `d.df`, but the [`plot(::Thermobench.Data)`](@ref) method
@@ -132,21 +135,42 @@ saveas("raw-cpu") # hide
 ```
 ![](assets/raw-cpu.png)
 
+#### Missing values and interpolation
+
 If you want to get rid of missing data, you can select interesting
 columns and pass the dataframe through [`dropmissing`](https://dataframes.juliadata.org/stable/lib/functions/#DataFrames.dropmissing):
 
 ```@repl abc
 select(d.df, [:time, :CPU_0_temp]) |> dropmissing
 ```
+which is the same as:
+```@repl abc
+dropmissing(select(d.df, [:time, :CPU_0_temp]));
+```
+or
+```@repl abc
+using Pipe: @pipe
+@pipe d.df |> select(_, [:time, :CPU_0_temp]) |> dropmissing(_);
+```
 
 Note that when you select all columns, you will likely end up with
 empty dataframe, because `dropmissing` keeps only rows with **no**
 missing values.
 
-Alternatively, you can [`interpolate`](@ref) the missing data:
+Alternatively, you can get rid of missing data by interpolating them
+with [`interpolate`](@ref):
 
 ```@repl abc
 interpolate(d.df)
+```
+
+#### Other useful data manipulations
+
+To filter out some rows, you can use:
+
+```@repl abc
+using DataFramesMeta
+@linq d.df |> where(10.0 .< :time .< 13.0)
 ```
 
 ## Reference
@@ -161,3 +185,7 @@ Modules = [Thermobench]
 ```@meta
 #DocTestSetup = nothing
 ```
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'after-save-hook 'wsh/thermobench.jl-make-doc) -->
+<!-- End: -->

@@ -14,6 +14,9 @@ makedocs(
     doctest = false,
     workdir = @__DIR__,
 )
+if isinteractive()
+    run(`firefox-reload`)
+end
 
 # using DocumenterMarkdown
 # makedocs(
