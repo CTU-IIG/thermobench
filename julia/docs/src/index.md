@@ -187,5 +187,5 @@ Modules = [Thermobench]
 ```
 
 <!-- Local Variables: -->
-<!-- eval: (add-hook 'after-save-hook 'wsh/thermobench.jl-make-doc) -->
+<!-- eval: (add-hook 'after-save-hook 'wsh/thermobench.jl-make-doc nil t) -->
 <!-- End: -->
