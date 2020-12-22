@@ -196,6 +196,7 @@ Strip unit names from DataFrame column names.
 ```jldoctest
 julia> d = Thermobench.read("test.csv", stripunits=false);
 
+
 julia> names(d.df)[1:3]
 3-element Array{String,1}:
  "time_s"
@@ -203,6 +204,7 @@ julia> names(d.df)[1:3]
  "CPU_1_temp_°C"
 
 julia> Thermobench.strip_units!(d)
+
 
 julia> names(d.df)[1:3]
 3-element Array{String,1}:
@@ -318,27 +320,27 @@ performed against the first column (time).
 ```jldoctest
 julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000, 1001], v=[0.0, missing, missing, missing, 1000.0, missing])
 6×2 DataFrame
-│ Row │ t       │ v        │
-│     │ Float64 │ Float64? │
-├─────┼─────────┼──────────┤
-│ 1   │ 0.0     │ 0.0      │
-│ 2   │ 1.0     │ missing  │
-│ 3   │ 2.0     │ missing  │
-│ 4   │ 3.0     │ missing  │
-│ 5   │ 1000.0  │ 1000.0   │
-│ 6   │ 1001.0  │ missing  │
+ Row │ t        v
+     │ Float64  Float64?
+─────┼────────────────────
+   1 │     0.0        0.0
+   2 │     1.0  missing
+   3 │     2.0  missing
+   4 │     3.0  missing
+   5 │  1000.0     1000.0
+   6 │  1001.0  missing
 
 julia> interpolate(x)
 6×2 DataFrame
-│ Row │ t       │ v        │
-│     │ Float64 │ Float64? │
-├─────┼─────────┼──────────┤
-│ 1   │ 0.0     │ 0.0      │
-│ 2   │ 1.0     │ 1.0      │
-│ 3   │ 2.0     │ 2.0      │
-│ 4   │ 3.0     │ 3.0      │
-│ 5   │ 1000.0  │ 1000.0   │
-│ 6   │ 1001.0  │ missing  │
+ Row │ t        v
+     │ Float64  Float64?
+─────┼────────────────────
+   1 │     0.0        0.0
+   2 │     1.0        1.0
+   3 │     2.0        2.0
+   4 │     3.0        3.0
+   5 │  1000.0     1000.0
+   6 │  1001.0  missing
 
 ```
 """
@@ -475,15 +477,17 @@ julia> using StatsBase: coef
 
 julia> d = Thermobench.read("test.csv");
 
+
 julia> f = fit(d.df.time, d.df.CPU_0_temp);
+
 
 julia> coef(f)
 5-element Array{Float64,1}:
-  53.00028128677644
- -13.124669110533562
- 317.62956167523816
-  -8.162698557462654
-  59.36603973254213
+  53.00028128651935
+ -13.124669118291182
+ 317.62956152940995
+  -8.162698552318565
+  59.36603963091383
 
 julia> printfit(f)
 "53.0 – 8.2⋅e^{−t/59.4} – 13.1⋅e^{−t/317.6}"
@@ -737,12 +741,12 @@ julia> df = DataFrame(names=["very long label", "b", "c"],
                       temp=10:12,
                       speed=collect(4:-1:2) .± 1)
 3×3 DataFrame
-│ Row │ names           │ temp  │ speed    │
-│     │ String          │ Int64 │ Measure… │
-├─────┼─────────────────┼───────┼──────────┤
-│ 1   │ very long label │ 10    │ 4.0±1.0  │
-│ 2   │ b               │ 11    │ 3.0±1.0  │
-│ 3   │ c               │ 12    │ 2.0±1.0  │
+ Row │ names            temp   speed
+     │ String           Int64  Measurem…
+─────┼───────────────────────────────────
+   1 │ very long label     10    4.0±1.0
+   2 │ b                   11    3.0±1.0
+   3 │ c                   12    2.0±1.0
 
 julia> @gp Thermobench.plot_bars(df)
 
@@ -889,12 +893,13 @@ intended for subtraction of ambient temperature.
 ```jldoctest
 julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Thermobench.MultiFit: test.csv
-    2×9 DataFrame. Omitted printing of 1 columns
-│ Row │ name     │ column     │ rmse     │ ops               │ Tinf    │ k1       │ tau1    │ k2       │
-│     │ String   │ Symbol     │ Float64  │ Measurement       │ Float64 │ Float64  │ Float64 │ Float64  │
-├─────┼──────────┼────────────┼──────────┼───────────────────┼─────────┼──────────┼─────────┼──────────┤
-│ 1   │ test.csv │ CPU_0_temp │ 0.154483 │ 3.9364e8±280000.0 │ 53.0003 │ -8.1627  │ 59.366  │ -13.1247 │
-│ 2   │ test.csv │ CPU_1_temp │ 0.14436  │ 3.9364e8±280000.0 │ 54.0527 │ -7.17072 │ 51.1449 │ -14.3006 │
+    2×9 DataFrame
+ Row │ name      column      rmse      ops                Tinf     k1        t ⋯
+     │ String    Symbol      Float64   Measurem…          Float64  Float64   F ⋯
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ test.csv  CPU_0_temp  0.154483  3.9364e8±280000.0  53.0003  -8.1627   5 ⋯
+   2 │ test.csv  CPU_1_temp  0.14436   3.9364e8±280000.0  54.0527  -7.17072  5
+                                                               3 columns omitted
 ```
 """
 function multi_fit(sources, columns = :CPU_0_temp;
@@ -1014,6 +1019,7 @@ Other `kwargs` are passed to [`fit`](@ref).
 # Example
 ```jldoctest
 julia> plot_fit("test.csv", [:CPU_0_temp :CPU_1_temp], order=2);
+
 
 ```
 """
