@@ -77,12 +77,23 @@ Base.filter!(f, d::Data) = filter(f, d.df)
 function plot end
 
 """
-    plot(d::Data, columns = :CPU_0_temp; with="points")
+    plot(d::Data, columns = :CPU_0_temp; kwargs...)
 
-Plot raw values from `d`. Second parameter specifies the column(s) to plot.
+Plot raw values from Thermobench .csv file stored in `d`.
+data.
+
+# Arguments
+
+- `columns`: Column or array of columns to plot (columns are specified as [Julia symbols](https://docs.julialang.org/en/v1/manual/metaprogramming/#Symbols))
+- `with`: Gnuplot's "with" value – chooses how the data is plot. Defaults to `"points"`.
+- `title`: Custom title for all plotted columns. Default title is column title of each plot column.
+- `enhanced`: Use Gnuplot enhanced markup for `title`. Default is `false`.
+
 """
 function plot(d::Data, columns = :CPU_0_temp;
               with="points",
+              title=nothing,
+              enhanced=false,
               )::Vector{Gnuplot.PlotElement}
     time_div = 1
     vcat(
@@ -91,7 +102,7 @@ function plot(d::Data, columns = :CPU_0_temp;
             df = select(d.df, [:time, column]) |> dropmissing
             Gnuplot.PlotElement(
                 data=Gnuplot.DatasetText(df[!, 1]/time_div, df[!, 2]),
-                plot="w $with title '$(string(column))' noenhanced"
+                plot="w $with title '$(isnothing(title) ? string(column) : title)' $(enhanced ? "" : "no")enhanced"
             )
         end
     )

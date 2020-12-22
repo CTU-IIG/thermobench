@@ -123,7 +123,7 @@ makes it easier:
 
 ```@example abc
 @gp    plot(d, :CPU_0_temp) key="left"
-@gp :- plot(d, :ambient, with="lines")
+@gp :- plot(d, :ambient, with="lines", title="Amb. temperature")
 saveas("raw-cpu") # hide
 ```
 ![](assets/raw-cpu.png)

@@ -48,6 +48,15 @@ end
     @test T.sample_mean_est(ops).err ≈ 1.24e5 rtol=0.01
 end
 
+@testset "plot raw data" begin
+    d = T.read("test.csv")
+    @test @gpok T.plot(d)
+    @test @gpok T.plot(d, :CPU_1_temp)
+    @test @gpok T.plot(d, [ :CPU_0_temp, :CPU_1_temp ])
+    @test @gpok T.plot(d, title="Custom title")
+    @test @gpok T.plot(d, title="x^2+y^2", enhanced=true)
+end
+
 ## test bad fit
 f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp,
                order=2, plotexp=true, attempts = 1,
