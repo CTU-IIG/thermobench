@@ -117,6 +117,10 @@ dump(d, maxdepth=1)
 first(d.df, 6)
 ```
 
+In the example above, the data is available in `d.df` DataFrame, where
+you can manipulate them as you want. You can find a lot of examples in
+[DataFrames.jl documentation](https://dataframes.juliadata.org/stable/).
+
 You can plot the data by using directly the values from DataFrame
 `d.df`, but the [`plot(::Thermobench.Data)`](@ref) method
 makes it easier:
