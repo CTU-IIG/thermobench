@@ -128,6 +128,23 @@ saveas("raw-cpu") # hide
 ```
 ![](assets/raw-cpu.png)
 
+If you want to get rid of missing data, you can select interesting
+columns and pass the dataframe through [`dropmissing`](https://dataframes.juliadata.org/stable/lib/functions/#DataFrames.dropmissing):
+
+```@repl abc
+select(d.df, [:time, :CPU_0_temp]) |> dropmissing
+```
+
+Note that when you select all columns, you will likely end up with
+empty dataframe, because `dropmissing` keeps only rows with **no**
+missing values.
+
+Alternatively, you can [`interpolate`](@ref) the missing data:
+
+```@repl abc
+interpolate(d.df)
+```
+
 ## Reference
 
 ```@index
