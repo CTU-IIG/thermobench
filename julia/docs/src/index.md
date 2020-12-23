@@ -188,7 +188,3 @@ Modules = [Thermobench]
 ```@meta
 #DocTestSetup = nothing
 ```
-
-<!-- Local Variables: -->
-<!-- eval: (add-hook 'after-save-hook 'wsh/thermobench.jl-make-doc nil t) -->
-<!-- End: -->
