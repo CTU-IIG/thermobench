@@ -13,6 +13,7 @@ makedocs(
     format = Documenter.HTML(),
     modules = [Thermobench],
     doctest = true,
+    strict = true,
     workdir = @__DIR__,
 )
 if isinteractive()
