@@ -67,7 +67,7 @@ function. In the example below, it reads the data from a CSV file and
 fits a thermal model to it. The result can be directly plotted by Gnuplot.jl:
 
 ```@repl abc
-@gp multi_fit("test.csv")
+@gp multi_fit("test1.csv")
 saveas("test-mf") # hide
 ```
 ![](assets/test-mf.png)
@@ -80,7 +80,7 @@ fit, `use_measurements` to produce results with confidence intervals
 and `use_cmpfit` to use alternative fitting solver.
 
 ```@repl abc
-mf = multi_fit(["test.csv", "test2.csv"], subtract=:ambient, use_cmpfit=true, use_measurements=true)
+mf = multi_fit(["test1.csv", "test2.csv"], subtract=:ambient, use_cmpfit=true, use_measurements=true)
 @gp mf
 saveas("test-mf2") # hide
 ```
@@ -90,7 +90,7 @@ In most cases, we are interested only in ``T_∞`` parameters. These can
 be plot (and compared between multiple data sets) with [`plot_Tinf`](@ref).
 
 ```@repl abc
-mf2 = multi_fit(["test.csv", "test2.csv"], :CPU_1_temp, name="CPU1", subtract=:ambient, use_cmpfit=true, use_measurements=true)
+mf2 = multi_fit(["test1.csv", "test2.csv"], :CPU_1_temp, name="CPU1", subtract=:ambient, use_cmpfit=true, use_measurements=true)
 @gp plot_Tinf(rename!(mf, "CPU0"), mf2) key="left"
 saveas("tinf", width=400) # hide
 ```
@@ -112,7 +112,7 @@ function:
 
 ```@repl abc
 using DataFrames
-d = T.read("test.csv");
+d = T.read("test1.csv");
 dump(d, maxdepth=1)
 first(d.df, 6)
 ```

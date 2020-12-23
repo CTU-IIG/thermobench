@@ -11,7 +11,7 @@ makedocs(
     sitename = "Thermobench",
     format = Documenter.HTML(),
     modules = [Thermobench],
-    doctest = false,
+    doctest = true,
     workdir = @__DIR__,
 )
 if isinteractive()
