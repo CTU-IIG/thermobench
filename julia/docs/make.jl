@@ -5,7 +5,8 @@ DocMeta.setdocmeta!(Thermobench,
                     :DocTestSetup, :(using Thermobench, DataFrames),
                     recursive=true)
 
-using DataFrames
+using DataFrames, Gnuplot
+Gnuplot.options.gpviewer = false
 
 makedocs(
     sitename = "Thermobench",
