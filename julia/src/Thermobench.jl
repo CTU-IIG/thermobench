@@ -413,7 +413,7 @@ largest.
 julia> f = Thermobench.fit(collect(0.0:10:50.0), [0, 6, 6.5, 6.8, 7, 7]);
 
 julia> printfit(f)
-"7.1 – 4.0⋅e^{−t/1.0} – 3.1⋅e^{−t/11.8}"
+"7.1 – 5.0⋅e^{−t/1.0} – 2.1⋅e^{−t/16.1}"
 ```
 """
 function printfit(fit; minutes = false, mime = MIME"text/x-gnuplot")
@@ -451,7 +451,7 @@ end
         tau_bounds = [(1, 60*60)],
         k_bounds = [(-120, 120)],
         T_bounds = (0, 120),
-        use_cmpfit::Bool = false,
+        use_cmpfit::Bool = true,
      )
 
 Fit a thermal model to time series given by `time_s` and `data`. The
@@ -461,8 +461,8 @@ T(t) = T_∞ + \sum_{i=1}^{order}k_i⋅e^{-\frac{t}{τ_i}},
 ```
 where T_∞, kᵢ and τᵢ are the coefficients found by this function.
 
-If `use_cmpfit` is true, use CMPFit.jl package rather than LsqFit.jl.
-LsqFit doesn't work well in constrained settings.
+If `use_cmpfit` is true (the default), use CMPFit.jl package rather
+than LsqFit.jl. LsqFit doesn't work well in constrained settings.
 
 You can limit the values of fitted parameters with `*_bounds`
 parameters. Each bound is a tuple of lower and upper limit. `T_bounds`
@@ -478,7 +478,7 @@ julia> using StatsBase: coef
 julia> d = Thermobench.read("test.csv");
 
 
-julia> f = fit(d.df.time, d.df.CPU_0_temp, use_cmpfit=true);
+julia> f = fit(d.df.time, d.df.CPU_0_temp);
 
 
 julia> coef(f)
@@ -500,7 +500,7 @@ function fit(time_s::Vector{Float64}, data;
              k_bounds::Vector{<:Tuple{Real,Real}} = [(-120, 120)],
              T_bounds::Tuple{Real,Real} = (0, 120),
              attempts::Integer = 10,
-             use_cmpfit::Bool = false,
+             use_cmpfit::Bool = true,
              kwargs...)
 
     bounds = zeros(1 + 2*order, 2)
@@ -894,11 +894,11 @@ intended for subtraction of ambient temperature.
 julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Thermobench.MultiFit: test.csv
     2×9 DataFrame
- Row │ name      column      rmse      ops                Tinf     k1        t ⋯
-     │ String    Symbol      Float64   Measurem…          Float64  Float64   F ⋯
+ Row │ name      column      rmse       ops                Tinf     k1         ⋯
+     │ String    Symbol      Float64    Measurem…          Float64  Float64    ⋯
 ─────┼──────────────────────────────────────────────────────────────────────────
-   1 │ test.csv  CPU_0_temp  0.154483  3.9364e8±280000.0  53.0003  -8.1627   5 ⋯
-   2 │ test.csv  CPU_1_temp  0.14436   3.9364e8±280000.0  54.0527  -7.17072  5
+   1 │ test.csv  CPU_0_temp   0.308966  3.9364e8±280000.0  53.0003  -8.1627    ⋯
+   2 │ test.csv  CPU_1_temp  14.1697    3.9364e8±280000.0  53.7449  -8.79378
                                                                3 columns omitted
 ```
 """
