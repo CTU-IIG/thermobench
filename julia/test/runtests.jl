@@ -90,6 +90,8 @@ f = T.plot_fit(csvs, :CPU_0_temp, order=2)
 mf1 = T.multi_fit(csvs, use_cmpfit=false, use_measurements=true)
 mf2 = T.multi_fit(csvs, use_cmpfit=true)
 
+mf2 |> T.write("mf.csv")
+
 using Measurements
 using Measurements: value, uncertainty
 @gp value.(mf1.result.Tinf) uncertainty.(mf1.result.Tinf)

@@ -660,6 +660,15 @@ rename!(mf::MultiFit, name) = (mf.name = name; mf)
 Base.filter(f, mf::MultiFit) = MultiFit(mf.name, filter(f, mf.result), mf.time, mf.subtract)
 
 """
+    write(file, mf::MultiFit)
+
+Write [`multi_fit()`](@ref) results to a CSV file `file`.
+"""
+function write(file, mf::MultiFit)
+    CSV.write(file, select(mf.result, Not([:fit,:data,:series])))
+end
+
+"""
     plot(mf::MultiFit; kwargs...)::Vector{Gnuplot.PlotElement}
 
 Plot MultiFit data.
