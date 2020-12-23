@@ -14,6 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Cache Julia stuff
+        uses: actions/cache@v2
+        with:
+          path: ~/.julia
+          key: ${{ runner.os }}-build
       - uses: julia-actions/setup-julia@latest
         with:
           version: 1.4

@@ -5,7 +5,8 @@ DocMeta.setdocmeta!(Thermobench,
                     :DocTestSetup, :(using Thermobench, DataFrames),
                     recursive=true)
 
-using DataFrames
+using DataFrames, Gnuplot
+Gnuplot.options.gpviewer = false
 
 makedocs(
     sitename = "Thermobench",
@@ -29,7 +30,7 @@ end
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
-if ENV.haskey("GITHUB_ACTIONS") || read(`git branch --show-current`, String) == "master\n"
+if haskey(ENV, "GITHUB_ACTIONS") && read(`git branch --show-current`, String) == "master\n"
     deploydocs(
         repo = "github.com/CTU-IIG/thermobench.git"
     )
