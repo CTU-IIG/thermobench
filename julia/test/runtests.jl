@@ -57,6 +57,14 @@ end
     @test @gpok T.plot(d, title="x^2+y^2", enhanced=true)
 end
 
+@testset "raw data manipulation" begin
+    d = T.read("test.csv")
+    T.write("written.csv", d)
+    d |> T.write("written-via-pipe.csv")
+    T.read("test.csv") |> interpolate! |> T.write("written-via-pipe2.csv")
+end
+
+
 ## test bad fit
 f = T.plot_fit("memory-bandwidth/data-fan/rnd-a53-t1-s16k.csv", :CPU_0_temp,
                order=2, plotexp=true, attempts = 1,

@@ -122,6 +122,9 @@ you can manipulate them as you want. You can find a lot of examples in
 [DataFrames.jl
 documentation](https://dataframes.juliadata.org/stable/).
 
+To write (possibly modified) data to a file, use
+[`Thermobench.write`](@ref) function.
+
 #### Plotting
 
 You can plot the data by using directly the values from DataFrame
