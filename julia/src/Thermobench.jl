@@ -280,10 +280,12 @@ function read(source; normalizeunits=true, stripunits=true, name=nothing, kwargs
 end
 
 """
+    interpolate!(d::Data)
     interpolate!(df::AbstractDataFrame)
 
 In-place version of [`interpolate`](@ref).
 """
+interpolate!(d::Data) = begin interpolate!(d.df); return d; end
 function interpolate!(df::AbstractDataFrame)
     size(df)[2] >= 2 || error("interpolate needs at least two columns")
     df[!,1] .|> ismissing |> any && error("First column must not have missing values")
@@ -312,7 +314,8 @@ end
 
 
 """
-    interpolate!(df::AbstractDataFrame)
+    interpolate(d::Data)
+    interpolate(df::AbstractDataFrame)
 
 Replace missing values with results of linear interpolation
 performed against the first column (time).
@@ -344,6 +347,7 @@ julia> interpolate(x)
 
 ```
 """
+interpolate(d::Data) = Data(d::Data, interpolate(d.df))
 function interpolate(df::AbstractDataFrame)
     d=deepcopy(df)
     interpolate!(d)

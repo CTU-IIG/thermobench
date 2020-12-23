@@ -161,7 +161,7 @@ Alternatively, you can get rid of missing data by interpolating them
 with [`interpolate`](@ref):
 
 ```@repl abc
-interpolate(d.df)
+interpolate(d)
 ```
 
 #### Other useful data manipulations
