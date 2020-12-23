@@ -29,6 +29,8 @@ end
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
-deploydocs(
-    repo = "github.com/CTU-IIG/thermobench.git"
-)
+if ENV.haskey("GITHUB_ACTIONS") || read(`git branch --show-current`, String) == "master\n"
+    deploydocs(
+        repo = "github.com/CTU-IIG/thermobench.git"
+    )
+end
