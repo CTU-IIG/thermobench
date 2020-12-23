@@ -481,13 +481,13 @@ julia> d = Thermobench.read("test.csv");
 julia> f = fit(d.df.time, d.df.CPU_0_temp);
 
 
-julia> coef(f)
+julia> round.(coef(f), digits=6)
 5-element Array{Float64,1}:
-  53.00028128651935
- -13.124669118291182
- 317.62956152940995
-  -8.162698552318565
-  59.36603963091383
+  53.000281
+ -13.124669
+ 317.629562
+  -8.162699
+  59.36604
 
 julia> printfit(f)
 "53.0 – 8.2⋅e^{−t/59.4} – 13.1⋅e^{−t/317.6}"
