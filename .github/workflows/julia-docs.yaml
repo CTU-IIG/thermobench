@@ -32,5 +32,4 @@ jobs:
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
-        working-directory: julia
-        run: julia --project=. docs/make.jl
+        run: make -C julia/docs
