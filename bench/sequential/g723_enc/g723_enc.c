@@ -17,6 +17,8 @@
 
 */
 
+#include <tbwrap.h>
+
 /*
   Declaration of data types
 */
@@ -871,7 +873,7 @@ void _Pragma( "entrypoint" ) g723_enc_main()
 int main( void )
 {
   g723_enc_init();
-  g723_enc_main();
+  thermobench_wrap(g723_enc_main);
 
   return ( g723_enc_return() );
 }

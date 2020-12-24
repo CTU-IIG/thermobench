@@ -126,7 +126,7 @@ int main( void )
 {
   ros_th5_init();
   
-  ros_th5_main();
+  thermobench_wrap(ros_th5_main);
   
   return ros_th5_return();  
 }

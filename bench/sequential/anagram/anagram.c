@@ -157,6 +157,7 @@
    steps to FindAnagram.
 */
 int printf(const char * restrict format, ... );
+#include <tbwrap.h>
 #include "anagram_ctype.h"
 #include "anagram_stdlib.h"
 #include "anagram_strings.h"
@@ -658,7 +659,7 @@ void _Pragma( "entrypoint" ) anagram_main( void )
 int main( void )
 {
   anagram_init();
-  anagram_main();
+  thermobench_wrap(anagram_main);
 
   return anagram_return();
 }

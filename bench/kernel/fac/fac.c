@@ -20,6 +20,7 @@
 
 */
 
+#include <tbwrap.h>
 /*
   Forward declaration of functions
 */
@@ -94,7 +95,7 @@ void _Pragma( "entrypoint" ) fac_main ()
 int main ( void )
 {
   fac_init();
-  fac_main();
+  thermobench_wrap(fac_main);
 
   return ( fac_return() );
 }

@@ -44,6 +44,7 @@
 #define L 20
 #define SAMPLING 5
 
+#include <tbwrap.h>
 
 float lms_input[ N + 1 ], lms_output[ N + 1 ];
 
@@ -197,7 +198,7 @@ int lms_return( void )
 int main()
 {
   lms_init();
-  lms_main();
+  thermobench_wrap(lms_main);
   return ( lms_return() );
 }
 

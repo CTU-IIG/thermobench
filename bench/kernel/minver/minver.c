@@ -26,6 +26,8 @@
     Original source: Turbo C Programming for Engineering by Hyun Soo Ahn
 */
 
+#include <tbwrap.h>
+
 /*
     Forward declaration of functions
 */
@@ -250,7 +252,7 @@ void _Pragma( "entrypoint" ) minver_main()
 int main( void )
 {
   minver_init();
-  minver_main();
+  thermobench_wrap(minver_main);
 
   return ( minver_return() );
 }

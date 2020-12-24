@@ -16,6 +16,8 @@
 
 */
 
+#include <tbwrap.h>
+
 /* A read from this address will result in an known value of 1 */
 #define KNOWN_VALUE 1
 #define NDES_WORSTCASE 1
@@ -384,7 +386,7 @@ void _Pragma( "entrypoint" ) ndes_main()
 int main( void )
 {
   ndes_init();
-  ndes_main();
+  thermobench_wrap(ndes_main);
 
   return ( ndes_return() );
 }

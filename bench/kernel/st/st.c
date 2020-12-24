@@ -21,6 +21,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -220,7 +221,7 @@ void _Pragma( "entrypoint" ) st_main( void )
 int main( void )
 {
   st_init();
-  st_main();
+  thermobench_wrap(st_main);
 
   return ( st_return() );
 }

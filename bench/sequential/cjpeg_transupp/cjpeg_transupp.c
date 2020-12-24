@@ -29,6 +29,7 @@
   Include section
 */
 
+#include <tbwrap.h>
 #include "jpeglib.h"
 
 
@@ -706,7 +707,7 @@ void _Pragma ( "entrypoint" ) cjpeg_transupp_main( void )
 int main( void )
 {
   cjpeg_transupp_init();
-  cjpeg_transupp_main();
+  thermobench_wrap(cjpeg_transupp_main);
 
   return ( cjpeg_transupp_return() - 660 != 0 );
 }

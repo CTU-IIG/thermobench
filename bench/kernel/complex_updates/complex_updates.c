@@ -32,6 +32,7 @@
 
 #define N 16
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -130,7 +131,7 @@ int main( void )
 {
   complex_updates_init();
 
-  complex_updates_main();
+  thermobench_wrap(complex_updates_main);
 
   return complex_updates_return();
 }

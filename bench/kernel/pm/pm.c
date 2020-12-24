@@ -26,6 +26,7 @@
   Include section
 */
 
+#include <tbwrap.h>
 #include "pm_math.h"
 #include "pm_string.h"
 
@@ -737,7 +738,7 @@ int pm_kernel( pm_data_t *pmdata )
 int main( void )
 {
   pm_init();
-  pm_main();
+  thermobench_wrap(pm_main);
 
   return pm_return();
 }

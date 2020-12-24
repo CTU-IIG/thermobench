@@ -19,6 +19,8 @@
 
 */
 
+#include <tbwrap.h>
+
 // Description: This is the MD5 algorithm comming form the Diffie-Hellman
 // application in the Netbench benchmark suite
 
@@ -625,7 +627,7 @@ void _Pragma( "entrypoint" ) md5_main( void )
 int main( void )
 {
   md5_init();
-  md5_main();
+  thermobench_wrap(md5_main);
   // printf("%d\n", ret);
   return md5_return();
 }

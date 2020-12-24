@@ -17,6 +17,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "memcpy.h"
 #include "memset.h"
 #include "sha.h"
@@ -214,6 +215,6 @@ int sha_return( void )
 int main ( void )
 {
   sha_init();
-  sha_main();
+  thermobench_wrap(sha_main);
   return ( sha_return() );
 }

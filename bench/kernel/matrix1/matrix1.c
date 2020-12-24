@@ -64,6 +64,7 @@
 #define Y 10 /* second dimension of array A, first dimension of array B */
 #define Z 10 /* second dimension of array B */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -163,7 +164,7 @@ void _Pragma ( "entrypoint" ) matrix1_main( void )
 int main( void )
 {
   matrix1_init();
-  matrix1_main();
+  thermobench_wrap(matrix1_main);
 
   return matrix1_return();
 }

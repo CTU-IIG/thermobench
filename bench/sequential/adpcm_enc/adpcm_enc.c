@@ -34,6 +34,7 @@
 #define SIZE 3
 #define IN_END 4
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -748,7 +749,7 @@ void _Pragma( "entrypoint" ) adpcm_enc_main( void )
 int main( void )
 {
   adpcm_enc_init();
-  adpcm_enc_main();
+  thermobench_wrap(adpcm_enc_main);
 
   return adpcm_enc_return();
 }

@@ -20,6 +20,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "basicmath_libc.h"
 #include "snipmath.h"
 
@@ -150,7 +151,7 @@ void _Pragma( "entrypoint" ) isqrt_main( void )
 int main( void )
 {
   isqrt_init();
-  isqrt_main();
+  thermobench_wrap(isqrt_main);
   return isqrt_return();
 }
 

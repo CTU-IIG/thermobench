@@ -35,6 +35,7 @@
 */
 
 
+#include <tbwrap.h>
 #include "epic.h"
 
 #define X_SIZE  64
@@ -1130,7 +1131,7 @@ int epic_return()
 int main( void )
 {
   epic_init();
-  epic_main();
+  thermobench_wrap(epic_main);
 
   return epic_return();
 }

@@ -18,6 +18,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
    Global Variables
@@ -67,6 +68,6 @@ void _Pragma( "entrypoint" ) recursion_main( void )
 int main( void )
 {
   recursion_init();
-  recursion_main();
+  thermobench_wrap(recursion_main);
   return ( recursion_return() );
 }

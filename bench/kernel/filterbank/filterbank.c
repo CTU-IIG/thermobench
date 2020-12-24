@@ -25,6 +25,8 @@
 
 */
 
+#include <tbwrap.h>
+
 /*
   Forward declaration of functions
 */
@@ -164,7 +166,7 @@ void filterbank_core( float r[ 256 ],
 int main( void )
 {
   filterbank_init();
-  filterbank_main();
+  thermobench_wrap(filterbank_main);
 
   return filterbank_return();
 }

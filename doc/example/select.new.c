@@ -176,7 +176,7 @@ int _Pragma ( "entrypoint" ) select_main( void )
 int main( void )
 {
   select_init();
-  select_main();
+  thermobench_wrap(select_main);
 
   return( select_return() - 35 != 0 );
 }

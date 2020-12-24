@@ -23,6 +23,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "powerwindow_HeaderFiles/powerwindow.h"
 #include "powerwindow_HeaderFiles/powerwindow_PW_Control_PSG_Front.h"
 #include "powerwindow_HeaderFiles/powerwindow_PW_Control_PSG_BackL.h"
@@ -730,7 +731,7 @@ int powerwindow_return( void )
 int main( void )
 {
   powerwindow_init();
-  powerwindow_main();
+  thermobench_wrap(powerwindow_main);
   return powerwindow_return();
 }
 

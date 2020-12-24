@@ -20,6 +20,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "pi.h"
 
 #define deg2rad(d) ((d)*PI/180)
@@ -85,6 +86,6 @@ void _Pragma( "entrypoint" ) deg2rad_main( void )
 int main( void )
 {
   deg2rad_init();
-  deg2rad_main();
+  thermobench_wrap(deg2rad_main);
   return deg2rad_return();
 }

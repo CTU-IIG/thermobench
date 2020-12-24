@@ -38,6 +38,7 @@
   -----------------------------------------------------------------------
 */
 
+#include <tbwrap.h>
 #include "aes.h"
 #include "rijndael_dec_libc.h"
 
@@ -183,7 +184,7 @@ int main()
 {
 
   rijndael_dec_init();
-  rijndael_dec_main();
+  thermobench_wrap(rijndael_dec_main);
 
   return ( rijndael_dec_return() );
 }

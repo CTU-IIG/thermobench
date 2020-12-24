@@ -19,6 +19,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "wcclibm.h"
 
 
@@ -80,7 +81,7 @@ void _Pragma( "entrypoint" ) cosf_main( void )
 int main( void )
 {
   cosf_init();
-  cosf_main();
+  thermobench_wrap(cosf_main);
   return cosf_return();
 }
 

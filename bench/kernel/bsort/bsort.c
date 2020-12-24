@@ -22,6 +22,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -126,7 +127,7 @@ void _Pragma( "entrypoint" ) bsort_main( void )
 int main( void )
 {
   bsort_init();
-  bsort_main();
+  thermobench_wrap(bsort_main);
 
   return bsort_return();
 }

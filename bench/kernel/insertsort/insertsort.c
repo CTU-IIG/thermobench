@@ -27,6 +27,7 @@
   Case Timing Analysis by Sung-Soo Lim
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -133,7 +134,7 @@ void _Pragma( "entrypoint" ) insertsort_main()
 int main( void )
 {
   insertsort_init();
-  insertsort_main();
+  thermobench_wrap(insertsort_main);
   return ( insertsort_return() );
 }
 

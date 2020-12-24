@@ -26,6 +26,7 @@
   Include section
 */
 
+#include <tbwrap.h>
 #include "quicksort.h"
 #include "quicksortlibm.h"
 #include "quicksortstdlib.h"
@@ -239,7 +240,7 @@ void _Pragma ( "entrypoint" ) quicksort_main( void )
 int main( void )
 {
   quicksort_init();
-  quicksort_main();
+  thermobench_wrap(quicksort_main);
 
   return ( quicksort_return() - 1527923179 != 0 );
 }

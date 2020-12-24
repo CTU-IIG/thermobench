@@ -126,7 +126,7 @@ int main( void )
 {
   ros_th3_init();
   
-  ros_th3_main();
+  thermobench_wrap(ros_th3_main);
   
   return ros_th3_return();  
 }

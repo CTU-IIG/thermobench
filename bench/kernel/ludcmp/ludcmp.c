@@ -27,6 +27,8 @@
                     (from the book C Programming for EEs by Hyun Soon Ahn)
 */
 
+#include <tbwrap.h>
+
 /*
   Forward declaration of functions
 */
@@ -171,7 +173,7 @@ void _Pragma( "entrypoint" ) ludcmp_main( void )
 int main( void )
 {
   ludcmp_init();
-  ludcmp_main();
+  thermobench_wrap(ludcmp_main);
 
   return ( ludcmp_return() );
 }

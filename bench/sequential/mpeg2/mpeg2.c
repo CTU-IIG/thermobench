@@ -44,6 +44,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of data types
@@ -13206,7 +13207,7 @@ void _Pragma ( "entrypoint" ) mpeg2_main( void )
 int main( void )
 {
   mpeg2_init();
-  mpeg2_main();
+  thermobench_wrap(mpeg2_main);
 
   return ( mpeg2_return() - ( -116 ) != 0 );
 }

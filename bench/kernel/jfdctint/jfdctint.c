@@ -94,6 +94,8 @@
    Error analysis shows that the values given below are the most effective.
 */
 
+#include <tbwrap.h>
+
 /*
   Forward declaration of functions
 */
@@ -313,7 +315,7 @@ void _Pragma ( "entrypoint" ) jfdctint_main( void )
 int main( void )
 {
   jfdctint_init();
-  jfdctint_main();
+  thermobench_wrap(jfdctint_main);
 
   return ( jfdctint_return() );
 }

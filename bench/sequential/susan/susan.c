@@ -269,6 +269,7 @@
 
   \**********************************************************************/
 
+#include <tbwrap.h>
 #include "wcclibm.h"
 #include "wccfile.h"
 #include "wccmalloc.h"
@@ -2504,7 +2505,7 @@ int susan_return( void )
 int main( void )
 {
   susan_init();
-  susan_main();
+  thermobench_wrap(susan_main);
 
   return susan_return();
 }

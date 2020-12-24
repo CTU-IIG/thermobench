@@ -55,6 +55,7 @@
 #define  FH_TUERMODUL_CTRL__END_REVERS_copy_IDX 23
 #define  FH_TUERMODUL__EINKLEMMUNG_IDX 24
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -1272,7 +1273,7 @@ void _Pragma ( "entrypoint" ) statemate_main( void )
 int main ( void )
 {
   statemate_init();
-  statemate_main();
+  thermobench_wrap(statemate_main);
 
   return statemate_return();
 }

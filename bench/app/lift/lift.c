@@ -23,7 +23,7 @@
 /*
   Include section
 */
-
+#include <tbwrap.h>
 #include "liftlibio.h"
 #include "liftlibcontrol.h"
 
@@ -126,7 +126,7 @@ void  _Pragma( "entrypoint" ) lift_main()
 int main( void )
 {
   lift_init();
-  lift_main();
+  thermobench_wrap(lift_main);
 
   return ( lift_return() );
 }

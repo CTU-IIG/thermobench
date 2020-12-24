@@ -24,6 +24,8 @@
   #define PROFILING
 */
 
+#include <tbwrap.h>
+
 #ifdef PROFILING
 #include <stdio.h>
 #endif
@@ -975,7 +977,7 @@ int petrinet_return( void )
 
 int main( void )
 {
-  petrinet_main();
+    thermobench_wrap(petrinet_main);
 
   return ( petrinet_return() );
 }

@@ -47,6 +47,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -157,7 +158,7 @@ void _Pragma( "entrypoint" ) iir_main( void )
 int main( void )
 {
   iir_init();
-  iir_main();
+  thermobench_wrap(iir_main);
 
   return ( iir_return() - 400 != 0 );
 }

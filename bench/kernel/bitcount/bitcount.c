@@ -18,6 +18,7 @@
 */
 
 
+#include <tbwrap.h>
 #include "bitops.h"
 
 #define FUNCS  8
@@ -140,7 +141,7 @@ void _Pragma( "entrypoint" ) bitcount_main()
 int main( void )
 {
   bitcount_init();
-  bitcount_main();
+  thermobench_wrap(bitcount_main);
 
   return ( bitcount_return() );
 }

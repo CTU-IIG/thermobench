@@ -23,6 +23,7 @@
   Include section
 */
 
+#include <tbwrap.h>
 #include "audiobeamlibm.h"
 #include "audiobeamlibmalloc.h"
 #include "audiobeam.h"
@@ -578,7 +579,7 @@ void _Pragma( "entrypoint" ) audiobeam_main( void )
 int main( void )
 {
   audiobeam_init();
-  audiobeam_main();
+  thermobench_wrap(audiobeam_main);
 
   return ( audiobeam_return() );
 }

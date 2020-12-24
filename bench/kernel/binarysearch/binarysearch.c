@@ -30,7 +30,7 @@
   Case Timing Analysis by Sung-Soo Lim
 */
 
-
+#include <tbwrap.h>
 /*
   Forward declaration of functions
 */
@@ -150,7 +150,7 @@ void _Pragma( "entrypoint" ) binarysearch_main( void )
 int main( void )
 {
   binarysearch_init();
-  binarysearch_main();
+  thermobench_wrap(binarysearch_main);
 
   return ( binarysearch_return() - ( -1 ) != 0 );
 }

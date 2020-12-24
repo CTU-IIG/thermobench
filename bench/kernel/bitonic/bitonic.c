@@ -18,6 +18,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -151,7 +152,7 @@ void _Pragma ( "entrypoint" ) bitonic_main( void )
 int main( void )
 {
   bitonic_init();
-  bitonic_main();
+  thermobench_wrap(bitonic_main);
 
   return ( bitonic_return() );
 }

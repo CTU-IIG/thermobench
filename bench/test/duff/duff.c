@@ -18,6 +18,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -126,7 +127,7 @@ void _Pragma( "entrypoint" ) duff_main( void )
 int main( void )
 {
   duff_init();
-  duff_main();
+  thermobench_wrap(duff_main);
 
   return ( duff_return() );
 }

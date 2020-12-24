@@ -26,6 +26,7 @@
 */
 
 
+#include <tbwrap.h>
 #include "wcclibm.h"
 #include "snipmath.h"
 
@@ -151,6 +152,6 @@ void cubic_solveCubic( float a, float b, float c, float d,
 int main( void )
 {
   cubic_init();
-  cubic_main();
+  thermobench_wrap(cubic_main);
   return cubic_return();
 }

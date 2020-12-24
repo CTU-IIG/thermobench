@@ -72,6 +72,8 @@
 #define BITS_PER_TWID 13     /* bits per twiddle coefficient */
 #define SHIFT BITS_PER_TWID  /* fractional shift after each multiplication */
 
+#include <tbwrap.h>
+
 /*
   Forward declaration of functions
 */
@@ -327,7 +329,7 @@ int main( void )
 {
   fft_init();
 
-  fft_main();
+  thermobench_wrap(fft_main);
 
   return fft_return();
 }

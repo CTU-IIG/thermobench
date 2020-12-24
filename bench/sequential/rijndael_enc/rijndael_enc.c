@@ -38,6 +38,7 @@
   -----------------------------------------------------------------------
 */
 
+#include <tbwrap.h>
 #include "aes.h"
 #include "rijndael_enc_libc.h"
 
@@ -225,7 +226,7 @@ void _Pragma( "entrypoint" ) rijndael_enc_main( void )
 int main( void )
 {
   rijndael_enc_init();
-  rijndael_enc_main();
+  thermobench_wrap(rijndael_enc_main);
 
   return ( rijndael_enc_return() );
 }

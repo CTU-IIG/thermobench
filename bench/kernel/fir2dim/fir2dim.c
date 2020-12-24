@@ -20,6 +20,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -192,7 +193,7 @@ void _Pragma( "entrypoint" ) fir2dim_main()
 int main( void )
 {
   fir2dim_init();
-  fir2dim_main();
+  thermobench_wrap(fir2dim_main);
 
   return ( fir2dim_return() );
 }

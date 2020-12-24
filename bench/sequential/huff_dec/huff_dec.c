@@ -43,6 +43,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Declaration of types
@@ -377,6 +378,6 @@ void _Pragma( "entrypoint" ) huff_dec_main( void )
 int main( void )
 {
   huff_dec_init();
-  huff_dec_main();
+  thermobench_wrap(huff_dec_main);
   return ( huff_dec_return() );
 }

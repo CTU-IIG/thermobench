@@ -149,7 +149,7 @@ int main( void )
 {
   ros_th2_init();
   
-  ros_th2_main();
+  thermobench_wrap(ros_th2_main);
   
   return ros_th2_return();  
 }

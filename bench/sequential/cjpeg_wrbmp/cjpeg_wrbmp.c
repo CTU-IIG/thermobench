@@ -24,6 +24,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "cdjpeg.h"
 
 #ifdef CJPEG_WRBMP_BMP_SUPPORTED
@@ -210,7 +211,7 @@ int cjpeg_wrbmp_return()
 int main( void )
 {
   cjpeg_wrbmp_init();
-  cjpeg_wrbmp_main();
+  thermobench_wrap(cjpeg_wrbmp_main);
 
   return ( cjpeg_wrbmp_return() );
 }

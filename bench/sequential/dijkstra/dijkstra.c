@@ -17,6 +17,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "input.h"
 
 /*
@@ -191,7 +192,7 @@ void _Pragma( "entrypoint" ) dijkstra_main( void )
 int main( void )
 {
   dijkstra_init();
-  dijkstra_main();
+  thermobench_wrap(dijkstra_main);
 
   return ( dijkstra_return() );
 }

@@ -5,6 +5,7 @@
    details.  THERE IS ABSOLUTELY NO WARRANTY FOR THIS SOFTWARE.
 */
 
+#include <tbwrap.h>
 #include "private.h"
 
 /*
@@ -2218,6 +2219,6 @@ void _Pragma( "entrypoint" ) gsm_enc_main( void )
 int main( void )
 {
   gsm_enc_init();
-  gsm_enc_main();
+  thermobench_wrap(gsm_enc_main);
   return ( gsm_enc_return() );
 }

@@ -31,6 +31,8 @@
     Original source: C Algorithms for Real-Time DSP by P. M. Embree
 */
 
+#include <tbwrap.h>
+
 /*
   Forward declaration of functions
 */
@@ -704,7 +706,7 @@ void _Pragma( "entrypoint" ) adpcm_dec_main( void )
 int main( void )
 {
   adpcm_dec_init();
-  adpcm_dec_main();
+  thermobench_wrap(adpcm_dec_main);
 
   return ( adpcm_dec_return() );
 }

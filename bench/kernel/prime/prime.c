@@ -18,6 +18,7 @@
 
 */
 
+#include <tbwrap.h>
 
 /*
   Forward declaration of functions
@@ -131,7 +132,7 @@ void _Pragma( "entrypoint" ) prime_main()
 int main( void )
 {
   prime_init();
-  prime_main();
+  thermobench_wrap(prime_main);
 
   return ( prime_return() ) ;
 }

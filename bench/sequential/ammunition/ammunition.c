@@ -24,6 +24,7 @@
 
 */
 
+#include <tbwrap.h>
 #include "bits.h"
 #include "arithm.h"
 #include "ammunition_stdlib.h"
@@ -1173,7 +1174,7 @@ void _Pragma( "entrypoint" ) ammunition_main( void )
 int main( void )
 {
   ammunition_init();
-  ammunition_main();
+  thermobench_wrap(ammunition_main);
 
   return ( ammunition_return() );
 }

@@ -25,6 +25,7 @@
   Include section
 */
 
+#include <tbwrap.h>
 #include "h264_dec.h"
 
 
@@ -597,7 +598,7 @@ void _Pragma( "entrypoint" )  h264_dec_main( void )
 int main( void )
 {
   h264_dec_init();
-  h264_dec_main();
+  thermobench_wrap(h264_dec_main);
 
   return ( h264_dec_return() );
 }

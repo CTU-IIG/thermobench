@@ -24,6 +24,7 @@
 */
 #define MAXSIZE 20
 
+#include <tbwrap.h>
 /*
   Type definition for the matrix
 */
@@ -134,7 +135,7 @@ void _Pragma( "entrypoint" ) countnegative_main ( void )
 int main( void )
 {
   countnegative_init();
-  countnegative_main();
+  thermobench_wrap(countnegative_main);
 
   return ( countnegative_return() );
 }
