@@ -23,5 +23,5 @@ stdenv.mkDerivation {
   BOOST_LIBRARYDIR = "${stdenv.lib.getLib boost}/lib";
 
   nativeBuildInputs = [ meson ninja pkg-config ];
-  buildInputs = [ libev opencl-headers ocl-icd boost ];
+  buildInputs = [ libev opencl-headers opencl-icd boost ];
 }
