@@ -49,6 +49,8 @@ if run_command('test', '-f', coremark_srcs[0]).returncode() == 0
 	endforeach
 endif
 
+libtbwrap = library('tbwrap', [ 'tbwrap.c'])
+
 if get_option('tacle-bench').enabled()
 	tacle_benchmarks = {
 		'app/lift': [ 'lift.c', 'liftlibcontrol.c', 'liftlibio.c' ],
@@ -132,12 +134,16 @@ if get_option('tacle-bench').enabled()
 		'test/duff': [ 'duff.c' ],
 		'test/test3': [ 'test3.c' ],
 	}
+	this_dir = include_directories('.')
 	foreach dir, srcs : tacle_benchmarks
 		sources = []
 		foreach src : srcs
 			sources += 'tacle-bench/bench' / dir / src
 		endforeach
 		executable('tacle_bench_' + dir.underscorify(), sources,
-			   include_directories : [ include_directories('tacle-bench/bench' / dir) ])
+			   include_directories : [ include_directories('tacle-bench/bench' / dir), this_dir ],
+			   link_with : libtbwrap,
+			   c_args : [ '-Werror=implicit-function-declaration' ],
+			  )
 	endforeach
 endif
