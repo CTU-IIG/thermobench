@@ -1,12 +1,12 @@
 #include "tbwrap.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <argz.h>
 #include <argp.h>
+#include <argz.h>
 #include <err.h>
-#include <time.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 /*
 
@@ -28,14 +28,14 @@ struct arguments {
 };
 
 /* Program documentation. */
-static char doc[] =
-    "TB_OPTS environment variable can contain the following space-separated options. "
-    "Note that there is no support for quoting, i.e. including space in the option argument.";
+static char doc[] = "TB_OPTS environment variable can contain the following space-separated options. "
+                    "Note that there is no support for quoting, i.e. including space in the option argument.";
 
 /* A description of the arguments we accept. */
 static char args_doc[] = "";
 
 /* The options we understand. */
+// clang-format off
 static struct argp_option options[] = {
     {"count",           'c', "NUM",   0, "Execute the benchmark NUM times. Zero means infinity. Defaults to 1." },
     {"work_done_str",   'w', "STR",   0, "\"work_done\" prefix string. Empty (default) means don't print the work_done message" },
@@ -44,18 +44,17 @@ static struct argp_option options[] = {
 
     { 0 }
 };
+// clang-format on
 
 /* Parse a single option. */
-static error_t
-parse_opt (int key, char *arg, struct argp_state *state)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
     /* Get the ‘input’ argument from ‘argp_parse’, which we
        know is a pointer to our arguments structure. */
     struct arguments *arguments = state->input;
 
-    switch (key)
-    {
-    case 'c': case 's':
+    switch (key) {
+    case 'c':
         arguments->count = atoll(arg);
         break;
     case 'w':
@@ -105,7 +104,7 @@ static void parse_tb_opts()
         errx(1, "argz_insert: %s", strerror(error));
 
     argc = argz_count(argz, argz_len);
-    argv = malloc((argc + 1) * sizeof (char *));
+    argv = malloc((argc + 1) * sizeof(char *));
     if (!argv)
         err(1, "parse_tb_opts");
 
@@ -143,12 +142,10 @@ static void tac(struct tictac *t)
 {
     clock_gettime(CLOCK_MONOTONIC, &t->tac);
 
-    uint64_t ns =
-        + t->tac.tv_sec * 1000000000 + t->tac.tv_nsec
-        - t->tic.tv_sec * 1000000000 - t->tic.tv_nsec;
+    uint64_t ns = +t->tac.tv_sec * 1000000000 + t->tac.tv_nsec - t->tic.tv_sec * 1000000000 - t->tic.tv_nsec;
 
     if (arguments.time)
-        printf("time=%g s\n", (double)ns/1000000000.0);
+        printf("time=%g s\n", (double)ns / 1000000000.0);
 }
 
 void thermobench_wrap(void (*f)())
