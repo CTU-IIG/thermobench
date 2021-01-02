@@ -289,6 +289,7 @@ Write raw thermobench data `d` to file named `file`.
 julia> const T = Thermobench;
 
 julia> T.read("test.csv") |> interpolate! |> T.write("interpolated.csv");
+
 ```
 """
 write(file; kwargs...) = d->write(file, d; kwargs...)
@@ -318,6 +319,10 @@ function interpolate!(df::AbstractDataFrame)
     df[!,1] .|> ismissing |> any && error("First column must not have missing values")
 
     for col in 2:size(df)[2]
+        # Convert Int64 to Float64
+        if eltype(df[!, col]) == Union{Missing, Int64}
+            df[!, col] = map(x->(ismissing(x) ? missing : Float64(x)), df[!, col])
+        end
         valid_row = 0
         for row in 1:size(df)[1]
             if ! ismissing(df[row, col])

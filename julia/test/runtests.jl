@@ -62,6 +62,12 @@ end
     T.write("written.csv", d)
     d |> T.write("written-via-pipe.csv")
     T.read("test.csv") |> interpolate! |> T.write("written-via-pipe2.csv")
+
+    @test begin
+        d = DataFrame(time=[0,1,2], val=[1, missing, 2])
+        interpolate!(d)
+        d.val
+    end == [1, 1.5, 2]
 end
 
 
