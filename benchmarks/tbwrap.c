@@ -24,6 +24,7 @@ struct arguments {
     uint64_t count;
     char *work_done_str;
     uint64_t work_done_every;
+    uint64_t work_done_every_msec;
     bool time;
 };
 
@@ -40,6 +41,7 @@ static struct argp_option options[] = {
     {"count",           'c', "NUM",   0, "Execute the benchmark NUM times. Zero means infinity. Defaults to 1." },
     {"work_done_str",   'w', "STR",   0, "\"work_done\" prefix string. Empty (default) means don't print the work_done message" },
     {"work_done_every", 'e', "NUM",   0, "Print \"work_done\" message every NUM iterations. Defaults to 1." },
+    {"work_done_every_sec", 's', "NUM",   0, "Print \"work_done\" approximately every NUM seconds. When non-zero, overrides --work_done_every." },
     {"time",            't', 0,       0, "Measure and print execution time of the benchmark." },
 
     { 0 }
@@ -62,6 +64,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'e':
         arguments->work_done_every = atoll(arg);
+        break;
+    case 's':
+        arguments->work_done_every_msec = atof(arg) * 1000;
         break;
     case 't':
         arguments->time = true;
@@ -118,14 +123,38 @@ static void parse_tb_opts()
     free(argz);
 }
 
+static uint64_t get_msecs()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000;
+}
+
+static bool print_work_done_now()
+{
+    if (arguments.work_done_every_msec == 0) {
+        static uint64_t wd_cntr = 1;
+        if (--wd_cntr == 0) {
+            wd_cntr = arguments.work_done_every;
+            return true;
+        }
+    } else {
+        static uint64_t last_print_msec = 0;
+        uint64_t msec = get_msecs();
+        if (msec - last_print_msec >= arguments.work_done_every_msec) {
+            last_print_msec = msec;
+            return true;
+        }
+
+    }
+    return false;
+}
+
 static void print_work_done(uint64_t work_done)
 {
-    static uint64_t wd_cntr = 1;
-
-    if (arguments.work_done_str && --wd_cntr == 0) {
+    if (arguments.work_done_str && print_work_done_now()) {
         printf("%s=%lu\n", arguments.work_done_str, work_done);
         fflush(stdout);
-        wd_cntr = arguments.work_done_every;
     }
 }
 
