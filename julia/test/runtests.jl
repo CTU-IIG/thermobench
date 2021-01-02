@@ -60,6 +60,10 @@ end
 @testset "raw data manipulation" begin
     d = T.read("test.csv")
     T.write("written.csv", d)
+    d2 = T.read("written.csv")
+    @test d.meta["version"] == d2.meta["version"]
+    @test d.meta["command"] == d2.meta["command"]
+
     d |> T.write("written-via-pipe.csv")
     T.read("test.csv") |> interpolate! |> T.write("written-via-pipe2.csv")
 
