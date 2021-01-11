@@ -221,7 +221,7 @@ plots = [
 ]
 @gp "set multiplot layout 5,1" :-
 for p in 1:length(plots)
-    mf = T.multi_fit([rename!(filter(r->r.time < t, d), """$(@sprintf("%4.0f min", t/60))""") for t in times],
+    local mf = T.multi_fit([rename!(filter(r->r.time < t, d), """$(@sprintf("%4.0f min", t/60))""") for t in times],
                      [:CPU_0_temp], use_measurements=true, use_cmpfit=true,
                      tau_bounds=plots[p].tau_bounds, order=plots[p].order)
     @show mf
