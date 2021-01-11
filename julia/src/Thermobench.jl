@@ -109,11 +109,12 @@ function plot(d::Data, columns = :CPU_0_temp;
 end
 
 """
-    ops_per_sec(d::Data, column = :work_done)::Vector{Float64}
+    ops_per_sec(d::Data, column = :work_done; drop_inf = false)::Vector{Float64}
 
 Return a vector of operations per second calculated by combining
 information from *time* and *work_done*-type column identified with
-`column`.
+`column`. If `drop_inf` is true, infinity values (if any) are removed
+from the resulting vector.
 
 ```jldoctest
 julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:3]
@@ -123,9 +124,13 @@ julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:
  5.4862923057965025e7
 ```
 """
-function ops_per_sec(d::Data, column = :work_done)::Vector{Float64}
+function ops_per_sec(d::Data, column = :work_done; drop_inf = false)::Vector{Float64}
     wd = select(d.df, :time, column => :work_done) |> dropmissing
     speed = diff(wd.work_done) ./ diff(wd.time)
+    if drop_inf
+        speed = filter(!isinf, speed)
+    end
+    return speed
 end
 
 """
@@ -156,16 +161,21 @@ multiple *work_done* columns. This is most often used for calculating
 combining [`sample_mean_est`](@ref) and [`ops_per_sec`](@ref) for all
 matching columns.
 
+# Optional arguments
+
+- `drop_inf` argument is passed to [`ops_per_sec`](@ref) function,
+- `alpha` is passed to [`sample_mean_est`](@ref).
+
 # Example
 ```jldoctest
 julia> ops_est(Thermobench.read("test.csv"))
 3.9364e8 ± 280000.0
 ```
 """
-function ops_est(d::Data, col_idx = r"work_done")::Measurement
+function ops_est(d::Data, col_idx = r"work_done"; drop_inf::Bool = false, alpha = 0.05)::Measurement
     wdcols = propertynames(d.df[!, col_idx])
-    sum([sample_mean_est(ops)
-         for ops in ops_per_sec.(d, wdcols) if length(ops) > 0])
+    sum([sample_mean_est(ops; alpha)
+         for ops in ops_per_sec.(d, wdcols; drop_inf) if length(ops) > 0])
 end
 
 "
