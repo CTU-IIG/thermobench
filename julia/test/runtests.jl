@@ -46,6 +46,10 @@ end
     @test std(ops) ≈ 6.1e4 rtol=0.01
     @test T.sample_mean_est(ops).val ≈ 5.5e7 rtol=0.01
     @test T.sample_mean_est(ops).err ≈ 1.24e5 rtol=0.01
+
+    d = T.Data(DataFrame(time=[1,1,2], work_done=[1,2,3]))
+    @test ops_per_sec(d, drop_inf = false) == [Inf, 1.0]
+    @test ops_per_sec(d, drop_inf = true) == [1.0]
 end
 
 @testset "plot raw data" begin

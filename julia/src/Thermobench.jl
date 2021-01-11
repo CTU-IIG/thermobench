@@ -55,6 +55,8 @@ Base.iterate(d::Data, state) = nothing
 "Copy existing Data `d`, but replace the DataFrame with `df`."
 Data(d::Data, df::AbstractDataFrame) = Data(df, d.name, deepcopy(d.meta))
 
+Data(df::AbstractDataFrame) = Data(df, "", Dict())
+
 Base.convert(::Type{Data}, t::Tuple{AbstractDataFrame, AbstractString}) = Data(t[1], t[2], nothing, nothing, nothing, nothing)
 Base.convert(::Type{Data}, df::AbstractDataFrame) = convert(Data, (df, ""))
 
