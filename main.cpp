@@ -4,6 +4,7 @@
 #include "model.h"
 #include "our_gl.h"
 #include <err.h>
+#include "../tbwrap.h"
 
 constexpr int width  = 800; // output image size
 constexpr int height = 800;
@@ -15,6 +16,13 @@ const vec3        up(0,1,0); // camera up vector
 
 extern mat<4,4> ModelView; // "OpenGL" state matrices
 extern mat<4,4> Projection;
+
+int opt;
+bool forever = false;
+char *work_done_string = NULL;
+unsigned long long work_done = 0;
+int work_done_every = 1;
+std::vector<Model> models;
 
 struct Shader : IShader {
     const Model &model;
@@ -64,49 +72,12 @@ void print_usage(char *cmd) {
     std::cerr << "Usage: " << cmd << " [-f] [-w work_done_string [-e num]]  obj/model.obj..." << std::endl;
 }
 
-int main(int argc, char** argv) {
-    int opt;
-    bool forever = false;
-    char *work_done_string = NULL;
-    unsigned long long work_done = 0;
-    int work_done_every = 1;
-
-    while ((opt = getopt(argc, argv, "e:fw:")) != -1) {
-        switch (opt) {
-        case 'e':
-            work_done_every = atoi(optarg);
-            if (work_done_every <= 0)
-                errx(1, "Usage: -e 'number > 0'");
-            break;
-        case 'f':
-            forever = true;
-            break;
-        case 'w':
-            work_done_string = optarg;
-            break;
-        default: /* '?' */
-            print_usage(argv[0]);
-            return 1;
-        }
-    }
-
-    if (optind >= argc) {
-        print_usage(argv[0]);
-        return 1;
-    }
-
-    if (work_done_string == NULL && work_done_every != 1)
-        errx(1, "-e only makes sense with -w");
-
+void tinyrender_run() {
     std::vector<double> zbuffer(width*height, -std::numeric_limits<double>::max()); // note that the z-buffer is initialized with minimal possible values
     TGAImage framebuffer(width, height, TGAImage::RGB); // the output image
     lookat(eye, center, up);                            // build the ModelView matrix
     viewport(width/8, height/8, width*3/4, height*3/4); // build the Viewport matrix
     projection(-1.f/(eye-center).norm());               // build the Projection matrix
-
-    std::vector<Model> models;
-    for (int m=optind; m<argc; m++) // iterate through all input objects
-        models.emplace_back(argv[m]);
 
     do {
         for (auto &model : models) { // iterate through all input objects
@@ -124,5 +95,44 @@ int main(int argc, char** argv) {
         }
     } while (forever);
     framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
+}
+
+void tinyrender_init(int argc, char** argv)
+{
+    while ((opt = getopt(argc, argv, "e:fw:")) != -1) {
+        switch (opt) {
+        case 'e':
+            work_done_every = atoi(optarg);
+            if (work_done_every <= 0)
+                errx(1, "Usage: -e 'number > 0'");
+            break;
+        case 'f':
+            forever = true;
+            break;
+        case 'w':
+            work_done_string = optarg;
+            break;
+        default: /* '?' */
+            print_usage(argv[0]);
+            return;
+        }
+    }
+
+    if (optind >= argc) {
+        print_usage(argv[0]);
+        return;
+    }
+
+    if (work_done_string == NULL && work_done_every != 1)
+        errx(1, "-e only makes sense with -w");
+
+    for (int m=optind; m<argc; m++) // iterate through all input objects
+        models.emplace_back(argv[m]);
+}
+
+int main(int argc, char** argv)
+{
+    tinyrender_init(argc, argv);
+    thermobench_wrap(tinyrender_run);
     return 0;
 }
