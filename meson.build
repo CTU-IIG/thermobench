@@ -10,6 +10,7 @@ tinyrenderer = executable(
 		'tgaimage.cpp',
 	],
 	dependencies : dependency('OpenMP', required : false),
+	link_with : libtbwrap,
 	cpp_args : cxx.get_supported_arguments(
 		[
 			'-std=c++14',
