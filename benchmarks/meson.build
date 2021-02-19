@@ -3,6 +3,8 @@ subdir('CPU')
 subdir('mem')
 subdir('sched')
 
+libtbwrap = library('tbwrap', [ 'tbwrap.c'])
+
 fs = import('fs')
 
 if fs.exists('tinyrenderer/meson.build')
@@ -48,8 +50,6 @@ if run_command('test', '-f', coremark_srcs[0]).returncode() == 0
 		endforeach
 	endforeach
 endif
-
-libtbwrap = library('tbwrap', [ 'tbwrap.c'])
 
 if get_option('tacle-bench').enabled()
 	tacle_benchmarks = {
