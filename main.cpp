@@ -17,7 +17,6 @@ const vec3        up(0,1,0); // camera up vector
 extern mat<4,4> ModelView; // "OpenGL" state matrices
 extern mat<4,4> Projection;
 
-int opt;
 bool forever = false;
 char *work_done_string = NULL;
 unsigned long long work_done = 0;
@@ -99,6 +98,8 @@ void tinyrender_run() {
 
 void tinyrender_init(int argc, char** argv)
 {
+    int opt;
+
     while ((opt = getopt(argc, argv, "e:fw:")) != -1) {
         switch (opt) {
         case 'e':
