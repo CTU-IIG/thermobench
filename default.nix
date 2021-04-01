@@ -15,12 +15,12 @@ stdenv.mkDerivation {
     ## until next release, we live without the benchmarks.
     # submodules = true;
   };
-  mesonFlags = "-Ddemos-sch=disabled -Dtacle-bench=disabled";
+  mesonFlags = [ "-Ddemos-sch=disabled" "-Dtacle-bench=disabled" ];
 
   # Meson is no longer able to pick up Boost automatically.
   # https://github.com/NixOS/nixpkgs/issues/86131
-  BOOST_INCLUDEDIR = "${stdenv.lib.getDev boost}/include";
-  BOOST_LIBRARYDIR = "${stdenv.lib.getLib boost}/lib";
+  BOOST_INCLUDEDIR = "${lib.getDev boost}/include";
+  BOOST_LIBRARYDIR = "${lib.getLib boost}/lib";
 
   nativeBuildInputs = [ meson ninja pkg-config ];
   buildInputs = [ libev opencl-headers opencl-icd boost ];
