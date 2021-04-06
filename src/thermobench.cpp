@@ -1,7 +1,7 @@
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// Copyright (C) 2019, 2020 Czech Technical University in Prague
+// Copyright (C) 2019, 2020, 2021 Czech Technical University in Prague
 //
 // Authors: Tibor Rózsa <rozsatib@fel.cvut.cz>
 //          Michal Sojka <michal.sojka@cvut.cz>
@@ -170,9 +170,12 @@ bool verbose_needs_eol = false;
 struct StdoutKeyColumn {
     const CsvColumn &column;
     const string key;
-    StdoutKeyColumn(const string header, const string key)
+    const bool synchronous; // Value stored every --period, not immediately
+    string last_value = ""; // Last value (for synchronous columns)
+    StdoutKeyColumn(const string header, const string key, bool synchronous)
         : column(columns.add(header))
-        , key(key) {};
+        , key(key)
+        , synchronous(synchronous) {};
 };
 
 vector<string> split(const string str, const char *delimiters);
@@ -180,12 +183,14 @@ vector<string> split(const string str, const char *delimiters);
 struct Exec {
     const string cmd;
     vector<StdoutKeyColumn> columns;
-    const CsvColumn *stdout_col;
+    StdoutKeyColumn * const stdout_col;
+    const bool has_sync_column;
 
     Exec(const string &arg)
         : cmd(parse_cmd(arg))
         , columns(parse_columns(arg))
         , stdout_col(find_stdout_col(columns))
+        , has_sync_column(any_of(begin(columns), end(columns), [](const auto &c) { return c.synchronous; }))
     {
     }
 
@@ -199,7 +204,7 @@ private:
     static vector<string> get_specs(const string &arg);
     static const string parse_cmd(const string &arg);
     static vector<StdoutKeyColumn> parse_columns(const string &arg);
-    static const CsvColumn *find_stdout_col(const vector<StdoutKeyColumn> &keys);
+    static StdoutKeyColumn *find_stdout_col(vector<StdoutKeyColumn> &keys);
     pid_t pid = 0;
     unique_ptr<__gnu_cxx::stdio_filebuf<char>> buf = nullptr;
     ev::child child = {};
@@ -243,27 +248,30 @@ vector<StdoutKeyColumn> Exec::parse_columns(const string &arg)
         const StdoutKeyColumn *catch_all = nullptr;
 
         for (string spec : specs) {
+            bool synchronous = spec.front() == '@';
+            if (synchronous)
+                spec.erase(0, 1); // Remove '@'
             if (spec.back() == '=') {
-                spec.pop_back();
-                keys.push_back(StdoutKeyColumn(spec, spec));
+                spec.pop_back(); // Remove '='
+                keys.push_back(StdoutKeyColumn(spec, spec, synchronous));
             } else {
                 if (catch_all != nullptr)
                     errx(1, "--exec: At most one COL without '=' allowed");
-                keys.push_back(StdoutKeyColumn(spec, ""));
+                keys.push_back(StdoutKeyColumn(spec, "", synchronous));
                 catch_all = &keys.back();
             }
         }
     } else {
-        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t")), ""));
+        keys.push_back(StdoutKeyColumn(arg.substr(0, arg.find_first_of(" \t")), "", false));
     }
     return keys;
 }
 
-const CsvColumn *Exec::find_stdout_col(const vector<StdoutKeyColumn> &columns)
+StdoutKeyColumn *Exec::find_stdout_col(vector<StdoutKeyColumn> &columns)
 {
     for (auto &col : columns)
         if (col.key.empty())
-            return &col.column;
+            return &col;
     return nullptr;
 }
 
@@ -462,14 +470,21 @@ void set_process_affinity(int pid, int cpu_id)
     sched_setaffinity(pid, sizeof(cpu_set_t), &my_set);
 }
 
-const CsvColumn *get_stdout_column(const string_view key, const vector<StdoutKeyColumn> &stdoutColumns)
+StdoutKeyColumn *get_stdout_key_column(const string_view key, vector<StdoutKeyColumn> &stdoutColumns)
 {
     for (unsigned i = 0; i < stdoutColumns.size(); ++i) {
         if (stdoutColumns[i].key == key)
-            return &(stdoutColumns[i].column);
+            return &(stdoutColumns[i]);
     }
     return nullptr;
 }
+
+const CsvColumn *get_stdout_column(const string_view key, vector<StdoutKeyColumn> &stdoutColumns)
+{
+    const StdoutKeyColumn *c = get_stdout_key_column(key, stdoutColumns);
+    return c ? &(c->column) : nullptr;
+}
+
 
 static double get_current_time()
 {
@@ -576,10 +591,10 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     while (getline(pipe_in, line)) {
         line.erase(line.find_last_not_of("\r\n") + 1);
         size_t index = line.find_first_of('=');
-        const CsvColumn *column = nullptr;
+        StdoutKeyColumn *column = nullptr;
 
         if (index != string::npos)
-            column = get_stdout_column((line.substr(0, index)).c_str(), this->columns);
+            column = get_stdout_key_column((line.substr(0, index)).c_str(), this->columns);
 
         if (column)
             line = line.substr(index + 1);
@@ -587,15 +602,19 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
             column = this->stdout_col;
 
         if (column) {
-            if (row.empty())
-                row.set(time_column, curr_time);
+            if (column->synchronous) {
+                column->last_value = move(line);
+            } else {
+                if (row.empty())
+                    row.set(time_column, curr_time);
 
-            if (!row.getValue(*column).empty()) {
-                row.write(state.out_fp);
-                row.clear();
-                row.set(time_column, curr_time);
+                if (!row.getValue(column->column).empty()) {
+                    row.write(state.out_fp);
+                    row.clear();
+                    row.set(time_column, curr_time);
+                }
+                row.set(column->column, line.c_str());
             }
-            row.set(*column, line.c_str());
         }
     }
 
@@ -645,6 +664,7 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     double temp = NAN;
     row.set(time_column, time);
 
+    // Save sensor values
     for (unsigned i = 0; i < state.sensors.size(); ++i) {
         double t = read_sensor(state.sensors[i].path.c_str());
         if (isnan(temp))
@@ -652,6 +672,19 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
         row.set(state.sensors[i].column, t);
     }
 
+    // Save last values of synchronous exec columns
+    for (auto &e : state.execs) {
+        if (!e->has_sync_column)
+            continue;
+        for (auto &c : e->columns) {
+            if (!c.synchronous)
+                continue;
+            row.set(c.column, move(c.last_value));
+            c.last_value.erase();
+        }
+    }
+
+    // Save CPU usage columns
     if (calc_cpu_usage) {
         read_procstat();
         for (unsigned i = 0; i < n_cpus; ++i) {
@@ -823,7 +856,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         write_stdout = true;
         break;
     case 'c':
-        state.stdoutColumns.push_back(StdoutKeyColumn(arg, arg));
+        state.stdoutColumns.push_back(StdoutKeyColumn(arg, arg, false));
         break;
     case 't':
         terminate_time = atoi(arg);
@@ -901,12 +934,15 @@ static struct argp_option options[] = {
     { "exec",           'e', "[(COL[,...])]CMD",  0,
 
       "Execute CMD (in addition to COMMAND) and store its stdout in relevant "
-      "CSV columns as specified by COL. If COL ends with '=', such as 'KEY=', "
-      "store the rest of stdout lines starting with KEY= in column KEY. "
-      "Otherwise all non-matching lines will be stored in column COL. If no "
-      "COL is specified, first word of CMD is used as COL specification. "
-
-      "Example: --exec '(amb1=,amb2=,amb_other) ssh ambient@turbot read_temp'"
+      "CSV columns as specified by COL. If COL ends with '=', e.g. 'KEY=', "
+      "store the rest of stdout lines starting with KEY= in column KEY. If "
+      "COL start with '@' values are not stored immediately when received but "
+      "the last value is remembered and stored synchronously with other "
+      "sensors. Otherwise all non-matching lines will be stored in column "
+      "COL. If no COL is specified, first word of CMD is used as COL "
+      "specification.\n"
+      //
+      "Example: --exec '(amb1=,@amb2=,amb_other) ssh ambient@turbot read_temp'"
 
     },
     { "exec-wait",      'E', 0,             0,

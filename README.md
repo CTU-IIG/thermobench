@@ -110,12 +110,15 @@ sensors in a .csv file.
                              COMMAND stdout
   -e, --exec=[(COL[,...])]CMD   Execute CMD (in addition to COMMAND) and store
                              its stdout in relevant CSV columns as specified by
-                             COL. If COL ends with '=', such as 'KEY=', store
-                             the rest of stdout lines starting with KEY= in
-                             column KEY. Otherwise all non-matching lines will
-                             be stored in column COL. If no COL is specified,
+                             COL. If COL ends with '=', e.g. 'KEY=', store the
+                             rest of stdout lines starting with KEY= in column
+                             KEY. If COL start with '@' values are not stored
+                             immediately when received but the last value is
+                             remembered and stored synchronously with other
+                             sensors. Otherwise all non-matching lines will be
+                             stored in column COL. If no COL is specified,
                              first word of CMD is used as COL specification.
-                             Example: --exec '(amb1=,amb2=,amb_other) ssh
+                             Example: --exec '(amb1=,@amb2=,amb_other) ssh
                              ambient@turbot read_temp'
   -E, --exec-wait            Wait for --exec processes to finish. Do not kill
                              them (useful for testing).

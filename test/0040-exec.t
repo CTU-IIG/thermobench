@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 . testlib
-plan_tests 21
+plan_tests 27
 
 out=$(thermobench -O- -s/dev/null -E --exec="echo value" -- true)
 ok $? "exit code"
@@ -46,3 +46,21 @@ is $? 1 "exit code"
 
 out=$(thermobench -O- -s/dev/null -E --exec='() echo' -- true)
 is $? 1 "exit code"
+
+out=$(thermobench -O- -S"/proc/uptime uptime" -E --exec='(@seq)seq -f "val%g" 9' -p 100 -- sleep 0.3)
+ok $? "exit code"
+readarray -t line <<<$out
+is "${line[1]}" "time/ms,uptime,seq"
+(( matches=0 ))
+for i in $(seq 9); do grep -q "val$i" <<<$out && (( matches++ )); done
+# Most likely only one value appears in the output. In the worst case three values (almost never 9)
+okx test $matches -ge 1 -a $matches -le 3
+
+out=$(thermobench -O- -S"/proc/uptime uptime" -E --exec='(@seq=,other)seq -f "seq=val%g" 9' -p 100 -- sleep 0.3)
+ok $? "exit code"
+readarray -t line <<<$out
+is "${line[1]}" "time/ms,uptime,seq,other"
+(( matches=0 ))
+for i in $(seq 9); do grep -q "val$i" <<<$out && (( matches++ )); done
+# Most likely only one value appears in the output. In the worst case three values (almost never 9)
+okx test $matches -ge 1 -a $matches -le 3
