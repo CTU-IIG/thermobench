@@ -38,6 +38,17 @@ struct Opts {
     /// Print debug output
     #[clap(short, long = "debug")]
     debug: bool,
+
+    /// Initial filter output. If not specified, taken from sensor value.
+    #[clap(short, value_name = "val")]
+    initial: Option<f64>,
+}
+
+fn read_val(f: &mut File) -> io::Result<f64> {
+    let mut contents = String::new();
+    f.seek(SeekFrom::Start(0))?;
+    f.read_to_string(&mut contents)?;
+    return Ok(f64::from(contents.trim_end().parse::<i32>().unwrap()));
 }
 
 fn main() -> io::Result<()> {
@@ -46,16 +57,15 @@ fn main() -> io::Result<()> {
     let alpha: f64 =
         opts.sample_period.as_secs_f64() / (opts.time_constant + opts.sample_period).as_secs_f64();
 
-    let mut contents = String::new();
     let mut f = File::open(&opts.sensor).expect(&opts.sensor);
     let mut last_print = Instant::now();
     let mut _i: u64 = 0; // iteration counter
-    let mut y: f64 = 0.0; // filter output
+    let mut y: f64 = match opts.initial {
+        Some(val) => val,
+        None => read_val(&mut f).expect("Sensor read error"),
+    };
     loop {
-        contents.clear();
-        f.seek(SeekFrom::Start(0))?;
-        f.read_to_string(&mut contents)?;
-        let u = f64::from(contents.trim_end().parse::<i32>().unwrap()); // filter input
+        let u = read_val(&mut f)?; // filter input
         y = (1.0 - alpha) * y + alpha * u; // filter output
         if opts.debug {
             println!("#{}, input: {}, output: {}", _i, u, y);
