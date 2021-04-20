@@ -11,5 +11,5 @@
 /sys/devices/system/cpu/cpu4/cpufreq/cpuinfo_cur_freq Cortex_A72_0_freq Hz
 /sys/devices/system/cpu/cpu5/cpufreq/cpuinfo_cur_freq Cortex_A72_1_freq Hz
 !(ambient/°C) while true; do ssh ambient@turbot read_temp; sleep 1; done
-!(cam_cpu=,cam_mem=) while true; do curl -sS turbot:8080/temperatures.txt; sleep 10; done
+!(cam_cpu=,cam_mem=,@heat_sources=) while true; do ssh thermocam@turbot; done
 !(@power/µW) while true; do ssh -T power@turbot; done
