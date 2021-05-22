@@ -183,7 +183,7 @@ vector<string> split(const string str, const char *delimiters);
 struct Exec {
     const string cmd;
     vector<StdoutKeyColumn> columns;
-    StdoutKeyColumn * const stdout_col;
+    StdoutKeyColumn *const stdout_col;
     const bool has_sync_column;
 
     Exec(const string &arg)
@@ -486,7 +486,6 @@ const CsvColumn *get_stdout_column(const string_view key, vector<StdoutKeyColumn
     const StdoutKeyColumn *c = get_stdout_key_column(key, stdoutColumns);
     return c ? &(c->column) : nullptr;
 }
-
 
 static double get_current_time()
 {

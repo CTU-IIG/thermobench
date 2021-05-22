@@ -145,7 +145,6 @@ static bool print_work_done_now()
             last_print_msec = msec;
             return true;
         }
-
     }
     return false;
 }

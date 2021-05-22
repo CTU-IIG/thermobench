@@ -11,5 +11,4 @@ void thermobench_wrap(void (*f)());
 }
 #endif
 
-
 #endif
