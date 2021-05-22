@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
     size_t local_ws;
     unsigned width, height;
     string work_done_msg;
+    int max_iter;
+    float escape_radius;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -25,8 +27,10 @@ int main(int argc, char **argv) {
         ("help", "produce help message")
         ("global-ws",     po::value(&global_ws)->default_value(1024))
         ("local-ws",      po::value(&local_ws)->default_value(32))
-        ("width",         po::value(&width)->default_value(256))
-        ("height",        po::value(&height)->default_value(256))
+        ("width",         po::value(&width)->default_value(1024))
+        ("height",        po::value(&height)->default_value(16))
+        ("max-iter",      po::value(&max_iter)->default_value(65536))
+        ("escape-radius", po::value(&escape_radius)->default_value(INFINITY))
         ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ;
 
@@ -39,6 +43,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    if (width % global_ws != 0)
+        warn("Warning: width (%d) is not multiple of global-ws (%d)\n", width, global_ws);
 
     get_ocl_device(&platform_id, &device_id);
 
@@ -68,10 +74,10 @@ int main(int argc, char **argv) {
 
     // create program object
     string src =
-        "#define HEIGHT " + to_string(height) + "\n"
-        "#define WIDTH " + to_string(width) + "\n"
-        "#define GLOBAL_WS " + to_string(global_ws) + "\n"
-        "#define LOCAL_WS " + to_string(local_ws) + "\n"
+        "#define HEIGHT (" + to_string(height) + ")\n"
+        "#define WIDTH (" + to_string(width) + ")\n"
+        "#define MAX_ITER (" + to_string(max_iter) + ")\n"
+        "#define ESCAPED(z) (" + (isinf(escape_radius) ? "false" : "(z) >= " + to_string(escape_radius*escape_radius)) + ")\n"
         + ocl_code;
     cl_program program;
     const char *source = src.c_str();
@@ -86,6 +92,7 @@ int main(int argc, char **argv) {
     if (status != CL_SUCCESS || !program) {
         error("clCreateProgramWithSource (%d)\n", status);
     }
+
 
     // Build program
     status = clBuildProgram(
