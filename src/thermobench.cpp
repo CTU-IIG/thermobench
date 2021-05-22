@@ -349,6 +349,8 @@ static void read_sensor_paths(char *sensors_file)
     char *line = NULL;
 
     while ((getline(&line, &len, fp)) != -1) {
+        while (line[0] != 0 && line[strlen(line) - 1] == '\n')
+            line[strlen(line) - 1] = 0;
         if (line[0] == '!') {
             state.execs.emplace_back(new Exec(line + 1));
         } else {
