@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
     string work_done_msg;
     int max_iter;
     float escape_radius;
+    uint32_t group_mask;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
         ("height",        po::value(&height)->default_value(16))
         ("max-iter",      po::value(&max_iter)->default_value(65536))
         ("escape-radius", po::value(&escape_radius)->default_value(INFINITY))
+        ("group-mask",    po::value(&group_mask)->default_value(0),              "bitmask specifying which work groups should run full computation; zero means all")
         ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ;
 
@@ -78,6 +80,7 @@ int main(int argc, char **argv) {
         "#define WIDTH (" + to_string(width) + ")\n"
         "#define MAX_ITER (" + to_string(max_iter) + ")\n"
         "#define ESCAPED(z) (" + (isinf(escape_radius) ? "false" : "(z) >= " + to_string(escape_radius*escape_radius)) + ")\n"
+        "#define GROUP_MASK (" + to_string(group_mask) + ")\n"
         + ocl_code;
     cl_program program;
     const char *source = src.c_str();
