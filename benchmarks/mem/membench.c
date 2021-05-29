@@ -318,7 +318,8 @@ static void print_help(char *argv[], struct cfg *dflt)
 	       "  -s <WSS>    Run benchmark for given working set size; the default is\n"
 	       "              to benchmark a sequence of multiple WSSs\n"
 	       "  -t <#thr>   The number of benchmark threads to run; use -C to\n"
-	       "              specify their CPU affinity\n"
+	       "              specify their CPU affinity. If -C is specified, -t defaults\n"
+	       "              to the number of -C occurrences\n"
 	       "  -w          Perform both memory reads and writes (default is only\n"
 	       "              reads)\n"
 	       "  -y          Report the memory access duration in clock cycles rather\n"
@@ -337,7 +338,7 @@ int main(int argc, char *argv[])
 
 	struct cfg cfg = {
 		.sequential = true,
-		.num_threads = 1,
+		.num_threads = 0,
 		.size = 0,
 		.read_count = 0x2000000,
 		.write = false,
@@ -345,6 +346,7 @@ int main(int argc, char *argv[])
 		.use_cycles = false, /* i.e. use nanoseconds */
 	};
 	CPU_ZERO(&cfg.cpu_set);
+	unsigned C_cnt = 0;
 
 	int opt;
 	while ((opt = getopt(argc, argv, "b::c:C:fho:rs:t:wy")) != -1) {
@@ -385,6 +387,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'C':
 			CPU_SET(atol(optarg), &cfg.cpu_set);
+			C_cnt++;
 			break;
 		case 'w':
 			cfg.write = true;
@@ -401,6 +404,9 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 	}
+
+	if (cfg.num_threads == 0)
+		cfg.num_threads = (C_cnt != 0) ? C_cnt : 1; /* default value */
 
 	if (cfg.write) {
 		struct s s;
