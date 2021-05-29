@@ -351,6 +351,8 @@ static void read_sensor_paths(char *sensors_file)
     while ((getline(&line, &len, fp)) != -1) {
         while (line[0] != 0 && line[strlen(line) - 1] == '\n')
             line[strlen(line) - 1] = 0;
+        if (line[0] == '#')
+            continue;
         if (line[0] == '!') {
             state.execs.emplace_back(new Exec(line + 1));
         } else {
@@ -906,9 +908,10 @@ static struct argp_option options[] = {
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "sensors_file",   's', "FILE",        0,
       "Definition of sensors to use. Each line of the FILE contains either "
-      "SPEC as in -S or, when the line starts with '!', the rest is interpreted as "
-      "an argument to --exec. When no sensors are specified via -s or -S, "
-      "all available thermal zones are added automatically." },
+      "SPEC as in -S or, when the line starts with '!', the rest is "
+      "interpreted as an argument to --exec. Lines starting with '#' are "
+      "ignored. When no sensors are specified via -s or -S, all available "
+      "thermal zones are added automatically." },
     { "sensor",         'S', "SPEC",        0,
       "Add a sensor to the list of used sensors. SPEC is FILE [NAME [UNIT]]. "
       "FILE is typically something like "

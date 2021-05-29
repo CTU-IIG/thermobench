@@ -137,9 +137,10 @@ sensors in a .csv file.
   -s, --sensors_file=FILE    Definition of sensors to use. Each line of the
                              FILE contains either SPEC as in -S or, when the
                              line starts with '!', the rest is interpreted as
-                             an argument to --exec. When no sensors are
-                             specified via -s or -S, all available thermal
-                             zones are added automatically.
+                             an argument to --exec. Lines starting with '#' are
+                             ignored. When no sensors are specified via -s or
+                             -S, all available thermal zones are added
+                             automatically.
   -S, --sensor=SPEC          Add a sensor to the list of used sensors. SPEC is
                              FILE [NAME [UNIT]]. FILE is typically something
                              like
