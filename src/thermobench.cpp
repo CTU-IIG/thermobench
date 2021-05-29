@@ -786,10 +786,6 @@ void measure(int measure_period_ms)
     child_stdout.set<child_stdout_cb>();
     child_stdout.start(p[0], ev::READ);
 
-    ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
-    if (state.sensors.size())
-        ev_timer_start(loop, &measure_timer);
-
     if (terminate_time > 0) {
         ev_timer_init(&terminate_timer, terminate_timer_cb, terminate_time, 0);
         ev_timer_start(loop, &terminate_timer);
@@ -800,8 +796,15 @@ void measure(int measure_period_ms)
     ev_signal_init(&sigterm_watcher, sigint_cb, SIGTERM);
     ev_signal_start(loop, &sigterm_watcher);
 
-    for (const auto &exec : state.execs)
+    bool have_sync_exec = false;
+    for (const auto &exec : state.execs) {
         exec->start(loop);
+        have_sync_exec |= exec->has_sync_column;
+    }
+
+    ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
+    if (state.sensors.size() > 0 || have_sync_exec)
+        ev_timer_start(loop, &measure_timer);
 
     int currpriority = getpriority(PRIO_PROCESS, getpid());
     setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
