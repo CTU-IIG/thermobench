@@ -70,6 +70,7 @@ sources = {
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 rt_dep = cc.find_library('rt', required : false)
+threads_dep = dependency('threads')
 
 run_command('sh', '-c', 'mkdir -p $MESON_BUILD_ROOT/$MESON_SUBDIR/../data')
 
@@ -77,7 +78,7 @@ foreach benchmark : automark_benchmarks
 	foreach workload_size : [ '4K', '4M' ]
 		executable(benchmark + '-' + workload_size,
 			   [ 'main.c' ] + sources.get(benchmark),
-			   dependencies : [ dependency('threads'), tbwrap_dep, common_dep, m_dep, rt_dep ],
+			   dependencies : [ threads_dep, tbwrap_dep, common_dep, m_dep, rt_dep ],
 			   c_args : common_flags + platform_flags + [
 					    '-DDEFINE_PARAMS_FUN=define_params_' + benchmark,
 					    '-DWL_IDX=@0@'.format(wl_idx.get(workload_size).get(benchmark)),
