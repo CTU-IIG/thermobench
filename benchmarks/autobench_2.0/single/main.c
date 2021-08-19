@@ -3,7 +3,7 @@
 #include "th_lib.h"
 #include "mith_workload.h"
 #include "al_smp.h"
-#include "tbwrap.h"
+#include <tbwrap.h>
 #include "benchmarks.h"
 
 //#define WORKLOAD_SIZE "4K"

@@ -5,6 +5,11 @@ subdir('sched')
 
 libtbwrap = library('tbwrap', [ 'tbwrap.c'])
 
+tbwrap_dep = declare_dependency(
+	link_with : libtbwrap,
+	include_directories : include_directories('.'),
+)
+
 fs = import('fs')
 
 if fs.exists('tinyrenderer/meson.build')
@@ -146,4 +151,8 @@ if get_option('tacle-bench').enabled()
 			   c_args : [ '-Werror=implicit-function-declaration' ],
 			  )
 	endforeach
+endif
+
+if get_option('autobench').enabled()
+	subdir('autobench_2.0/single')
 endif

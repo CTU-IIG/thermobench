@@ -4,5 +4,7 @@ option('demos-sch', type : 'feature',
        description : 'libdemos-sch support')
 option('tacle-bench', type : 'feature',
        description : 'Compile some tacle-bench benchmarks')
+option('autobench', type : 'feature',
+       description : 'Compile some EEMBC AutoBench benchmarks')
 option('system-libev', type : 'feature',
        description : 'Use system-provided libev')
