@@ -322,10 +322,11 @@ static string shell_quote(int argc, char **argv)
         } else {
             result += "'";
             for (char *p = argv[i]; *p; p++) {
-                if (*p == '\'')
-                    result += "'\\''";
-                else
-                    result += *p;
+                switch (*p) {
+                case '\'': result += "'\\''"; break;
+                case '\n': result += "'$\'\\n\''"; break;
+                default:   result += *p;
+                }
             }
             result += "'";
         }
