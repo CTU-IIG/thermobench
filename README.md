@@ -147,6 +147,7 @@ sensors in a .csv file.
                              /sys/devices/virtual/thermal/thermal_zone0/temp 
   -t, --time=SECONDS         Terminate the COMMAND after this time
   -u, --cpu-usage            Calculate and log CPU usage.
+      --unbuffered           Flush CSV to disk after every row.
   -v, --verbose              Print progress information to stderr.
   -w, --wait=TEMP [°C]      Wait for the temperature reported by the first
                              configured sensor to be less or equal to TEMP

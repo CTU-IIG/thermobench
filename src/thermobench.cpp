@@ -166,6 +166,7 @@ bool calc_cpu_usage = false;
 bool exec_wait = false;
 bool verbose = false;
 bool verbose_needs_eol = false;
+bool csv_unbuffered = false;
 
 struct StdoutKeyColumn {
     const CsvColumn &column;
@@ -546,6 +547,8 @@ static void child_stdout_cb(ev::io &w, int revents)
 
     if (!row.empty())
         row.write(state.out_fp);
+    if (csv_unbuffered)
+        fflush(state.out_fp);
 }
 
 void Exec::start(ev::loop_ref loop)
@@ -624,6 +627,9 @@ void Exec::child_stdout_cb(ev::io &w, int revents)
     if (!row.empty())
         row.write(state.out_fp);
 
+    if (csv_unbuffered)
+        fflush(state.out_fp);
+
     // Stop the watcher if the pipe is closed. If this was the last
     // watcher, the event loop terminates.
     if (pipe_in.eof())
@@ -696,6 +702,9 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
     }
 
     row.write(state.out_fp);
+
+    if (csv_unbuffered)
+        fflush(state.out_fp);
 
     if (verbose) {
         fprintf(stderr, "\r%.1fs  %.1f°C   ", time / 1000.0, temp / 1000.0);
@@ -816,6 +825,10 @@ void measure(int measure_period_ms)
     verbose_ensure_eol();
 }
 
+enum {
+    OPT_UNBUFFERED = 1000,
+};
+
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
 {
     static bool sensors_specified = false;
@@ -878,6 +891,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         break;
     case 'E':
         exec_wait = true;
+        break;
+    case OPT_UNBUFFERED:
+        csv_unbuffered = true;
         break;
         /*     case ARGP_KEY_ARG: */
         /*         break; */
@@ -954,6 +970,7 @@ static struct argp_option options[] = {
     },
     { "exec-wait",      'E', 0,             0,
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
+    { "unbuffered",     OPT_UNBUFFERED, 0,  0, "Flush CSV to disk after every row." },
     { "verbose",        'v', 0,             0, "Print progress information to stderr." },
     { 0 }
 };
@@ -1116,6 +1133,8 @@ int main(int argc, char **argv)
     CsvRow row(columns);
     columns.setHeader(row);
     row.write(state.out_fp);
+    if (csv_unbuffered)
+        fflush(state.out_fp);
 
     // Clear signal mask in children - don't let them inherit our
     // mask, which libev "randomly" modifies
