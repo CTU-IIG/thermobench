@@ -9,6 +9,13 @@ Standalone autobench kernels with thermobench wrapper.
 - Reconfigure the meson build directory with:
 
         meson configure -Dautobench=enabled
+
+  This configures the benchmarks to be compiled in the default,
+  multi-threaded mode. If you prefer single-threaded mode, configure
+  the build by the following command:
+
+        meson configure -Dautobench=enabled -Dautobench-singlethread=true
+
 - Build thermobench: `ninja`
 
 
