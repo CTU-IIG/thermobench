@@ -6,5 +6,7 @@ option('tacle-bench', type : 'feature',
        description : 'Compile some tacle-bench benchmarks')
 option('autobench', type : 'feature',
        description : 'Compile some EEMBC AutoBench benchmarks')
+option('autobench-singlethread', type : 'boolean', value : false,
+       description : 'Compile EEMBC AutoBench as single-threaded programs')
 option('system-libev', type : 'feature',
        description : 'Use system-provided libev')

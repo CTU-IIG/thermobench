@@ -25,6 +25,8 @@ wl_idx = { '4K' : wl_idx_4K, '4M' : wl_idx_4M }
 common_flags = ['-Wall', '-Wno-long-long', '-std=gnu99', '-O2', '-fno-asm', '-fsigned-char']
 platform_flags = ['-DEE_SIZEOF_LONG=8', '-DEE_SIZEOF_PTR=8', '-DEE_PTR_ALIGN=8', '-DHAVE_SYS_STAT_H=1', '-DGCC_INLINE_MACRO=1', '-DNO_RESTRICT_QUALIFIER=1']
 
+optional_flags = get_option('autobench-singlethread') ? [ '-DUSE_SINGLE_CONTEXT=1', '-DUSE_NATIVE_PTHREAD=0' ] : []
+
 autobench_common = static_library('autobench_common', [
 					 '../mith/src/th_getopt.c',
 					 '../mith/src/mith_lib.c',
@@ -41,7 +43,7 @@ autobench_common = static_library('autobench_common', [
 					 '../mith/al/src/th_al.c',
 				  ],
 				  include_directories : include_directories('../mith/include', '../mith/al/include'),
-				  c_args : common_flags + platform_flags,
+				  c_args : common_flags + platform_flags + optional_flags,
 				 )
 common_dep = declare_dependency(
 	link_with : autobench_common,
@@ -79,7 +81,7 @@ foreach benchmark : automark_benchmarks
 		executable(benchmark + '-' + workload_size,
 			   [ 'main.c' ] + sources.get(benchmark),
 			   dependencies : [ threads_dep, tbwrap_dep, common_dep, m_dep, rt_dep ],
-			   c_args : common_flags + platform_flags + [
+			   c_args : common_flags + platform_flags + optional_flags + [
 					    '-DDEFINE_PARAMS_FUN=define_params_' + benchmark,
 					    '-DWL_IDX=@0@'.format(wl_idx.get(workload_size).get(benchmark)),
 					    '-DINIT_FUN=bmark_init_' + benchmark,
