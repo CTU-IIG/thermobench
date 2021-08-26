@@ -16,7 +16,7 @@ void mandelbrot(__global unsigned char* buffer) {
     float Zr2, Zi2; // Zr2 = Zr*Zr; Zi2 = Zi*Zi
 
     const uint gs = get_global_size(0);
-    const uint work_group = get_global_id(0) / get_local_size(0);
+    const uint work_group = get_group_id(0);
     const bool run = (GROUP_MASK == 0) || !!((1U << work_group) & GROUP_MASK);
 
     for (int y_px = get_global_id(0); y_px < WIDTH; y_px += gs) {
