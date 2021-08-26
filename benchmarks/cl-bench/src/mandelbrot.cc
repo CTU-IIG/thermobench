@@ -3,6 +3,7 @@
 #include <string>
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <chrono>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -22,6 +23,7 @@ int main(int argc, char **argv) {
     float escape_radius;
     uint32_t group_mask;
     uint32_t kernel_count;
+    bool print_time;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -36,6 +38,7 @@ int main(int argc, char **argv) {
         ("group-mask",    po::value(&group_mask)->default_value(0),              "bitmask specifying which work groups should run full computation; zero means all")
         ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
         ("kernel-count",  po::value(&kernel_count)->default_value(0),            "how many times to execute the kernel; 0 means infinity")
+        ("print-time",    po::bool_switch(&print_time),                          "print time of kernel execution")
         ;
 
     po::variables_map vm;
@@ -128,6 +131,8 @@ int main(int argc, char **argv) {
 
     // Run
     do {
+        auto tic = chrono::steady_clock::now();
+
         check_clSetKernelArg(kernel, 0, &buffer);
 
         check_clEnqueueNDRangeKernel(
@@ -147,10 +152,23 @@ int main(int argc, char **argv) {
             error("clFinish (%d)\n", status);
         }
 
+        auto tac = chrono::steady_clock::now();
+
+        bool flush = false;
+
+        if (print_time) {
+            printf("time=%gs\n", chrono::duration_cast<chrono::microseconds>(tac - tic).count() / 1e6);
+            flush = true;
+        }
+
         if (!work_done_msg.empty()) {
             printf("%s=%d\n", work_done_msg.c_str(), work_done++);
-            fflush(NULL);
+            flush = true;
         }
+
+        if (flush)
+            fflush(NULL);
+
     } while (kernel_count == 0 || kernel_count-- > 1);
 
     status = clReleaseKernel(kernel);
