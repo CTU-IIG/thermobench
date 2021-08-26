@@ -21,6 +21,7 @@ int main(int argc, char **argv) {
     int max_iter;
     float escape_radius;
     uint32_t group_mask;
+    uint32_t kernel_count;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -34,6 +35,7 @@ int main(int argc, char **argv) {
         ("escape-radius", po::value(&escape_radius)->default_value(INFINITY))
         ("group-mask",    po::value(&group_mask)->default_value(0),              "bitmask specifying which work groups should run full computation; zero means all")
         ("work-done-msg", po::value(&work_done_msg)->default_value("work_done"))
+        ("kernel-count",  po::value(&kernel_count)->default_value(0),            "how many times to execute the kernel; 0 means infinity")
         ;
 
     po::variables_map vm;
@@ -149,7 +151,7 @@ int main(int argc, char **argv) {
             printf("%s=%d\n", work_done_msg.c_str(), work_done++);
             fflush(NULL);
         }
-    } while (true);
+    } while (kernel_count == 0 || kernel_count-- > 1);
 
     status = clReleaseKernel(kernel);
     if (status != CL_SUCCESS) {
