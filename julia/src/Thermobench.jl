@@ -790,6 +790,7 @@ Generic helper function to plot bar graphs with Gnuplot.jl.
 - `label_enhanced=false`: whether to apply Gnuplot enhanced formatting to labels.
 - `key_enhanced=false`: whether to apply Gnuplot enhanced formatting to data keys.
 - `y2cols=[]`: Columns (specified as symbols) which should be plot against *y2* axis.
+- `linetypes=1:ncol(df)-1`: Line types (colors) used for different bars
 
 # Example
 
@@ -822,6 +823,7 @@ function plot_bars(df::AbstractDataFrame;
                    label_enhanced = false,
                    key_enhanced = false,
                    y2cols = [],
+                   linetypes = 1:ncol(df)-1,
                    )::Vector{Gnuplot.PlotElement}
     n = nrow(df)
 
@@ -875,7 +877,7 @@ function plot_bars(df::AbstractDataFrame;
             Gnuplot.PlotElement(
                 data=data,
                 plot="using $(gpusing(i)) $(axes(i))" *
-                """title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced""",
+                """title '$(names(df, i)[1])' $(key_enhanced ? "" : "no")enhanced lt $(linetypes[i-1])""",
             )
             for i in 2:ncol(df)
         ]...
