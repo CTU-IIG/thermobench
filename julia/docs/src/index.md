@@ -31,14 +31,14 @@ Depth = 4
 Thermobench.jl can be installed using the Julia package manager. From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```
-pkg> develop /path/to/thermobench/julia
+pkg> add https://github.com/CTU-IIG/thermobench:julia
 ```
 
 Alternatively, if you want to use the same versions of packages as the
 author of the package, run:
 
 ```
-(@v1.5) pkg> activate /path/to/thermobench/julia
+(@v1.6) pkg> activate /path/to/thermobench/julia
 (Thermobench) pkg> instantiate
 ```
 
