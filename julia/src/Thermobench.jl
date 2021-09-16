@@ -90,21 +90,24 @@ data.
 - `with`: Gnuplot's "with" value – chooses how the data is plot. Defaults to `"points"`.
 - `title`: Custom title for all plotted columns. Default title is column title of each plot column.
 - `enhanced`: Use Gnuplot enhanced markup for `title`. Default is `false`.
+- `minutes::Bool=false`: chooses between seconds and minutes on the x-axis.
 
 """
 function plot(d::Data, columns = :CPU_0_temp;
               with="points",
               title=nothing,
               enhanced=false,
+              minutes=false,
               )::Vector{Gnuplot.PlotElement}
-    time_div = 1
+    time_div = minutes ? 60 : 1
     vcat(
         Gnuplot.PlotElement(cmds="set grid"),
         map(ensurearray(columns)) do column
             df = select(d.df, [:time, column]) |> dropmissing
             Gnuplot.PlotElement(
                 data=Gnuplot.DatasetText(df[!, 1]/time_div, df[!, 2]),
-                plot="w $with title '$(isnothing(title) ? string(column) : title)' $(enhanced ? "" : "no")enhanced"
+                plot="w $with title '$(isnothing(title) ? string(column) : title)' $(enhanced ? "" : "no")enhanced",
+                cmds="set xlabel 'Time [$(minutes ? "min" : "s")]"
             )
         end
     )
