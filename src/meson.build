@@ -25,6 +25,7 @@ endif
 executable('thermobench', [
 		  'thermobench.cpp',
 		  'csvRow.cpp',
+		  'sched_deadline.c',
 		  version_h,
 	   ],
 	   cpp_args : ['-Weffc++', '-std=c++17'],

@@ -33,6 +33,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <vector>
+#include "sched_deadline.h"
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -167,6 +168,8 @@ bool exec_wait = false;
 bool verbose = false;
 bool verbose_needs_eol = false;
 bool csv_unbuffered = false;
+bool sched_deadline = false;
+float sched_deadline_budget = 1.0; // %
 
 struct StdoutKeyColumn {
     const CsvColumn &column;
@@ -816,8 +819,13 @@ void measure(int measure_period_ms)
     if (state.sensors.size() > 0 || have_sync_exec)
         ev_timer_start(loop, &measure_timer);
 
-    int currpriority = getpriority(PRIO_PROCESS, getpid());
-    setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
+    if (sched_deadline) {
+        setup_sched_deadline(measure_period_ms * 1000000,
+                             measure_period_ms * 1000000/100 * sched_deadline_budget);
+    } else {
+        int currpriority = getpriority(PRIO_PROCESS, getpid());
+        setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 
@@ -828,6 +836,7 @@ void measure(int measure_period_ms)
 
 enum {
     OPT_UNBUFFERED = 1000,
+    OPT_SCHED_DEADLINE,
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
@@ -895,6 +904,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
         break;
     case OPT_UNBUFFERED:
         csv_unbuffered = true;
+        break;
+    case OPT_SCHED_DEADLINE:
+        sched_deadline = true;
+        if (arg)
+            sched_deadline_budget = atof(arg);
         break;
         /*     case ARGP_KEY_ARG: */
         /*         break; */
@@ -973,6 +987,12 @@ static struct argp_option options[] = {
       "Wait for --exec processes to finish. Do not kill them (useful for testing)." },
     { "unbuffered",     OPT_UNBUFFERED, 0,  0, "Flush CSV to disk after every row." },
     { "verbose",        'v', 0,             0, "Print progress information to stderr." },
+    { "sched-deadline", OPT_SCHED_DEADLINE, "BUDGET%", OPTION_ARG_OPTIONAL,
+
+      "Use SCHED_DEADLINE to schedule periodic sampling. BUDGET% specifies execution "
+      "time budget in percents of the period (default is 1%)."
+
+    },
     { 0 }
 };
 

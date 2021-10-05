@@ -141,6 +141,9 @@ sensors in a .csv file.
                              ignored. When no sensors are specified via -s or
                              -S, all available thermal zones are added
                              automatically.
+      --sched-deadline[=BUDGET%]   Use SCHED_DEADLINE to schedule periodic
+                             sampling. BUDGET% specifies execution time budget
+                             in percents of the period (default is 1%).
   -S, --sensor=SPEC          Add a sensor to the list of used sensors. SPEC is
                              FILE [NAME [UNIT]]. FILE is typically something
                              like
