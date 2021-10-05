@@ -19,14 +19,14 @@ void mandelbrot(__global unsigned char* buffer) {
     const uint work_group = get_group_id(0);
     const bool run = (GROUP_MASK == 0) || !!((1U << work_group) & GROUP_MASK);
 
-    for (int y_px = get_global_id(0); y_px < WIDTH; y_px += gs) {
-        float y = Y_MIN + y_px * PIXEL_HEIGHT;
-        if (fabs(y) < PIXEL_HEIGHT / 2) {
-            y = 0.0; // Main antenna
-        }
+    for (int x_px = get_global_id(0); x_px < WIDTH; x_px += gs) {
+        const float x = X_MIN + x_px * PIXEL_WIDTH;
 
-        for (int x_px = 0; x_px < HEIGHT; x_px++) {
-            const float x = X_MIN + x_px * PIXEL_WIDTH;
+        for (int y_px = 0; y_px < HEIGHT; y_px++) {
+            float y = Y_MIN + y_px * PIXEL_HEIGHT;
+            if (fabs(y) < PIXEL_HEIGHT / 2) {
+                y = 0.0; // Main antenna
+            }
 
             // initial value of orbit = critical point Z = 0
             Zr = 0.0;
