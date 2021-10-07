@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <linux/types.h>
 
 #include "sched_deadline.h"
 
