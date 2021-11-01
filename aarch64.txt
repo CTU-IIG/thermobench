@@ -13,6 +13,7 @@ strip = 'aarch64-linux-gnu-strip'
 
 [properties]
 cpp_link_args = ['-static']
+c_link_args = ['-static']
 
 [host_machine]
 system = 'linux'
