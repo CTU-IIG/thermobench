@@ -97,5 +97,5 @@ foreach benchmark : automark_benchmarks
 
 	# Create a symlink to the data files - the path is hardcoded in the binaries :-(
 	run_command('sh', '-c',
-		    'ln -sf $MESON_SOURCE_ROOT/$MESON_SUBDIR/../benchmarks/automotive/@0@01/data_@0@ $MESON_BUILD_ROOT/$MESON_SUBDIR/../data'.format(benchmark))
+		    'ln -sfr $MESON_SOURCE_ROOT/$MESON_SUBDIR/../benchmarks/automotive/@0@01/data_@0@ $MESON_BUILD_ROOT/$MESON_SUBDIR/../data'.format(benchmark))
 endforeach
