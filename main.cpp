@@ -124,6 +124,9 @@ void tinyrender_init(int argc, char** argv)
         return;
     }
 
+    if (getenv("TB_OPTS") && (forever || work_done_string != NULL || work_done_every != 1))
+        errx(1, "-f, -w and -e switches are incompatible with TB_OPTS environment variable");
+
     if (work_done_string == NULL && work_done_every != 1)
         errx(1, "-e only makes sense with -w");
 
