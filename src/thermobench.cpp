@@ -8,6 +8,7 @@
 //
 #define _POSIX_C_SOURCE 200809L
 #include "csvRow.h"
+#include "sched_deadline.h"
 #include "util.hpp"
 #include <algorithm>
 #include <argp.h>
@@ -33,7 +34,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-#include "sched_deadline.h"
 
 #ifdef WITH_LOCAL_LIBEV
 #define EV_STANDALONE 1
@@ -326,9 +326,14 @@ static string shell_quote(int argc, char **argv)
             result += "'";
             for (char *p = argv[i]; *p; p++) {
                 switch (*p) {
-                case '\'': result += "'\\''"; break;
-                case '\n': result += "'$\'\\n\''"; break;
-                default:   result += *p;
+                case '\'':
+                    result += "'\\''";
+                    break;
+                case '\n':
+                    result += "'$\'\\n\''";
+                    break;
+                default:
+                    result += *p;
                 }
             }
             result += "'";
@@ -820,8 +825,7 @@ void measure(int measure_period_ms)
         ev_timer_start(loop, &measure_timer);
 
     if (sched_deadline) {
-        setup_sched_deadline(measure_period_ms * 1000000,
-                             measure_period_ms * 1000000/100 * sched_deadline_budget);
+        setup_sched_deadline(measure_period_ms * 1000000, measure_period_ms * 1000000 / 100 * sched_deadline_budget);
     } else {
         int currpriority = getpriority(PRIO_PROCESS, getpid());
         setpriority(PRIO_PROCESS, getpid(), currpriority - 1);
