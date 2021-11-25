@@ -34,3 +34,4 @@
 /sys/bus/i2c/drivers/ina3221x/0-0041/iio_device/in_current2_input SYS_DDR_current   mA
 /sys/bus/i2c/drivers/ina3221x/0-0041/iio_device/in_voltage2_input SYS_DDR_voltage   mV
 /sys/bus/i2c/drivers/ina3221x/0-0041/iio_device/in_power2_input   SYS_DDR_power     mW
+/sys/kernel/debug/tegra_fan/cur_pwm                               CUR_PWM           %
