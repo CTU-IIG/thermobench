@@ -114,12 +114,19 @@ function plot(d::Data, columns = :CPU_0_temp;
 end
 
 """
-    ops_per_sec(d::Data, column = :work_done; drop_inf = false)::Vector{Float64}
+    ops_per_sec(d::Data, column = :work_done)::Vector{Float64}
 
 Return a vector of operations per second calculated by combining
 information from *time* and *work_done*-type column identified with
-`column`. If `drop_inf` is true, infinity values (if any) are removed
-from the resulting vector.
+`column`.
+
+# Optional arguments
+
+- `decimate::Int64` - Use only every n-th "work_done" row (n =
+  `decimate`). Defaults to 1. Special value 0 means use only first and
+  last value.
+- `drop_inf` - If true, infinity values (if any) are removed from the
+  resulting vector. Defaults to false.
 
 ```jldoctest
 julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:3]
@@ -129,8 +136,16 @@ julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:
  5.4862923057965025e7
 ```
 """
-function ops_per_sec(d::Data, column = :work_done; drop_inf = false)::Vector{Float64}
+function ops_per_sec(d::Data, column = :work_done;
+                     drop_inf = false,
+                     decimate::Int64 = 1
+                     )::Vector{Float64}
     wd = select(d.df, :time, column => :work_done) |> dropmissing
+    if decimate == 0
+        wd = wd[[1,end], :]
+    elseif decimate > 1
+        wd = wd[1:decimate:end, :]
+    end
     speed = diff(wd.work_done) ./ diff(wd.time)
     if drop_inf
         speed = filter(!isinf, speed)
