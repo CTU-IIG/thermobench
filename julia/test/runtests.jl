@@ -165,7 +165,7 @@ for csv in csvs
     x = T.thermocam_correct!(df)'
     calib = vcat(calib, x)
 end
-describe(DataFrame(calib), :all)
+describe(DataFrame(calib, :auto), :all)
 
 # Visualize thermo camera callibration
 d = T.read("memory-bandwidth/data-nofan/rnd-a53-t1-s16k.csv")
@@ -326,7 +326,7 @@ end
 map(mf) do mf
     perf = mean.(ops_per_sec.(mf.result.data))
     @show perf
-    @gp :- perf mf.result.Tinf "lw 3 ps 3 title '$(mf.name)'"
+    @gp :- perf Measurements.value.(mf.result.Tinf) "lw 3 ps 3 title '$(mf.name)'"
 end
 
 perf = mean.(ops_per_sec.(mf[1].result.data))
