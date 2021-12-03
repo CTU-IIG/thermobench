@@ -15,7 +15,11 @@ if ! isinteractive()
                         recursive=true)
     doctest(Thermobench, manual=false, fix=true)
 end
-macro gpok(args...) :( (@gp $(esc.(args)...); true) ) end
+if Gnuplot.options.gpviewer
+    macro gpok(args...) :( @gp $(esc.(args)...); true ) end
+else
+    macro gpok(args...) :( display(@gp $(esc.(args)...)); true ) end
+end
 cd("/home/wsh/thermac/devel/experiments")
 
 @testset "plot_bars" begin
