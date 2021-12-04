@@ -130,7 +130,7 @@ information from *time* and *work_done*-type column identified with
 
 ```jldoctest
 julia> ops_per_sec(Thermobench.read("test.csv"), :CPU0_work_done) |> ops->ops[1:3]
-3-element Array{Float64,1}:
+3-element Vector{Float64}:
  5.499226671249357e7
  5.498016096730722e7
  5.4862923057965025e7
@@ -228,7 +228,7 @@ julia> d = Thermobench.read("test.csv", stripunits=false);
 
 
 julia> names(d.df)[1:3]
-3-element Array{String,1}:
+3-element Vector{String}:
  "time_s"
  "CPU_0_temp_°C"
  "CPU_1_temp_°C"
@@ -237,7 +237,7 @@ julia> Thermobench.strip_units!(d)
 
 
 julia> names(d.df)[1:3]
-3-element Array{String,1}:
+3-element Vector{String}:
  "time"
  "CPU_0_temp"
  "CPU_1_temp"
@@ -550,12 +550,12 @@ julia> f = fit(d.df.time, d.df.CPU_0_temp);
 
 
 julia> coef(f)
-5-element Array{Float64,1}:
-  53.000281317694906
-  -8.162698631078944
-  59.36604041500533
- -13.124669051563407
- 317.6295650259018
+5-element Vector{Float64}:
+  53.000281131995216
+ -13.124669351494804
+ 317.6295458318768
+  -8.162698170955293
+  59.36603736868179
 
 julia> printfit(f)
 "53.0 – 8.2⋅e^{−t/59.4} – 13.1⋅e^{−t/317.6}"
@@ -973,11 +973,11 @@ intended for subtraction of ambient temperature.
 julia> multi_fit("test.csv", [:CPU_0_temp :CPU_1_temp])
 Thermobench.MultiFit: test.csv
     2×9 DataFrame
- Row │ name      column      rmse       ops                Tinf     k1         ⋯
-     │ String    Symbol      Float64    Measurem…          Float64  Float64    ⋯
+ Row │ name      column      rmse      ops                Tinf     k1        t ⋯
+     │ String    Symbol      Float64   Measurem…          Float64  Float64   F ⋯
 ─────┼──────────────────────────────────────────────────────────────────────────
-   1 │ test.csv  CPU_0_temp   0.308966  3.9364e8±280000.0  53.0003  -8.1627    ⋯
-   2 │ test.csv  CPU_1_temp  14.1697    3.9364e8±280000.0  53.7449  -8.79378
+   1 │ test.csv  CPU_0_temp  0.308966  3.9364e8±280000.0  53.0003  -8.1627   5 ⋯
+   2 │ test.csv  CPU_1_temp  0.288719  3.9364e8±280000.0  54.0527  -7.17072  5
                                                                3 columns omitted
 ```
 """
@@ -1063,7 +1063,7 @@ Construct array of symbols from arguments.
 Useful for constructing column names, e.g.,
 ```jldoctest
 julia> @symarray Cortex_A57_temp Denver2_temp
-2-element Array{Symbol,1}:
+2-element Vector{Symbol}:
  :Cortex_A57_temp
  :Denver2_temp
 ```
