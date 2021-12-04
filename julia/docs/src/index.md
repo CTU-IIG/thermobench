@@ -6,7 +6,6 @@ DocTestSetup = :(using Thermobench, DataFrames)
 
 ```@setup abc
 using Gnuplot, Pipe, DataFramesMeta
-Gnuplot.quitall()
 mkpath("build/assets")
 Gnuplot.options.term = "unknown"
 empty!(Gnuplot.options.init)

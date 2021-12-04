@@ -13,6 +13,13 @@ if ! isinteractive()
     DocMeta.setdocmeta!(Thermobench,
                         :DocTestSetup, :(using Thermobench, DataFrames; cd(joinpath(dirname(pathof(Thermobench)), "..", "test")));
                         recursive=true)
+    # Create gnuplot session now! When it is created later, during
+    # doctests execution, it results in deadlock. The reason is that
+    # Gnuplot.jl connects gnuplot's stdout to current Julia's stdout,
+    # but during doctests, the stdout is redirected to a pipe. The
+    # doctest waits for EOF on stdout, but this will never happen,
+    # because the running gnuplot keeps it open indefinitely.
+    Gnuplot.getsession()
     doctest(Thermobench, manual=false, fix=true)
 end
 if Gnuplot.options.gpviewer
