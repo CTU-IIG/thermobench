@@ -121,6 +121,13 @@ you can manipulate them as you want. You can find a lot of examples in
 [DataFrames.jl
 documentation](https://dataframes.juliadata.org/stable/).
 
+In addition to using dataframe `d.df` directly, you can access
+individual columns via shortcut properties such as:
+
+```@repl abc
+d.CPU_0_temp |> x->first(x, 6)
+```
+
 To write (possibly modified) data to a file, use
 [`Thermobench.write`](@ref) function.
 

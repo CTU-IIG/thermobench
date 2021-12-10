@@ -39,7 +39,8 @@ mutable struct Data
 end
 ```
 
-Data read from thermobench CSV file.
+Data read from thermobench CSV file. You can access the actual data
+either via `d.df` (e.g. `d.df.ambient`) or via a shortcut `d.ambient`.
 """
 mutable struct Data
     df::DataFrame
@@ -74,6 +75,15 @@ end
 
 Base.filter(f, d::Data) = Data(d, filter(f, d.df))
 Base.filter!(f, d::Data) = filter(f, d.df)
+
+function Base.getproperty(d::Data, sym::Symbol)
+    if hasfield(Data, sym)
+        getfield(d, sym)
+    else
+        getproperty(d.df, sym)
+    end
+end
+Base.propertynames(d::Data) = union!(propertynames(d.df), fieldnames(typeof(d)))
 
 "Plot various Thermobench data types."
 function plot end
