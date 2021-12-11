@@ -12,6 +12,10 @@ empty!(Gnuplot.options.init)
 push!(Gnuplot.options.init, linetypes(:Set1_5, lw=1.5, ps=1.5))
 push!(Gnuplot.options.init, "set errorbars lw 2")
 saveas(file; width=800, height=350) = save(term="pngcairo size $width,$height fontscale 0.8", output="build/assets/$(file).png")
+function showas(; width=820, height=350)
+    Gnuplot.options.mime[MIME"text/html"] = "svg size $width,$height dynamic enhanced standalone background rgb 'white"
+    @gp :- ""
+end
 ```
 
 Julia module for working with
@@ -65,11 +69,9 @@ The simplest way to using the package is the [`multi_fit`](@ref)
 function. In the example below, it reads the data from a CSV file and
 fits a thermal model to it. The result can be directly plotted by Gnuplot.jl:
 
-```@repl abc
+```@example abc
 @gp multi_fit("test1.csv")
-saveas("test-mf") # hide
 ```
-![](assets/test-mf.png)
 
 You can pass multiple CSV files to [`multi_fit`](@ref). The result is
 shown as a DataFrame, which makes it easy to compare the results. You
@@ -140,9 +142,7 @@ makes it easier:
 ```@example abc
 @gp    plot(d, :CPU_0_temp) key="left"
 @gp :- plot(d, :ambient, with="lines", title="Amb. temperature")
-saveas("raw-cpu") # hide
 ```
-![](assets/raw-cpu.png)
 
 #### Missing values and interpolation
 
