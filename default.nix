@@ -22,6 +22,6 @@ stdenv.mkDerivation {
   BOOST_INCLUDEDIR = "${lib.getDev boost}/include";
   BOOST_LIBRARYDIR = "${lib.getLib boost}/lib";
 
-  nativeBuildInputs = [ meson ninja pkg-config ];
-  buildInputs = [ libev opencl-headers opencl-icd boost ];
+  nativeBuildInputs = [ meson ninja pkg-config wayland-scanner wayland-protocols ];
+  buildInputs = [ libev opencl-headers opencl-icd boost wayland ];
 }
