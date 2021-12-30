@@ -22,7 +22,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "config.h"
+//#include "config.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -34,10 +34,12 @@
 #include <sys/mman.h>
 #include <signal.h>
 #include <errno.h>
+#include <err.h>
 
+#include "shm.h"
 #include <wayland-client.h>
-#include "shared/os-compatibility.h"
-#include <libweston/zalloc.h>
+#include "wayland/os-compatibility.h"
+#include "wayland/zalloc.h"
 #include "xdg-shell-client-protocol.h"
 #include "fullscreen-shell-unstable-v1-client-protocol.h"
 
@@ -133,7 +135,7 @@ handle_xdg_surface_configure(void *data, struct xdg_surface *surface,
 	xdg_surface_ack_configure(surface, serial);
 
 	if (window->wait_for_configure) {
-		redraw(window, NULL, 0);
+		//redraw(window, NULL, 0);
 		window->wait_for_configure = false;
 	}
 }
@@ -189,7 +191,7 @@ create_window(struct display *display, int width, int height)
 		xdg_toplevel_add_listener(window->xdg_toplevel,
 					  &xdg_toplevel_listener, window);
 
-		xdg_toplevel_set_title(window->xdg_toplevel, "simple-shm");
+		xdg_toplevel_set_title(window->xdg_toplevel, "tinyrenderer");
 		wl_surface_commit(window->surface);
 		window->wait_for_configure = true;
 	} else if (display->fshell) {
@@ -402,7 +404,8 @@ create_display(void)
 		exit(1);
 	}
 	display->display = wl_display_connect(NULL);
-	assert(display->display);
+	if (!display->display)
+	    errx(1, "Cannot connect to a wayland display");
 
 	display->has_xrgb = false;
 	display->registry = wl_display_get_registry(display->display);
@@ -464,7 +467,7 @@ create_display(void)
 	return display;
 }
 
-static void
+void
 destroy_display(struct display *display)
 {
 	if (display->shm)
@@ -485,44 +488,43 @@ destroy_display(struct display *display)
 	free(display);
 }
 
-static void
-signal_int(int signum)
+static struct display *display;
+static struct window *window;
+
+void
+display_init(int width, int height)
 {
-	running = 0;
+	display = create_display();
+	window = create_window(display, width, height);
+	if (!window)
+		errx(1, "create_window failed");
 }
 
-int
-main(int argc, char **argv)
+void display_show(uint8_t *framebuffer)
 {
-	struct sigaction sigint;
-	struct display *display;
-	struct window *window;
-	int ret = 0;
+	int ret;
+        ret = wl_display_dispatch(display->display);
+	(void)ret; /* TODO check ret */
 
-	display = create_display();
-	window = create_window(display, 250, 250);
-	if (!window)
-		return 1;
+	struct buffer *buffer = window_next_buffer(window);
+        if (!buffer) {
+		warnx("Both buffers busy at redraw().\n");
+		return;
+        }
 
-	sigint.sa_handler = signal_int;
-	sigemptyset(&sigint.sa_mask);
-	sigint.sa_flags = SA_RESETHAND;
-	sigaction(SIGINT, &sigint, NULL);
+        memcpy(buffer->shm_data, framebuffer, window->width * window->height * 4);
 
-	/* Initialise damage to full surface, so the padding gets painted */
-	wl_surface_damage(window->surface, 0, 0,
-			  window->width, window->height);
+	wl_surface_attach(window->surface, buffer->buffer, 0, 0);
+	wl_surface_damage(window->surface, 0, 0, window->width, window->height);
+	wl_surface_commit(window->surface);
+	buffer->busy = 1;
 
-	if (!window->wait_for_configure)
-		redraw(window, NULL, 0);
+}
 
-	while (running && ret != -1)
-		ret = wl_display_dispatch(display->display);
-
-	fprintf(stderr, "simple-shm exiting\n");
-
-	destroy_window(window);
-	destroy_display(display);
-
-	return 0;
+void display_destroy()
+{
+	if (window)
+		destroy_window(window);
+	if (display)
+		destroy_display(display);
 }

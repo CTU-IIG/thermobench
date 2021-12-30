@@ -9,7 +9,19 @@
 constexpr int width  = 800; // output image size
 constexpr int height = 800;
 
+#ifdef WITH_WAYLAND
+#include "wayland/shm.h"
+#else
+#define display_init(w, h)
+#define display_show(x)
+#define display_destroy()
+#endif
+
+#ifdef WITH_WAYLAND
+      vec3 light_dir(1,1,1); // light source
+#else
 const vec3 light_dir(1,1,1); // light source
+#endif
 const vec3       eye(1,1,3); // camera position
 const vec3    center(0,0,0); // camera direction
 const vec3        up(0,1,0); // camera up vector
@@ -72,13 +84,23 @@ void print_usage(char *cmd) {
 }
 
 void tinyrender_run() {
-    std::vector<double> zbuffer(width*height, -std::numeric_limits<double>::max()); // note that the z-buffer is initialized with minimal possible values
-    TGAImage framebuffer(width, height, TGAImage::RGB); // the output image
-    lookat(eye, center, up);                            // build the ModelView matrix
-    viewport(width/8, height/8, width*3/4, height*3/4); // build the Viewport matrix
-    projection(-1.f/(eye-center).norm());               // build the Projection matrix
+    TGAImage framebuffer(width, height, TGAImage::RGBA); // the output image
 
     do {
+        std::vector<double> zbuffer(width*height, -std::numeric_limits<double>::max()); // note that the z-buffer is initialized with minimal possible values
+
+#ifdef WITH_WAYLAND
+        static unsigned frame = 0;
+        float f = static_cast<double>(frame++) / 30;
+        vec3 eye(3*sin(f), 1, 3*cos(f));
+        light_dir = eye;
+
+        framebuffer.clear();
+#endif
+        lookat(eye, center, up);                            // build the ModelView matrix
+        viewport(width/8, height/8, width*3/4, height*3/4); // build the Viewport matrix
+        projection(-1.f/(eye-center).norm());               // build the Projection matrix
+
         for (auto &model : models) { // iterate through all input objects
             Shader shader(model);
             for (int i=0; i<model.nfaces(); i++) { // for every triangle
@@ -92,6 +114,8 @@ void tinyrender_run() {
             printf("%s=%lld\n", work_done_string, work_done - 1);
             fflush(stdout);
         }
+        framebuffer.flip_vertically();
+        display_show(framebuffer.buffer());
     } while (forever);
     framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
 }
@@ -130,6 +154,8 @@ void tinyrender_init(int argc, char** argv)
     if (work_done_string == NULL && work_done_every != 1)
         errx(1, "-e only makes sense with -w");
 
+    display_init(width, height);
+
     for (int m=optind; m<argc; m++) // iterate through all input objects
         models.emplace_back(argv[m]);
 }
@@ -138,5 +164,6 @@ int main(int argc, char** argv)
 {
     tinyrender_init(argc, argv);
     thermobench_wrap(tinyrender_run);
+    display_destroy();
     return 0;
 }
