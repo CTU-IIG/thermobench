@@ -145,7 +145,7 @@ void tinyrender_init(int argc, char** argv)
 
     if (optind >= argc) {
         print_usage(argv[0]);
-        return;
+        exit(1);
     }
 
     if (getenv("TB_OPTS") && (forever || work_done_string != NULL || work_done_every != 1))

@@ -405,7 +405,7 @@ create_display(void)
 	}
 	display->display = wl_display_connect(NULL);
 	if (!display->display)
-	    errx(1, "Cannot connect to a wayland display");
+	    err(1, "Cannot connect to a wayland display");
 
 	display->has_xrgb = false;
 	display->registry = wl_display_get_registry(display->display);
