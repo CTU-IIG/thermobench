@@ -269,7 +269,7 @@ Read thermobech CSV file `source` and return it as [`Thermobench.Data`](@ref).
 The `source` can be a file name or an IO stream. By default units are
 normalized with [`normalize_units!`](@ref) and stripped from column
 names with [`strip_units!`](@ref). `name` is stored in the resulting
-data structure and often serves as a graph label. It `name` is not
+data structure and often serves as a graph label. If `name` is not
 specified it is set (if possible) to the basename of the CSV file.
 `kwargs` are stored in the resulting structure as metadata.
 
@@ -802,7 +802,7 @@ Generic helper function to plot bar graphs with Gnuplot.jl.
 # Arguments
 
 - `df`: data to plot. The first column should contains text labels,
-  the other columns the ploted values. If the values are of
+  the other columns the plotted values. If the values are of
   `Measurement` type, they will be plotted with errorbars style,
   unless overridden with `hist_style`.
 - `box_width=0.8`: the width of the boxes. One means that the boxes
