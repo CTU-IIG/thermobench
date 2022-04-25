@@ -134,6 +134,9 @@ sensors in a .csv file.
   -O, --output=FILE          The name of output CSV file (overrides -o and -n).
                              Hyphen (-) means standard output
   -p, --period=TIME [ms]     Period of reading the sensors
+      --sched-deadline[=BUDGET%]   Use SCHED_DEADLINE to schedule periodic
+                             sampling. BUDGET% specifies execution time budget
+                             in percents of the period (default is 1%).
   -s, --sensors_file=FILE    Definition of sensors to use. Each line of the
                              FILE contains either SPEC as in -S or, when the
                              line starts with '!', the rest is interpreted as
@@ -141,16 +144,13 @@ sensors in a .csv file.
                              ignored. When no sensors are specified via -s or
                              -S, all available thermal zones are added
                              automatically.
-      --sched-deadline[=BUDGET%]   Use SCHED_DEADLINE to schedule periodic
-                             sampling. BUDGET% specifies execution time budget
-                             in percents of the period (default is 1%).
   -S, --sensor=SPEC          Add a sensor to the list of used sensors. SPEC is
                              FILE [NAME [UNIT]]. FILE is typically something
                              like
                              /sys/devices/virtual/thermal/thermal_zone0/temp 
   -t, --time=SECONDS         Terminate the COMMAND after this time
-  -u, --cpu-usage            Calculate and log CPU usage.
       --unbuffered           Flush CSV to disk after every row.
+  -u, --cpu-usage            Calculate and log CPU usage.
   -v, --verbose              Print progress information to stderr.
   -w, --wait=TEMP [°C]      Wait for the temperature reported by the first
                              configured sensor to be less or equal to TEMP
