@@ -117,7 +117,8 @@ void tinyrender_run() {
         framebuffer.flip_vertically();
         display_show(framebuffer.buffer());
     } while (forever);
-    framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
+    if (getenv("TB_OPTS") == NULL)
+        framebuffer.write_tga_file("framebuffer.tga"); // the vertical flip is moved inside the function
 }
 
 void tinyrender_init(int argc, char** argv)
