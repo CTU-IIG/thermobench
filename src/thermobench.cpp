@@ -1,7 +1,7 @@
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// Copyright (C) 2019, 2020, 2021 Czech Technical University in Prague
+// Copyright (C) 2019, 2020, 2021, 2022 Czech Technical University in Prague
 //
 // Authors: Tibor Rózsa <rozsatib@fel.cvut.cz>
 //          Michal Sojka <michal.sojka@cvut.cz>
@@ -152,6 +152,7 @@ const CsvColumn *stdout_column = NULL;
 
 /* Command line options */
 int measure_period_ms = 1000;
+bool randomize_timing = false;
 char *benchmark_path[2] = { NULL, NULL };
 char **benchmark_argv = NULL;
 double cooldown_temp = NAN;
@@ -289,6 +290,7 @@ struct measure_state {
 } state;
 
 ev_timer measure_timer;
+ev_timer randomized_timer;
 ev_timer terminate_timer;
 ev_signal sigint_watcher, sigterm_watcher;
 
@@ -662,6 +664,7 @@ static void child_exit_cb(EV_P_ ev_child *w, int revents)
 
     // Stop other watchers that my block event loop from exiting.
     ev_timer_stop(EV_A_ & measure_timer);
+    ev_timer_stop(EV_A_ & randomized_timer);
     ev_timer_stop(EV_A_ & terminate_timer);
     ev_signal_stop(EV_A_ & sigint_watcher);
     ev_signal_stop(EV_A_ & sigterm_watcher);
@@ -719,6 +722,20 @@ static void measure_timer_cb(EV_P_ ev_timer *w, int revents)
         fprintf(stderr, "\r%.1fs  %.1f°C   ", time / 1000.0, temp / 1000.0);
         verbose_needs_eol = true;
     }
+}
+
+static void randomized_timer_cb(EV_P_ ev_timer *w, int revents)
+{
+    // Stop the timer if it has not been called in the last period.
+    // This can (theoretically) happen if the rand()/RAND_MAX is close
+    // to 1.0.
+    // TODO: Detect this situation and handle it by by calling the
+    // measure_timer_cb() from here.
+    ev_timer_stop(loop, &randomized_timer);
+
+    ev_timer_init(&randomized_timer, measure_timer_cb,
+                  measure_period_ms / 1000.0 * rand() / RAND_MAX, 0.);
+    ev_timer_start(loop, &randomized_timer);
 }
 
 static void terminate_timer_cb(EV_P_ ev_timer *w, int revents)
@@ -820,7 +837,11 @@ void measure(int measure_period_ms)
         have_sync_exec |= exec->has_sync_column;
     }
 
-    ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
+    if (!randomize_timing)
+        ev_timer_init(&measure_timer, measure_timer_cb, 0.0, measure_period_ms / 1000.0);
+    else
+        ev_timer_init(&measure_timer, randomized_timer_cb, 0.0, measure_period_ms / 1000.0);
+
     if (state.sensors.size() > 0 || have_sync_exec)
         ev_timer_start(loop, &measure_timer);
 
@@ -850,6 +871,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
     switch (key) {
     case 'p':
         measure_period_ms = atoi(arg);
+        break;
+    case 'r':
+        randomize_timing = true;
         break;
     case 'b':
         benchmark_path[0] = arg;
@@ -942,6 +966,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *argp_state)
 static struct argp_option options[] = {
     { "period",         'p', "TIME [ms]",   0, "Period of reading the sensors" },
     { "measure_period", 'p', 0,             OPTION_ALIAS | OPTION_HIDDEN },
+    { "randomize",      'r', 0,             0,
+      "Randomize timing of sensor reading. Average period is still given by "
+      "--period, but the exact sampling point within each period will be "
+      "selected randomly with uniform distribution." },
     { "benchmark",      'b', "EXECUTABLE",  OPTION_HIDDEN, "Benchmark program to execute" },
     { "benchmark_path", 'b', 0,             OPTION_ALIAS | OPTION_HIDDEN },
     { "sensors_file",   's', "FILE",        0,
@@ -1125,6 +1153,8 @@ string cpu::getHeader(unsigned idx)
 int main(int argc, char **argv)
 {
     argp_parse(&argp, argc, argv, 0, 0, NULL);
+
+    srand(time(NULL));
 
     if (!isnan(cooldown_temp))
         wait_cooldown(fan_cmd);

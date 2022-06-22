@@ -134,6 +134,10 @@ sensors in a .csv file.
   -O, --output=FILE          The name of output CSV file (overrides -o and -n).
                              Hyphen (-) means standard output
   -p, --period=TIME [ms]     Period of reading the sensors
+  -r, --randomize            Randomize timing of sensor reading. Average period
+                             is still given by --period, but the exact sampling
+                             point within each period will be selected randomly
+                             with uniform distribution.
       --sched-deadline[=BUDGET%]   Use SCHED_DEADLINE to schedule periodic
                              sampling. BUDGET% specifies execution time budget
                              in percents of the period (default is 1%).
