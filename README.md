@@ -1,5 +1,19 @@
 # Thermobench
 
+Thermobench is a tool for Linux, that runs a benchmark (arbitrary
+command) and simultaneously collects data from various sources, which
+are then stored into a CSV file. Primary collected data sources are
+temperature sensors. In addition, Thermobench can measure and collect
+CPU load, CPU frequency and stdout of the benchmark and/or arbitrary
+number of programs run simultaneously with the benchmark (`--exec`).
+Stdout of the programs is optionally parsed for lines matching
+`name=value` and the values are stored in separate CSV columns named
+`name`.
+
+Processing of CSV files produced by Thermobench can simplified with
+Julia package
+[Thermobench.jl](https://ctu-iig.github.io/thermobench/dev/).
+
 ## Prerequisites
 
 We use the Meson build system. On Debian-based distro, it can be
@@ -176,10 +190,6 @@ explicitly enabled by -c or -l options.
 Report bugs to https://github.com/CTU-IIG/thermobench/issues.
 ```
 <!-- help end -->
-
-## See also
-
-- [Thermobench.jl](https://ctu-iig.github.io/thermobench/dev/)
 
 ## Citing
 
