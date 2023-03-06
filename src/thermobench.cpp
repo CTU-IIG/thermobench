@@ -733,8 +733,7 @@ static void randomized_timer_cb(EV_P_ ev_timer *w, int revents)
     // measure_timer_cb() from here.
     ev_timer_stop(loop, &randomized_timer);
 
-    ev_timer_init(&randomized_timer, measure_timer_cb,
-                  measure_period_ms / 1000.0 * rand() / RAND_MAX, 0.);
+    ev_timer_init(&randomized_timer, measure_timer_cb, measure_period_ms / 1000.0 * rand() / RAND_MAX, 0.);
     ev_timer_start(loop, &randomized_timer);
 }
 
