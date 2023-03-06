@@ -8,10 +8,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-        fetch-depth: 0
+    - {uses: actions/checkout@v2, with: {fetch-depth: 0}}
+    - {run: git -c protocol.file.allow=always submodule update --init}
     - uses: cachix/install-nix-action@v20
       with:
         nix_path: nixpkgs=channel:nixos-unstable
