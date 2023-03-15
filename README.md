@@ -27,9 +27,18 @@ Alternatively, newest `meson` version can be installed by:
 
 ## Compilation
 
+First, we need to initialize git submodules, which are needed for
+compilation. Since we use the [git-subtrac][] tool to manage the
+submodules, we have to initialize them as follows:
+
 ``` sh
 git update-ref refs/heads/master.trac origin/master.trac
-git submodule update --init
+git -c protocol.file.allow=always submodule update --init
+```
+
+Now, we can compile everything:
+
+```sh
 make  # this invokes Meson
 ```
 
@@ -39,6 +48,8 @@ If you want to enable all optional features (e.g. benchmarks), run:
 meson --reconfigure -Dauto_features=enabled build
 make
 ```
+
+[git-subtrac]: https://github.com/apenwarr/git-subtrac/
 
 ### Compilation with DEmOS scheduler support
 
