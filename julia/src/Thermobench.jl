@@ -357,17 +357,21 @@ end
 
 
 """
-    interpolate!(d::Data)
-    interpolate!(df::AbstractDataFrame)
+    interpolate!(d::Data, selected_cols...)
+    interpolate!(df::AbstractDataFrame, selected_cols...)
 
 In-place version of [`interpolate`](@ref).
 """
-interpolate!(d::Data) = begin interpolate!(d.df); return d; end
-function interpolate!(df::AbstractDataFrame)
+interpolate!(d::Data, selected_cols...) = begin interpolate!(d.df, selected_cols...); return d; end
+function interpolate!(df::AbstractDataFrame, selected_cols...)
     size(df)[2] >= 2 || error("interpolate needs at least two columns")
     df[!,1] .|> ismissing |> any && error("First column must not have missing values")
 
-    for col in 2:size(df)[2]
+    if selected_cols === ()
+		selected_cols = 2:size(df)[2]
+	end
+
+    for col in selected_cols
         # Convert Int64 to Float64
         if eltype(df[!, col]) == Union{Missing, Int64}
             df[!, col] = map(x->(ismissing(x) ? missing : Float64(x)), df[!, col])
@@ -395,11 +399,13 @@ end
 
 
 """
-    interpolate(d::Data)
-    interpolate(df::AbstractDataFrame)
+    interpolate(d::Data, selected_cols...)
+    interpolate(df::AbstractDataFrame, selected_cols...)
 
 Replace missing values with results of linear interpolation
 performed against the first column (time).
+
+If selected_cols are provided, then only those columns are interpolated. Otherwise all columns are interpolated.
 
 ```jldoctest
 julia> x = DataFrame(t=[0.0, 1, 2, 3, 1000, 1001], v=[0.0, missing, missing, missing, 1000.0, missing])
@@ -428,10 +434,10 @@ julia> interpolate(x)
 
 ```
 """
-interpolate(d::Data) = Data(d::Data, interpolate(d.df))
-function interpolate(df::AbstractDataFrame)
+interpolate(d::Data, selected_cols...) = Data(d::Data, interpolate(d.df, selected_cols...))
+function interpolate(df::AbstractDataFrame, selected_cols...)
     d=deepcopy(df)
-    interpolate!(d)
+    interpolate!(d, selected_cols...)
     return d
 end
 
